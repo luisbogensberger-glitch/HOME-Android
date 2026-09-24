@@ -1,7 +1,34 @@
 {
-  "version": "2026-09-24",
-  "generatedAt": "2026-09-24T19:40:00Z",
+  "version": "2026-09-24-test-7",
+  "generatedAt": "2026-09-24T19:45:00Z",
   "cards": [
+    {
+      "id": "2026-09-24-sunk-cost-test",
+      "icon": "🧠",
+      "topic": "Psychology · Decision-Making",
+      "time": "3 min",
+      "title": "The Sunk-Cost Trap: Why Past Effort Shouldn’t Decide Your Next Move",
+      "hook": "The more time, money or pride you have invested, the harder it becomes to walk away—even when walking away is rational.",
+      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
+      "lead": "A sunk cost is a cost you cannot recover. Rationally, it should not affect what you do next. Psychologically, however, people often keep investing because stopping would make the earlier investment feel wasted.",
+      "sections": [
+        ["Past cost vs. future value", "Imagine you have spent months building a product feature that users barely touch. The time is already gone. The useful question is not ‘How much have we invested?’ but ‘Given what we know now, where should the next hour or euro go?’ Only future costs and future benefits should drive the choice."],
+        ["Why the trap feels convincing", "Stopping can feel like admitting failure, so we search for reasons to continue. This is intensified by <b>loss aversion</b>, ego and consistency pressure. The result is escalation of commitment: more resources are added mainly to justify what has already been spent."],
+        ["A practical countermeasure", "Use a reset question: <b>If I had not already invested anything, would I choose this option today?</b> Another method is to define exit criteria in advance—for example, ‘If fewer than 15% of test users activate this feature after three iterations, we stop or redesign it.’ Pre-committed criteria make emotional rationalisation harder."]
+      ],
+      "takeaway": "Do not ask whether previous effort deserves to be rescued. Ask which option creates the highest expected value from this point forward.",
+      "q": "Which question best protects against the sunk-cost fallacy?",
+      "options": [
+        "How much have we already invested?",
+        "Would we choose this option today if we were starting from zero?",
+        "How can we justify our earlier decision?",
+        "Can we invest a little more so the previous effort was not wasted?"
+      ],
+      "correct": 1,
+      "prompt": "Name one current commitment where a ‘start from zero today’ test could change your next decision.",
+      "keywords": ["sunk cost", "decision", "future value", "loss aversion", "exit criteria", "commitment"],
+      "publishedAt": "2026-09-24T19:45:00Z"
+    },
     {
       "id": "2026-09-24-lean-startup-build-measure-learn",
       "icon": "🚀",
