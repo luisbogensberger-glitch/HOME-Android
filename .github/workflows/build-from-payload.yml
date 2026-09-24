@@ -40,6 +40,11 @@ jobs:
           patch -p1 < ../todo-details.patch
       - name: Add HOME Worker sync
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
+      - name: Bake behavior engine baseline
+        shell: bash
+        run: |
+          cp home-runtime/behavior-v3.js src/luis-home-app/app/src/main/assets/behavior-v3.js
+          cp home-runtime/behavior-v3.css src/luis-home-app/app/src/main/assets/behavior-v3.css
       - name: Add premium HOME dashboard and adaptive runtime
         shell: bash
         run: |
@@ -51,11 +56,13 @@ jobs:
               '<link rel="stylesheet" href="home-ui-v2.css" />',
               '<link rel="stylesheet" href="adaptive-runtime.css" />',
               '<link rel="stylesheet" href="todo-premium.css" />',
+              '<link rel="stylesheet" href="behavior-v3.css" />',
           ]
           js_tags=[
               '<script src="home-ui-v2.js"></script>',
               '<script src="adaptive-runtime.js"></script>',
               '<script src="todo-premium.js"></script>',
+              '<script src="behavior-v3.js"></script>',
           ]
           for tag in css_tags:
               if tag not in s:
