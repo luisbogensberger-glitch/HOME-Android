@@ -31,7 +31,7 @@
         ],
         [
           "The hard part is control",
-          "More memory and more actions also raise the stakes. Good systems need clear boundaries around what is remembered, which tool an assistant may use, when it must ask first, and how a user can correct or remove stale context. The next competitive advantage in personal AI may therefore be not only intelligence, but <b>trustworthy continuity</b>."><br><br><small>Sources: OpenAI ChatGPT Release Notes, 23 Sep 2026 · Google DeepMind, “Advancing Private AI Compute with secure, server-side memory”, 23 Sep 2026.</small>"
+          "More memory and more actions also raise the stakes. Good systems need clear boundaries around what is remembered, which tool an assistant may use, when it must ask first, and how a user can correct or remove stale context. The next competitive advantage in personal AI may therefore be not only intelligence, but <b>trustworthy continuity</b>.<br><br><small>Sources: OpenAI ChatGPT Release Notes, 23 Sep 2026 · Google DeepMind, ‘Advancing Private AI Compute with secure, server-side memory’, 23 Sep 2026.</small>"
         ]
       ],
       "takeaway": "The frontier is shifting from smarter single responses to assistants that remember, use tools and continue work safely across time.",
