@@ -21,6 +21,9 @@ def request(method, path, body=None):
     req = urllib.request.Request(API + path, data=data, method=method)
     req.add_header("Authorization", "Bearer " + TOKEN)
     req.add_header("Accept", "application/json")
+    req.add_header("User-Agent", "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36 HOME-Sync-Bridge/1.0")
+    req.add_header("Accept-Language", "en-GB,en;q=0.9")
+    req.add_header("Cache-Control", "no-cache")
     if body is not None:
         req.add_header("Content-Type", "application/json; charset=utf-8")
     try:
