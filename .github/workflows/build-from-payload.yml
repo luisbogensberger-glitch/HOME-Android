@@ -30,6 +30,12 @@ jobs:
           patch -p1 < ../todo-details.patch
       - name: Add HOME Worker sync
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
+      - name: Enable remote Tube feed access
+        shell: bash
+        run: |
+          FILE="src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java"
+          sed -i 's/settings.setAllowFileAccessFromFileURLs(false);/settings.setAllowFileAccessFromFileURLs(true);/' "$FILE"
+          sed -i 's/settings.setAllowUniversalAccessFromFileURLs(false);/settings.setAllowUniversalAccessFromFileURLs(true);/' "$FILE"
       - name: Relabel legacy UI text
         shell: bash
         run: |
