@@ -1,6 +1,6 @@
 {
-  "version": "2026-09-24-ai-news",
-  "generatedAt": "2026-09-24T20:41:00Z",
+  "version": "2026-09-24-clickable-sources",
+  "generatedAt": "2026-09-24T20:48:00Z",
   "visibleCount": 6,
   "featuredIds": [
     "2026-09-24-sunk-cost-test",
@@ -21,39 +21,17 @@
       "img": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
       "lead": "The most interesting AI shift right now is not just a smarter model. It is the move toward assistants that can carry context across time, connect to tools and continue useful work beyond a single prompt.",
       "sections": [
-        [
-          "What changed this week",
-          "On 23 September 2026, OpenAI said ChatGPT Voice can use plugins and connected apps, while Voice is also available in Work. On the same day, Google DeepMind described a Private AI Compute architecture designed to support persistent, cross-device AI memory while keeping stronger privacy protections. Different products, but a similar direction: assistants are becoming less like one-off chat boxes and more like ongoing software systems."
-        ],
-        [
-          "Why this matters",
-          "A useful assistant needs more than raw model intelligence. It needs <b>continuity</b> so it can remember relevant context, <b>tools</b> so it can act, and <b>permissions</b> so the user stays in control. That combination is especially important for systems like HOME: the value comes from connecting calendar, tasks, learning and habits over time rather than answering one isolated question well."
-        ],
-        [
-          "The hard part is control",
-          "More memory and more actions also raise the stakes. Good systems need clear boundaries around what is remembered, which tool an assistant may use, when it must ask first, and how a user can correct or remove stale context. The next competitive advantage in personal AI may therefore be not only intelligence, but <b>trustworthy continuity</b>.<br><br><small>Sources: OpenAI ChatGPT Release Notes, 23 Sep 2026 · Google DeepMind, ‘Advancing Private AI Compute with secure, server-side memory’, 23 Sep 2026.</small>"
-        ]
+        ["What changed this week", "On 23 September 2026, OpenAI said ChatGPT Voice can use plugins and connected apps, while Voice is also available in Work. On the same day, Google DeepMind described a Private AI Compute architecture designed to support persistent, cross-device AI memory while keeping stronger privacy protections. Different products, but a similar direction: assistants are becoming less like one-off chat boxes and more like ongoing software systems."],
+        ["Why this matters", "A useful assistant needs more than raw model intelligence. It needs <b>continuity</b> so it can remember relevant context, <b>tools</b> so it can act, and <b>permissions</b> so the user stays in control. That combination is especially important for systems like HOME: the value comes from connecting calendar, tasks, learning and habits over time rather than answering one isolated question well."],
+        ["The hard part is control", "More memory and more actions also raise the stakes. Good systems need clear boundaries around what is remembered, which tool an assistant may use, when it must ask first, and how a user can correct or remove stale context. The next competitive advantage in personal AI may therefore be not only intelligence, but <b>trustworthy continuity</b>."],
+        ["Sources", "<a href=\"https://help.openai.com/en/articles/6825453-chatgpt-release-notes\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">OpenAI · ChatGPT Release Notes ↗</a><a href=\"https://deepmind.google/blog/advancing-private-ai-compute-with-secure-server-side-memory/\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Google DeepMind · Private AI Compute ↗</a>"]
       ],
       "takeaway": "The frontier is shifting from smarter single responses to assistants that remember, use tools and continue work safely across time.",
       "q": "What best links the two AI developments described here?",
-      "options": [
-        "Both mainly make image generation cheaper",
-        "Both move assistants toward persistent context and useful action beyond a single prompt",
-        "Both remove the need for user permissions",
-        "Both are designed only for offline phones"
-      ],
+      "options": ["Both mainly make image generation cheaper", "Both move assistants toward persistent context and useful action beyond a single prompt", "Both remove the need for user permissions", "Both are designed only for offline phones"],
       "correct": 1,
       "prompt": "In one sentence, name one permission or checkpoint a persistent personal AI assistant should have before acting for you.",
-      "keywords": [
-        "memory",
-        "plugins",
-        "tools",
-        "permissions",
-        "assistant",
-        "continuity",
-        "privacy",
-        "agent"
-      ],
+      "keywords": ["memory", "plugins", "tools", "permissions", "assistant", "continuity", "privacy", "agent"],
       "publishedAt": "2026-09-24T20:41:00Z",
       "priority": 100
     },
@@ -69,16 +47,12 @@
       "sections": [
         ["Past cost vs. future value", "Imagine you have spent months building a product feature that users barely touch. The time is already gone. The useful question is not ‘How much have we invested?’ but ‘Given what we know now, where should the next hour or euro go?’ Only future costs and future benefits should drive the choice."],
         ["Why the trap feels convincing", "Stopping can feel like admitting failure, so we search for reasons to continue. This is intensified by <b>loss aversion</b>, ego and consistency pressure. The result is escalation of commitment: more resources are added mainly to justify what has already been spent."],
-        ["A practical countermeasure", "Use a reset question: <b>If I had not already invested anything, would I choose this option today?</b> Another method is to define exit criteria in advance—for example, ‘If fewer than 15% of test users activate this feature after three iterations, we stop or redesign it.’ Pre-committed criteria make emotional rationalisation harder."]
+        ["A practical countermeasure", "Use a reset question: <b>If I had not already invested anything, would I choose this option today?</b> Another method is to define exit criteria in advance—for example, ‘If fewer than 15% of test users activate this feature after three iterations, we stop or redesign it.’ Pre-committed criteria make emotional rationalisation harder."],
+        ["Sources", "<a href=\"https://dictionary.apa.org/behavioral-economics\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">APA Dictionary · Behavioral economics & sunk-cost effect ↗</a>"]
       ],
       "takeaway": "Do not ask whether previous effort deserves to be rescued. Ask which option creates the highest expected value from this point forward.",
       "q": "Which question best protects against the sunk-cost fallacy?",
-      "options": [
-        "How much have we already invested?",
-        "Would we choose this option today if we were starting from zero?",
-        "How can we justify our earlier decision?",
-        "Can we invest a little more so the previous effort was not wasted?"
-      ],
+      "options": ["How much have we already invested?", "Would we choose this option today if we were starting from zero?", "How can we justify our earlier decision?", "Can we invest a little more so the previous effort was not wasted?"],
       "correct": 1,
       "prompt": "Name one current commitment where a ‘start from zero today’ test could change your next decision.",
       "keywords": ["sunk cost", "decision", "future value", "loss aversion", "exit criteria", "commitment"],
@@ -97,21 +71,87 @@
       "sections": [
         ["Start with the risky assumption", "Every new venture rests on assumptions. Two especially important ones are the <b>value hypothesis</b>—whether the product creates enough value for customers—and the <b>growth hypothesis</b>—how adoption could spread. Instead of polishing a complete product first, identify the assumption that could kill the idea if it is wrong."],
         ["The MVP is a learning tool", "A <b>minimum viable product</b> is the smallest experiment that can produce useful evidence about a key assumption. ‘Minimum’ does not mean careless or low quality. It means avoiding work that does not help answer the current question. Sometimes the MVP is software; sometimes it is a landing page, manual service, prototype or direct customer test."],
-        ["Measure, then pivot or persevere", "After building the experiment, measure behaviour rather than relying only on compliments. Compare what happened with what you expected. If the evidence supports the underlying assumptions, improve and continue. If it repeatedly contradicts them, change an important part of the strategy—a <b>pivot</b>—while keeping what you have learned."]
+        ["Measure, then pivot or persevere", "After building the experiment, measure behaviour rather than relying only on compliments. Compare what happened with what you expected. If the evidence supports the underlying assumptions, improve and continue. If it repeatedly contradicts them, change an important part of the strategy—a <b>pivot</b>—while keeping what you have learned."],
+        ["Sources", "<a href=\"https://theleanstartup.com/principles\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">The Lean Startup · Methodology & Build–Measure–Learn ↗</a><a href=\"https://theleanstartup.com/book\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">The Lean Startup · Book overview ↗</a>"]
       ],
       "takeaway": "Build–Measure–Learn turns product development into a sequence of experiments: identify a risky assumption, test it cheaply, measure real behaviour and let the evidence shape the next move.",
       "q": "What is the primary purpose of an MVP in Lean Startup thinking?",
-      "options": [
-        "To launch the cheapest possible finished product",
-        "To impress investors with as many features as possible",
-        "To test a key assumption and generate validated learning",
-        "To avoid speaking with customers until the product is polished"
-      ],
+      "options": ["To launch the cheapest possible finished product", "To impress investors with as many features as possible", "To test a key assumption and generate validated learning", "To avoid speaking with customers until the product is polished"],
       "correct": 2,
       "prompt": "For one idea you are working on, state one risky assumption and the smallest experiment that could test it.",
       "keywords": ["assumption", "hypothesis", "experiment", "customer", "test", "evidence", "learn", "mvp", "measure", "pivot"],
       "publishedAt": "2026-09-24T19:40:00Z",
       "priority": 100
+    },
+    {
+      "id": "hops",
+      "icon": "🌿",
+      "topic": "Agriculture & Science",
+      "time": "3 min",
+      "title": "What Hop Oils Actually Change in Beer",
+      "hook": "Two hop lots can share the same alpha percentage and still smell completely different.",
+      "img": "https://images.unsplash.com/photo-1505075106905-fb052892c116?auto=format&fit=crop&w=1200&q=80",
+      "lead": "Two hop lots can share the same alpha percentage and still smell completely different.",
+      "sections": [
+        ["Bitterness is not aroma", "During boiling, alpha acids become more soluble iso-alpha acids and make a major contribution to bitterness. Aroma is driven much more by <b>volatile essential oils</b>. Their many compounds combine into impressions such as citrus, resin, spice, flowers or herbs. Because these compounds are volatile and sensitive, timing changes the result. A long boil drives off many aroma molecules. Late additions, whirlpool use and dry hopping preserve different parts of the aroma profile."],
+        ["Why provenance matters", "Variety is only the beginning. Site, weather, plant health, harvest timing, drying, pelletisation and storage all influence the eventual sensory effect. That makes traceability and lot-level documentation operational information, not decorative marketing. For a brewer, the useful question is not only ‘How much alpha?’ but ‘What should this particular lot do in this particular recipe?’"],
+        ["Sources", "<a href=\"https://shop.hopsteiner.com/all-products/aroma\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Hopsteiner · Hop aroma, alpha acids & total oil ↗</a><a href=\"https://shop.hopsteiner.com/all-products/advanced-products/co2-extract/71344747.html\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Hopsteiner · CO₂ hop extract composition ↗</a>"]
+      ],
+      "takeaway": "Alpha helps calculate bitterness; aroma comes from a much richer and more fragile chemical profile.",
+      "q": "Which statement is most accurate?",
+      "options": ["Alpha acids explain both bitterness and every aroma", "Longer boiling preserves more volatile hop oils", "Alpha acids mainly shape bitterness; volatile oils shape much of the aroma", "Harvest and storage have little effect on aroma"],
+      "correct": 2,
+      "prompt": "In one sentence, name the most useful information Barthhof should give a brewer besides alpha percentage.",
+      "keywords": ["aroma", "sensory", "harvest", "storage", "drying", "oil", "lot", "traceability", "recipe"],
+      "publishedAt": "2026-09-24T20:48:00Z",
+      "priority": 80
+    },
+    {
+      "id": "container",
+      "icon": "📦",
+      "topic": "History & Economics",
+      "time": "3 min",
+      "title": "How One Metal Box Rewired Global Trade",
+      "hook": "A boring steel box changed which ports, factories and cities could compete.",
+      "img": "https://images.unsplash.com/photo-1494412651409-8963ce7935a7?auto=format&fit=crop&w=1200&q=80",
+      "lead": "A boring steel box changed which ports, factories and cities could compete in the world economy.",
+      "sections": [
+        ["Before the box", "For most of shipping history, cargo arrived as separate sacks, barrels and crates. Workers loaded and unloaded each item by hand. Ships spent days in port, damage and theft were common, and every transfer between a truck, train and ship created another costly handling step."],
+        ["Standardisation was the real invention", "From the 1950s onward, standard containers could move sealed between ships, trains and trucks. The breakthrough was not simply stronger packaging. Ports, cranes, vehicles and firms adopted the same dimensions, corner fittings and handling rules. That common interface removed friction at every handoff. Ships turned around faster, schedules became more reliable and transport costs fell."],
+        ["Use the idea", "ForBrewers faces a smaller version of the same problem if every brewery sends orders in a different format. A standard order pack—variety, harvest year, alpha level, volume, pellet format, delivery window and certificates—can travel through each handoff without repeated clarification."],
+        ["Sources", "<a href=\"https://www.worldbank.org/en/news/press-release/2025/12/11/international-standards-proliferate-reshaping-global-economy-too-many-developing-countries-are-left-behind-report-finds\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">World Bank · Standards and the shipping container ↗</a>"]
+      ],
+      "takeaway": "Standardisation creates value when one trusted unit can cross many boundaries without being rebuilt.",
+      "q": "Which mechanism best explains the container’s economic impact?",
+      "options": ["Ships became larger, and nothing else changed", "A sealed standard box reduced handling and coordination across ships, trains and trucks", "Containers eliminated tariffs between countries", "Ports were no longer necessary"],
+      "correct": 1,
+      "prompt": "In one sentence, apply containerisation logic to a fragmented workflow: what should be standardised, and why?",
+      "keywords": ["standard", "format", "handoff", "interface", "friction", "workflow", "coordination", "repeat", "consistent"],
+      "publishedAt": "2026-09-24T20:48:00Z",
+      "priority": 75
+    },
+    {
+      "id": "agents",
+      "icon": "🤖",
+      "topic": "AI & Technology",
+      "time": "3 min",
+      "title": "Why AI Agents Need Checkpoints, Not Just Goals",
+      "hook": "One early agent mistake can quietly contaminate every later step.",
+      "img": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
+      "lead": "Give an AI agent a broad goal and it may produce a confident result quickly—while quietly carrying one early mistake through every later step.",
+      "sections": [
+        ["Why goals are not enough", "An agent does more than answer once. It may search, choose sources, transform data and take actions. Each step depends on the previous one. If the agent misidentifies a company in step one, a perfect email in step five is still addressed to the wrong person. A <b>checkpoint</b> interrupts that chain."],
+        ["Good checkpoint design", "A useful checkpoint has three parts: <b>Object</b>—what is being checked; <b>Evidence</b>—what must be true; and <b>Fallback</b>—what happens when the test fails. For example, before sending a brewery outreach email, verify the brewery name against its official website, confirm the recipient’s role and stop for review if either is uncertain."],
+        ["Sources", "<a href=\"https://developers.openai.com/api/docs/guides/agents/guardrails-approvals\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">OpenAI · Guardrails and human review ↗</a><a href=\"https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">OpenAI · Practical guide to building agents ↗</a>"]
+      ],
+      "takeaway": "Reliable autonomy comes from goals plus feedback, boundaries and deliberate stops.",
+      "q": "Which design best reduces compounding agent errors?",
+      "options": ["One broad goal with no review", "More autonomy without feedback", "Checkpoints that test outputs and permissions before the next step", "A longer prompt alone"],
+      "correct": 2,
+      "prompt": "In one sentence, write one checkpoint for an AI agent preparing a brewery outreach list or a UCL research task.",
+      "keywords": ["verify", "source", "permission", "check", "evidence", "fallback", "stop", "review", "official", "record"],
+      "publishedAt": "2026-09-24T20:48:00Z",
+      "priority": 90
     }
   ]
 }
