@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updatedAt": "2026-09-24T23:55:00+01:00",
+  "version": 2,
+  "updatedAt": "2026-09-25T00:45:00+01:00",
   "theme": {
     "radius": 22,
     "density": "comfortable",
@@ -35,19 +35,8 @@
     "focusCount": 3
   },
   "notifications": {
-    "enabled": true,
-    "learningReminder": {
-      "enabled": true,
-      "time": "08:30",
-      "title": "Tube Learning",
-      "body": "One useful idea is enough to keep the streak alive."
-    },
-    "todoReminder": {
-      "enabled": true,
-      "time": "18:30",
-      "title": "HOME",
-      "body": "A quick look at your open tasks before the evening disappears."
-    }
+    "enabled": false,
+    "managedBy": "behavior-v3"
   },
   "adaptation": {
     "enabled": true,
