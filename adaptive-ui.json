@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-24T23:55:00+01:00",
+  "theme": {
+    "radius": 22,
+    "density": "comfortable",
+    "motion": "smooth",
+    "accent": "#8ea8ff",
+    "surfaceOpacity": 0.78
+  },
+  "tube": {
+    "layout": "stack",
+    "visibleCount": 5,
+    "cardImageRatio": 0.34,
+    "showHooks": true,
+    "showTopic": true,
+    "readerDepth": "balanced",
+    "sectionLimit": 3,
+    "paragraphScale": 1.0,
+    "quizMode": "mcq_sentence",
+    "sentenceMinWords": 5,
+    "sentenceTargetWords": 14,
+    "completionAction": "replace_card",
+    "swipeDirection": "vertical"
+  },
+  "todos": {
+    "layout": "cards",
+    "maxVisible": 8,
+    "showMeta": true,
+    "showArea": true,
+    "showMinutes": true,
+    "showNotes": false,
+    "groupBy": "none",
+    "archiveCollapsed": true,
+    "focusCount": 3
+  },
+  "notifications": {
+    "enabled": true,
+    "learningReminder": {
+      "enabled": true,
+      "time": "08:30",
+      "title": "Tube Learning",
+      "body": "One useful idea is enough to keep the streak alive."
+    },
+    "todoReminder": {
+      "enabled": true,
+      "time": "18:30",
+      "title": "HOME",
+      "body": "A quick look at your open tasks before the evening disappears."
+    }
+  },
+  "adaptation": {
+    "enabled": true,
+    "localDaily": true,
+    "allowLayoutChanges": true,
+    "allowQuizChanges": true,
+    "allowDensityChanges": true,
+    "minEventsBeforeChange": 12,
+    "cooldownHours": 20
+  }
+}
