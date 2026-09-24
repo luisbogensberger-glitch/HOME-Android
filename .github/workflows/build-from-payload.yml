@@ -30,6 +30,15 @@ jobs:
           patch -p1 < ../todo-details.patch
       - name: Add HOME Worker sync
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
+      - name: Relabel legacy UI text
+        shell: bash
+        run: |
+          FILE="src/luis-home-app/app/src/main/assets/index.html"
+          sed -i 's/Connect Notion/Connect HOME/g' "$FILE"
+          sed -i 's/Syncing with Notion…/Syncing with HOME Sync…/g' "$FILE"
+          sed -i 's/Could not read Notion tasks/Could not read HOME tasks/g' "$FILE"
+          sed -i 's/Adding to Notion…/Adding to HOME Sync…/g' "$FILE"
+          sed -i 's/Open full task guidance in Notion ↗/Open full task guidance ↗/g' "$FILE"
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
