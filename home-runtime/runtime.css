@@ -1,0 +1,4 @@
+/* HOME remote runtime CSS. Safe to change at any time; no APK rebuild required. */
+:root{--home-remote-version:1}
+/* Intentionally light by default. adaptive-runtime.css contains the stable component library.
+   Future experiments may completely restyle/restructure Tube Learning and To-Dos here. */
