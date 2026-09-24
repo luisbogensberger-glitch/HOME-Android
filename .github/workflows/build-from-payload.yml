@@ -3,8 +3,14 @@ name: Build HOME Android APK
 on:
   push:
     branches: [ main, feature/notion-task-sync, worker-backend-sync ]
+    paths-ignore:
+      - 'tube-feed.json'
+      - 'home-bridge/**'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - 'tube-feed.json'
+      - 'home-bridge/**'
   workflow_dispatch:
 
 permissions:
