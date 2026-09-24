@@ -1,4 +1,4 @@
-/* HOME dashboard v2 — rebuild only the launch screen and keep all existing routes/data. */
+/* HOME dashboard v3 — rebuild launch screen, preserve data/routes, enhance calendar. */
 (function(){
   const home=document.getElementById('homeScreen');
   if(!home)return;
@@ -90,6 +90,92 @@
     if(tubeText)tubeText.textContent=learned?`${learned} completed so far`:'One useful thing at a time.';
     if(ring)ring.style.setProperty('--learn-angle',`${Math.min(learned,5)/5*360}deg`);
   };
+
+  function calendarIcon(title){
+    const t=(title||'').toLowerCase();
+    if(t.includes('morning')||t.includes('launch')||t.includes('breakfast'))return '☀️';
+    if(t.includes('read')||t.includes('book')||t.includes('study'))return '📖';
+    if(t.includes('ucl')||t.includes('lecture')||t.includes('module'))return '🎓';
+    if(t.includes('python')||t.includes('fintech')||t.includes('code'))return '💻';
+    if(t.includes('international')||t.includes('global'))return '🌍';
+    if(t.includes('walk')||t.includes('buffer')||t.includes('travel'))return '🚶';
+    if(t.includes('meeting')||t.includes('call'))return '◌';
+    if(t.includes('email')||t.includes('mail'))return '✉️';
+    return '✦';
+  }
+
+  function decorateCalendar(){
+    const screen=document.getElementById('calendarScreen');
+    if(!screen)return;
+
+    const date=document.getElementById('calendarDate');
+    try{
+      if(date&&typeof selectedDate!=='undefined'){
+        const weekday=new Intl.DateTimeFormat('en-GB',{weekday:'long'}).format(selectedDate);
+        const day=new Intl.DateTimeFormat('en-GB',{day:'numeric'}).format(selectedDate);
+        const month=new Intl.DateTimeFormat('en-GB',{month:'long'}).format(selectedDate);
+        date.textContent=`${weekday} ${day} ${month}`;
+      }
+    }catch(e){}
+
+    screen.querySelectorAll('.event').forEach((event)=>{
+      const body=event.querySelector('.eventBody');
+      const title=body&&body.querySelector('h3');
+      if(!body||!title)return;
+      const raw=title.textContent.trim();
+
+      if(!body.querySelector('.eventIcon')){
+        const icon=document.createElement('span');
+        icon.className='eventIcon';
+        icon.setAttribute('aria-hidden','true');
+        icon.textContent=calendarIcon(raw);
+        body.insertBefore(icon,body.firstChild);
+      }
+
+      if(raw.includes('|')&&!title.querySelector('small')){
+        const parts=raw.split('|').map(v=>v.trim()).filter(Boolean);
+        if(parts.length>1){
+          title.textContent='';
+          const primary=document.createElement('span');
+          primary.textContent=parts.shift();
+          const secondary=document.createElement('small');
+          secondary.textContent=parts.join(' · ');
+          title.append(primary,secondary);
+        }
+      }
+    });
+  }
+
+  const originalRenderCalendar=typeof window.renderCalendar==='function'?window.renderCalendar:null;
+  if(originalRenderCalendar){
+    window.renderCalendar=function(){
+      const result=originalRenderCalendar.apply(this,arguments);
+      decorateCalendar();
+      return result;
+    };
+  }
+
+  const calendarList=document.getElementById('calendarList');
+  if(calendarList){
+    new MutationObserver(()=>decorateCalendar()).observe(calendarList,{childList:true,subtree:true});
+  }
+
+  const originalShowScreen=typeof window.showScreen==='function'?window.showScreen:null;
+  if(originalShowScreen){
+    window.showScreen=function(name){
+      const result=originalShowScreen.apply(this,arguments);
+      if(name==='calendar'){
+        const screen=document.getElementById('calendarScreen');
+        decorateCalendar();
+        if(screen){
+          screen.classList.remove('calendarEnter');
+          requestAnimationFrame(()=>requestAnimationFrame(()=>screen.classList.add('calendarEnter')));
+        }
+      }
+      if(name==='home')updateHome();
+      return result;
+    };
+  }
 
   updateHome();
   requestAnimationFrame(()=>requestAnimationFrame(()=>home.classList.add('homeReady')));
