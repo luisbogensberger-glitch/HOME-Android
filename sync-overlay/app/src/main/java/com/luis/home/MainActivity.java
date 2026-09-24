@@ -15,6 +15,7 @@ import android.text.InputType;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -33,6 +34,7 @@ public class MainActivity extends Activity {
     private WebView webView;
     private SharedPreferences prefs;
     private NotionSync notion;
+    private HomeSync homeSync;
     private final ExecutorService notionQueue = Executors.newSingleThreadExecutor();
 
     @Override
@@ -40,6 +42,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences("home_state", MODE_PRIVATE);
         notion = new NotionSync(this);
+        homeSync = new HomeSync(this);
 
         getWindow().setStatusBarColor(0xFF111214);
         getWindow().setNavigationBarColor(0xFF111214);
@@ -132,6 +135,41 @@ public class MainActivity extends Activity {
     }
 
     public class NativeBridge {
+        @JavascriptInterface public boolean hasHomeConnection() { return homeSync.isConfigured(); }
+
+        @JavascriptInterface public void configureHome() {
+            runOnUiThread(() -> {
+                LinearLayout fields = new LinearLayout(MainActivity.this); fields.setOrientation(LinearLayout.VERTICAL);
+                int padding = (int)(20 * getResources().getDisplayMetrics().density); fields.setPadding(padding, 0, padding, 0);
+                EditText url = new EditText(MainActivity.this); url.setSingleLine(true); url.setHint("https://your-home.example");
+                EditText token = new EditText(MainActivity.this); token.setSingleLine(true);
+                token.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD); token.setHint("HOME access token");
+                fields.addView(url); fields.addView(token);
+                AlertDialog dialog = new AlertDialog.Builder(MainActivity.this).setTitle("Connect HOME")
+                        .setMessage("Use your private HOME service address and token. Never paste the token into a chat or GitHub.")
+                        .setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Connect", null).create();
+                dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
+                    try { homeSync.configure(url.getText().toString(), token.getText().toString()); dialog.dismiss(); callback("onHomeConnected", new JSONObject()); }
+                    catch (Exception ex) { url.setError(ex.getMessage()); }
+                })); dialog.show();
+            });
+        }
+        @JavascriptInterface public void disconnectHome() { homeSync.disconnect(); callback("onHomeDisconnected", new JSONObject()); }
+        @JavascriptInterface public void requestHomeSync() {
+            notionQueue.execute(() -> { try { callback("onHomeSnapshot", homeSync.request("GET", "/v1/snapshot", null)); } catch (Exception ex) { homeError(ex); } });
+        }
+        @JavascriptInterface public void createHomeTask(String title) {
+            notionQueue.execute(() -> { try { callback("onHomeTaskCreated", homeSync.request("POST", "/v1/tasks", new JSONObject().put("title", title))); } catch (Exception ex) { homeError(ex); } });
+        }
+        @JavascriptInterface public void setHomeTaskDone(String id, boolean done) {
+            notionQueue.execute(() -> { try { callback("onHomeTaskChanged", homeSync.request("POST", "/v1/tasks/" + id + "/done", new JSONObject().put("done", done))); } catch (Exception ex) { homeError(ex); } });
+        }
+        @JavascriptInterface public void submitHomeQuiz(String payload) {
+            notionQueue.execute(() -> { try { callback("onHomeQuizSubmitted", homeSync.request("POST", "/v1/attempts", new JSONObject(payload))); } catch (Exception ex) { homeError(ex); } });
+        }
+        @JavascriptInterface public void importHomeState(String payload) {
+            notionQueue.execute(() -> { try { homeSync.request("POST", "/v1/import", new JSONObject(payload)); callback("onHomeImported", new JSONObject()); } catch (Exception ex) { homeError(ex); } });
+        }
         @JavascriptInterface
         public String loadState(String key) {
             return prefs.getString(key, "");
@@ -276,5 +314,10 @@ public class MainActivity extends Activity {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    private void homeError(Exception ex) {
+        try { callback("onHomeSyncError", new JSONObject().put("message", ex.getMessage() == null ? "HOME is unavailable; saved data remains on this phone." : ex.getMessage())); }
+        catch (Exception ignored) { }
     }
 }
