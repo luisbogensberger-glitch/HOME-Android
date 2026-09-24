@@ -1,0 +1,18 @@
+/* HOME Behaviour Engine v3 */
+#homeMomentum{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px;padding:12px 14px;border-radius:19px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(20,26,31,.58),rgba(12,17,21,.48));backdrop-filter:blur(20px) saturate(1.08);-webkit-backdrop-filter:blur(20px) saturate(1.08);box-shadow:0 14px 34px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.06)}
+.homeMomentumLabel{font-size:9px;letter-spacing:.18em;font-weight:850;color:rgba(255,255,255,.52);margin-bottom:4px}.homeMomentumMain{font-size:12px;font-weight:720;color:rgba(255,255,255,.88);line-height:1.25}.homeMomentumRight{display:flex;align-items:center;gap:9px;white-space:nowrap}.homeMomentumDots{display:flex;gap:4px}.homeMomentumDots i{width:8px;height:8px;border-radius:50%;display:block;background:rgba(255,255,255,.15);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}.homeMomentumDots i.done{background:#bfe8cb;box-shadow:0 0 12px rgba(143,211,164,.22)}.homeMomentumXp{font-size:10px;color:rgba(255,255,255,.55);font-weight:700}
+html[data-home-daypart="morning"] #homeMomentum{border-color:rgba(131,178,222,.16)}
+html[data-home-daypart="midday"] #homeMomentum{border-color:rgba(194,188,139,.16)}
+html[data-home-daypart="evening"] #homeMomentum{border-color:rgba(211,152,122,.18)}
+html[data-home-daypart="night"] #homeMomentum{border-color:rgba(161,143,204,.18)}
+
+/* When repeated long scrolling is observed in To-Dos, reduce vertical friction a little. */
+html[data-behaviour-todo-density="compact"] #todosScreen #todoList[data-behaviour-density="compact"]{gap:7px}
+html[data-behaviour-todo-density="compact"] #todosScreen #todoList[data-behaviour-density="compact"] .todo{min-height:76px;padding:12px 14px;border-radius:21px}
+html[data-behaviour-todo-density="compact"] #todosScreen #todoList[data-behaviour-density="compact"] .todoBody h3{font-size:14px;margin-bottom:4px}
+html[data-behaviour-todo-density="compact"] #todosScreen #todoList[data-behaviour-density="compact"] .todoMeta{font-size:10.5px;-webkit-line-clamp:1}
+
+/* Focus mode is intentionally gentle: secondary items remain available, but recede. */
+html[data-behaviour-todo-density="focus"] #todosScreen #todoList[data-layout="focus"] .adaptiveSecondary{opacity:.48;filter:saturate(.72);transform:scale(.987)}
+
+@media(max-width:390px){#homeMomentum{padding:11px 12px}.homeMomentumMain{font-size:11.5px}.homeMomentumXp{font-size:9px}}
