@@ -48,5 +48,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: HOME-notion-sync-apk
-          path: HOME-v2.apk
+          path: HOME-notion-sync.apk
           if-no-files-found: error
