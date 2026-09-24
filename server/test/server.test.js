@@ -22,3 +22,19 @@ test('authentication, task sync, quiz evidence and adaptive profile', async t =>
   assert.match(mcp.result.content[0].text, /"score":92/);
   assert.equal((await (await call('/v1/snapshot')).json()).profile[0].mastery, 'Solid');
 });
+
+test('first-device import is repeatable and preserves completion state', async t => {
+  const token = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const { server } = createApp({ token, filename: ':memory:' });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const request = async (path, payload) => fetch(base + path, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const payload = { tasks: [{ id: 'legacy:task-1', title: 'Keep my archived task', completedAt: 1700000000000 }], cards: [{ id: 'legacy-card', title: 'Preserved lesson', topic: 'History', options: ['A', 'B', 'C', 'D'], correct: 2, prompt: 'Explain it.' }] };
+  assert.equal((await (await request('/v1/import', payload)).json()).imported, 2);
+  assert.equal((await (await request('/v1/import', payload)).json()).imported, 0);
+  const snapshot = await (await fetch(base + '/v1/snapshot', { headers: { Authorization: `Bearer ${token}` } })).json();
+  assert.equal(snapshot.completed.length, 1);
+  assert.equal(snapshot.cards.length, 1);
+  assert.equal((await request('/v1/tasks/legacy:task-1/done', { done: false })).status, 200);
+});
