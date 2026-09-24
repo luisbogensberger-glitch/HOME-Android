@@ -1,0 +1,30 @@
+nks" id="detailLinks"></div></div>
++      <div class="detailSection"><div class="detailLabel">Your note</div><textarea class="detailNote" id="detailPersonalNote" placeholder="Add anything you want to remember for this task…"></textarea><div class="detailSaved">Saved automatically on this phone.</div></div>
++    </div>
++  </section>
++
+   <section class="screen" id="tubeScreen">
+     <div class="header" id="tubeHeader"><button class="back" onclick="showScreen('home')">‹</button><div class="headerTitle"><div class="eyebrow">Tube Learning</div><h1>Pick one useful thing.</h1></div><span></span></div>
+     <div class="pad" style="padding-top:0">
+@@ -67,7 +79,7 @@
+ function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+ let currentScreen='home';
+ function showScreen(name){if(currentScreen==='tube'&&name!=='tube'&&document.getElementById('reader').classList.contains('show')){closeReader();return}document.querySelectorAll('.screen').forEach(x=>x.classList.remove('show'));document.getElementById(name+'Screen').classList.add('show');currentScreen=name;window.scrollTo(0,0);if(name==='calendar')renderCalendar();if(name==='todos')renderTodos();if(name==='tube')renderDeck();updateHome()}
+-window.handleAndroidBack=()=>{if(currentScreen==='tube'&&document.getElementById('reader').classList.contains('show')){closeReader();return 'handled'}if(currentScreen!=='home'){showScreen('home');return 'handled'}return 'home'};
++window.handleAndroidBack=()=>{if(currentScreen==='tube'&&document.getElementById('reader').classList.contains('show')){closeReader();return 'handled'}if(currentScreen==='todoDetail'){closeTodoDetail();return 'handled'}if(currentScreen!=='home'){showScreen('home');return 'handled'}return 'home'};
+ 
+ /* ---------- Calendar ---------- */
+ let selectedDate=new Date(); selectedDate.setHours(12,0,0,0);
+@@ -80,20 +92,24 @@
+ function renderCalendar(){const dateEl=document.getElementById('calendarDate'),sub=document.getElementById('calendarSub'),list=document.getElementById('calendarList'),perm=document.getElementById('calendarPermission');dateEl.textContent=new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'long'}).format(selectedDate);sub.textContent='Only what matters: time, title, location.';list.innerHTML='';if(!hasNative()){perm.classList.add('hidden');list.innerHTML='<div class="empty">Calendar preview requires the Android app.</div>';return}if(!Native.hasCalendarPermission()){perm.classList.remove('hidden');return}else perm.classList.add('hidden');const [start,end]=dayBounds(selectedDate);let events=[];try{events=JSON.parse(Native.getCalendarEvents(start,end)||'[]')}catch(e){}if(!events.length){list.innerHTML='<div class="empty">Nothing scheduled for this day.</div>';return}events.forEach(e=>{const btn=document.createElement('button');btn.className='event';const fmt=t=>new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(t));const time=e.allDay?'All day':`${fmt(e.start)}<br>${fmt(e.end)}`;btn.innerHTML=`<div class="eventTime">${time}</div><div class="eventBar" style="background:${eventColor(e.title)}"></div><div class="eventBody"><h3>${esc(e.title)}</h3>${e.location?`<div class="eventLoc">${esc(e.location)}</div>`:''}${e.allDay?'<span class="allDay">all-day</span>':''}</div>`;btn.onclick=()=>Native.openCalendarEvent(String(e.id));list.appendChild(btn)});}
+ 
+ /* ---------- To-Dos ---------- */
+-const seedTodos=[
+-{id:'ucl-devices',title:'Finish setting up iPad and laptop for UCL',minutes:60,area:'UCL & Research',note:'UCL accounts, mail, apps, backgrounds, file access and distraction-reducing home screens.'},
+-{id:'orientation',title:'Morning orientation',minutes:7,area:'Personal Growth',note:'Energy, calendar, priorities, focus block.'},
+-{id:'oscar',title:'Reply to Oscar',minutes:20,area:'Barthhof & ForBrewers',note:'Answer every point and close with a clear next step.'},
+-{id:'bullitt',title:'Apply for BULLITT Student Brand Ambassador role',minutes:35,area:'Entrepreneurship & Career',note:'Send the application Simon recommended.'},
+-{id:'societies',title:'Research UCL societies for Welcome Fair',minutes:30,area:'UCL & Research',note:'Shortlist 5–8 societies worth visiting.'}
+-];
+-let todoState=loadStore('todoState',null);if(!todoState||!Array.isArray(todoState.active)){todoState={active:seedTodos,archive:[]};saveStore('todoState',todoState)}
+-function renderTodos(){const list=document.getElementById('todoList'),arch=document.getElementById('archiveList');list.innerHTML='';arch.innerHTML='';todoState.active.forEach(t=>{const el=document.createElement('div');el.className='todo';el.innerHTML=`<button class="todoCheck" aria-label="Complete">✓</button><div class="todoBody"><h3>${es
