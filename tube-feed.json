@@ -1,16 +1,62 @@
 {
-  "version": "2026-09-24-adaptive-6-test",
-  "generatedAt": "2026-09-24T20:00:57Z",
+  "version": "2026-09-24-ai-news",
+  "generatedAt": "2026-09-24T20:41:00Z",
   "visibleCount": 6,
   "featuredIds": [
     "2026-09-24-sunk-cost-test",
     "2026-09-24-lean-startup-build-measure-learn",
     "hops",
     "container",
-    "pause",
+    "2026-09-24-ai-news-persistent-action-oriented-assistants",
     "agents"
   ],
   "cards": [
+    {
+      "id": "2026-09-24-ai-news-persistent-action-oriented-assistants",
+      "icon": "📰",
+      "topic": "AI News · Technology",
+      "time": "3 min",
+      "title": "AI News: Assistants Are Becoming Persistent and Action-Oriented",
+      "hook": "Two updates this week point in the same direction: AI is moving from isolated chat toward systems that can remember context and act through tools.",
+      "img": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
+      "lead": "The most interesting AI shift right now is not just a smarter model. It is the move toward assistants that can carry context across time, connect to tools and continue useful work beyond a single prompt.",
+      "sections": [
+        [
+          "What changed this week",
+          "On 23 September 2026, OpenAI said ChatGPT Voice can use plugins and connected apps, while Voice is also available in Work. On the same day, Google DeepMind described a Private AI Compute architecture designed to support persistent, cross-device AI memory while keeping stronger privacy protections. Different products, but a similar direction: assistants are becoming less like one-off chat boxes and more like ongoing software systems."
+        ],
+        [
+          "Why this matters",
+          "A useful assistant needs more than raw model intelligence. It needs <b>continuity</b> so it can remember relevant context, <b>tools</b> so it can act, and <b>permissions</b> so the user stays in control. That combination is especially important for systems like HOME: the value comes from connecting calendar, tasks, learning and habits over time rather than answering one isolated question well."
+        ],
+        [
+          "The hard part is control",
+          "More memory and more actions also raise the stakes. Good systems need clear boundaries around what is remembered, which tool an assistant may use, when it must ask first, and how a user can correct or remove stale context. The next competitive advantage in personal AI may therefore be not only intelligence, but <b>trustworthy continuity</b>."><br><br><small>Sources: OpenAI ChatGPT Release Notes, 23 Sep 2026 · Google DeepMind, “Advancing Private AI Compute with secure, server-side memory”, 23 Sep 2026.</small>"
+        ]
+      ],
+      "takeaway": "The frontier is shifting from smarter single responses to assistants that remember, use tools and continue work safely across time.",
+      "q": "What best links the two AI developments described here?",
+      "options": [
+        "Both mainly make image generation cheaper",
+        "Both move assistants toward persistent context and useful action beyond a single prompt",
+        "Both remove the need for user permissions",
+        "Both are designed only for offline phones"
+      ],
+      "correct": 1,
+      "prompt": "In one sentence, name one permission or checkpoint a persistent personal AI assistant should have before acting for you.",
+      "keywords": [
+        "memory",
+        "plugins",
+        "tools",
+        "permissions",
+        "assistant",
+        "continuity",
+        "privacy",
+        "agent"
+      ],
+      "publishedAt": "2026-09-24T20:41:00Z",
+      "priority": 100
+    },
     {
       "id": "2026-09-24-sunk-cost-test",
       "icon": "🧠",
