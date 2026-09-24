@@ -1,0 +1,8 @@
+name = "luis-home-sync"
+main = "worker.js"
+compatibility_date = "2026-09-24"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "luis-home-sync"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
