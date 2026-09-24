@@ -1,6 +1,11 @@
 {
-  "version": "2026-09-24-test-7",
-  "generatedAt": "2026-09-24T19:45:00Z",
+  "version": "2026-09-24-adaptive-7",
+  "generatedAt": "2026-09-24T19:50:00Z",
+  "visibleCount": 7,
+  "featuredIds": [
+    "2026-09-24-sunk-cost-test",
+    "2026-09-24-lean-startup-build-measure-learn"
+  ],
   "cards": [
     {
       "id": "2026-09-24-sunk-cost-test",
@@ -27,7 +32,8 @@
       "correct": 1,
       "prompt": "Name one current commitment where a ‘start from zero today’ test could change your next decision.",
       "keywords": ["sunk cost", "decision", "future value", "loss aversion", "exit criteria", "commitment"],
-      "publishedAt": "2026-09-24T19:45:00Z"
+      "publishedAt": "2026-09-24T19:45:00Z",
+      "priority": 95
     },
     {
       "id": "2026-09-24-lean-startup-build-measure-learn",
@@ -54,7 +60,8 @@
       "correct": 2,
       "prompt": "For one idea you are working on, state one risky assumption and the smallest experiment that could test it.",
       "keywords": ["assumption", "hypothesis", "experiment", "customer", "test", "evidence", "learn", "mvp", "measure", "pivot"],
-      "publishedAt": "2026-09-24T19:40:00Z"
+      "publishedAt": "2026-09-24T19:40:00Z",
+      "priority": 100
     }
   ]
 }
