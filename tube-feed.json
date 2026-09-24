@@ -1,10 +1,14 @@
 {
-  "version": "2026-09-24-adaptive-7",
-  "generatedAt": "2026-09-24T19:50:00Z",
-  "visibleCount": 7,
+  "version": "2026-09-24-adaptive-6-test",
+  "generatedAt": "2026-09-24T20:00:57Z",
+  "visibleCount": 6,
   "featuredIds": [
     "2026-09-24-sunk-cost-test",
-    "2026-09-24-lean-startup-build-measure-learn"
+    "2026-09-24-lean-startup-build-measure-learn",
+    "hops",
+    "container",
+    "pause",
+    "agents"
   ],
   "cards": [
     {
