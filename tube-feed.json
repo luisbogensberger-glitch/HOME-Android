@@ -1,68 +1,93 @@
 {
-  "version": "2026-09-24-clickable-sources",
-  "generatedAt": "2026-09-24T20:48:00Z",
-  "visibleCount": 6,
+  "version": "2026-09-24-4learn-3news",
+  "generatedAt": "2026-09-24T20:55:00Z",
+  "visibleCount": 7,
   "featuredIds": [
-    "2026-09-24-sunk-cost-test",
+    "2026-09-24-news-ai-alibaba-stack",
+    "2026-09-24-news-ucl-space-landing-pad",
+    "2026-09-24-news-airtel-money-london-ipo",
     "2026-09-24-lean-startup-build-measure-learn",
+    "2026-09-24-sunk-cost-test",
     "hops",
-    "container",
-    "2026-09-24-ai-news-persistent-action-oriented-assistants",
-    "agents"
+    "container"
   ],
   "cards": [
     {
-      "id": "2026-09-24-ai-news-persistent-action-oriented-assistants",
+      "id": "2026-09-24-news-ai-alibaba-stack",
       "icon": "📰",
-      "topic": "AI News · Technology",
+      "topic": "NEWS · AI & Tech",
       "time": "3 min",
-      "title": "AI News: Assistants Are Becoming Persistent and Action-Oriented",
-      "hook": "Two updates this week point in the same direction: AI is moving from isolated chat toward systems that can remember context and act through tools.",
-      "img": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
-      "lead": "The most interesting AI shift right now is not just a smarter model. It is the move toward assistants that can carry context across time, connect to tools and continue useful work beyond a single prompt.",
+      "title": "Alibaba Pushes the Full AI Stack: Bigger Models + Its Own Chip",
+      "hook": "The AI race is widening from model quality into chips, data centres and control of the whole stack.",
+      "img": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+      "lead": "Alibaba used its Apsara conference to signal a much broader AI ambition: not just stronger models, but its own chips and a much larger infrastructure footprint.",
       "sections": [
-        ["What changed this week", "On 23 September 2026, OpenAI said ChatGPT Voice can use plugins and connected apps, while Voice is also available in Work. On the same day, Google DeepMind described a Private AI Compute architecture designed to support persistent, cross-device AI memory while keeping stronger privacy protections. Different products, but a similar direction: assistants are becoming less like one-off chat boxes and more like ongoing software systems."],
-        ["Why this matters", "A useful assistant needs more than raw model intelligence. It needs <b>continuity</b> so it can remember relevant context, <b>tools</b> so it can act, and <b>permissions</b> so the user stays in control. That combination is especially important for systems like HOME: the value comes from connecting calendar, tasks, learning and habits over time rather than answering one isolated question well."],
-        ["The hard part is control", "More memory and more actions also raise the stakes. Good systems need clear boundaries around what is remembered, which tool an assistant may use, when it must ask first, and how a user can correct or remove stale context. The next competitive advantage in personal AI may therefore be not only intelligence, but <b>trustworthy continuity</b>."],
-        ["Sources", "<a href=\"https://help.openai.com/en/articles/6825453-chatgpt-release-notes\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">OpenAI · ChatGPT Release Notes ↗</a><a href=\"https://deepmind.google/blog/advancing-private-ai-compute-with-secure-server-side-memory/\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Google DeepMind · Private AI Compute ↗</a>"]
+        ["What happened", "Reuters reported on 22 September that Alibaba announced plans for a next-generation AI model in the <b>5–10 trillion parameter</b> range and unveiled the Zhenwu V900 AI chip. The company said the new chip delivers roughly three times the performance of its predecessor and is intended for large clusters supporting massive AI workloads."],
+        ["Why it matters", "This is a useful strategy lesson: the competitive battlefield is moving from a single product layer to the <b>full stack</b>—models, chips, cloud capacity and distribution. Owning more layers can reduce dependence on suppliers and create tighter optimisation, but it also requires enormous capital and execution capability."],
+        ["What to watch", "For anyone building AI products, the important question is not whether to copy this scale. It is where dependence sits in your own stack. If one external model, API or compute provider controls your economics, that dependency can become strategically important."],
+        ["Sources", "<a href=\"https://www.reuters.com/business/retail-consumer/alibaba-plans-ai-model-with-5-trillion-10-trillion-parameters-unveils-new-chip-2026-09-22/\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Reuters · Alibaba unveils new AI model and chip ↗</a>"]
       ],
-      "takeaway": "The frontier is shifting from smarter single responses to assistants that remember, use tools and continue work safely across time.",
-      "q": "What best links the two AI developments described here?",
-      "options": ["Both mainly make image generation cheaper", "Both move assistants toward persistent context and useful action beyond a single prompt", "Both remove the need for user permissions", "Both are designed only for offline phones"],
+      "takeaway": "AI competition is increasingly about owning the infrastructure around the model, not only the model itself.",
+      "q": "What is the main strategic signal from Alibaba’s announcement?",
+      "options": ["AI models no longer need compute infrastructure", "Competition is expanding across models, chips and cloud infrastructure", "Only chip companies can build AI products", "Model size alone guarantees a better business"],
       "correct": 1,
-      "prompt": "In one sentence, name one permission or checkpoint a persistent personal AI assistant should have before acting for you.",
-      "keywords": ["memory", "plugins", "tools", "permissions", "assistant", "continuity", "privacy", "agent"],
-      "publishedAt": "2026-09-24T20:41:00Z",
+      "prompt": "In one sentence, name one external dependency in HOME or another project that could become strategically important.",
+      "keywords": ["dependency", "model", "api", "compute", "infrastructure", "stack", "supplier", "control"],
+      "publishedAt": "2026-09-24T20:55:00Z",
       "priority": 100
     },
     {
-      "id": "2026-09-24-sunk-cost-test",
-      "icon": "🧠",
-      "topic": "Psychology · Decision-Making",
+      "id": "2026-09-24-news-ucl-space-landing-pad",
+      "icon": "📰",
+      "topic": "NEWS · UCL & Entrepreneurship",
       "time": "3 min",
-      "title": "The Sunk-Cost Trap: Why Past Effort Shouldn’t Decide Your Next Move",
-      "hook": "The more time, money or pride you have invested, the harder it becomes to walk away—even when walking away is rational.",
-      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
-      "lead": "A sunk cost is a cost you cannot recover. Rationally, it should not affect what you do next. Psychologically, however, people often keep investing because stopping would make the earlier investment feel wasted.",
+      "title": "UCL Launches a New International Space Investment Programme",
+      "hook": "A new programme launched at UCL’s IDEALondon is designed to help overseas space companies establish themselves in the UK.",
+      "img": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
+      "lead": "This is unusually relevant because it sits directly at the intersection of UCL, entrepreneurship, international expansion and venture investment.",
       "sections": [
-        ["Past cost vs. future value", "Imagine you have spent months building a product feature that users barely touch. The time is already gone. The useful question is not ‘How much have we invested?’ but ‘Given what we know now, where should the next hour or euro go?’ Only future costs and future benefits should drive the choice."],
-        ["Why the trap feels convincing", "Stopping can feel like admitting failure, so we search for reasons to continue. This is intensified by <b>loss aversion</b>, ego and consistency pressure. The result is escalation of commitment: more resources are added mainly to justify what has already been spent."],
-        ["A practical countermeasure", "Use a reset question: <b>If I had not already invested anything, would I choose this option today?</b> Another method is to define exit criteria in advance—for example, ‘If fewer than 15% of test users activate this feature after three iterations, we stop or redesign it.’ Pre-committed criteria make emotional rationalisation harder."],
-        ["Sources", "<a href=\"https://dictionary.apa.org/behavioral-economics\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">APA Dictionary · Behavioral economics & sunk-cost effect ↗</a>"]
+        ["What happened", "On 24 September, UCL announced the <b>UK Space Landing Pad Programme</b> with Seraphim Space VC, Space South Central and the Satellite Applications Catapult. The six-month pilot is intended to attract high-potential international space companies that want to build a commercial presence in the UK."],
+        ["What companies receive", "According to UCL, the programme combines mentorship, regulatory guidance, technical facilities and direct exposure to commercial partners and investors. The first five participating companies are due to be announced later in 2026."],
+        ["Why this is useful for you", "The programme is a concrete example of an <b>entrepreneurial ecosystem</b>: university infrastructure, public institutions, specialist investors and industry partners reduce the friction of market entry together. That is worth watching at UCL because the relationships around a venture can sometimes matter as much as the venture idea itself."],
+        ["Sources", "<a href=\"https://www.ucl.ac.uk/news/2026/sep/uk-space-minister-joins-launch-new-international-investment-programme\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">UCL · UK Space Landing Pad Programme ↗</a>"]
       ],
-      "takeaway": "Do not ask whether previous effort deserves to be rescued. Ask which option creates the highest expected value from this point forward.",
-      "q": "Which question best protects against the sunk-cost fallacy?",
-      "options": ["How much have we already invested?", "Would we choose this option today if we were starting from zero?", "How can we justify our earlier decision?", "Can we invest a little more so the previous effort was not wasted?"],
+      "takeaway": "UCL is actively operating as a bridge between founders, investors, industry and the UK market—not only as a teaching institution.",
+      "q": "What is the programme mainly designed to reduce?",
+      "options": ["The cost of university tuition", "Friction for international space firms entering the UK market", "The need for venture investors", "The need for technical facilities"],
       "correct": 1,
-      "prompt": "Name one current commitment where a ‘start from zero today’ test could change your next decision.",
-      "keywords": ["sunk cost", "decision", "future value", "loss aversion", "exit criteria", "commitment"],
-      "publishedAt": "2026-09-24T19:45:00Z",
-      "priority": 95
+      "prompt": "In one sentence, name one UCL ecosystem connection that could be useful to explore during your MSc.",
+      "keywords": ["ucl", "ecosystem", "investor", "founder", "network", "market", "venture", "connection"],
+      "publishedAt": "2026-09-24T20:55:00Z",
+      "priority": 100
+    },
+    {
+      "id": "2026-09-24-news-airtel-money-london-ipo",
+      "icon": "📰",
+      "topic": "NEWS · Finance & London",
+      "time": "3 min",
+      "title": "Airtel Money Moves Toward a Major London IPO",
+      "hook": "A fast-growing African fintech is preparing a London listing—an unusually clean real-world entrepreneurial-finance case.",
+      "img": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80",
+      "lead": "Airtel Mobile Commerce, the company behind Airtel Money, formally announced its intention to float in London on 23 September.",
+      "sections": [
+        ["What happened", "Airtel Mobile Commerce published an <b>Intention to Float</b> announcement through the London Stock Exchange on 23 September. Financial Times reporting said the company is targeting an IPO that could raise at least about <b>$800 million</b>, with a possible valuation in the $8–9 billion range."],
+        ["Why London matters", "For London, the listing would be notable after a relatively quiet period for large IPOs. For the company, a public listing can provide new capital, liquidity for existing shareholders, visibility and an acquisition currency—but it also introduces disclosure requirements and continuous public-market scrutiny."],
+        ["Entrepreneurial-finance lens", "This is a good reminder that financing is a sequence. Startups may begin with founder capital and private investors, then use later venture or growth capital, and eventually consider public markets. Each stage changes not only the amount of capital available but also <b>who has influence and what information must be disclosed</b>."],
+        ["Sources", "<a href=\"https://www.londonstockexchange.com/news-article/market-news/airtel-mobile-commerce-n-v-intention-to-float/17799936\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">London Stock Exchange · Airtel Money intention to float ↗</a><a href=\"https://www.ft.com/content/62a6939f-7e24-492e-bdf6-b9ab9e1d3578\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Financial Times · Airtel Money London IPO ↗</a>"]
+      ],
+      "takeaway": "Going public changes the financing structure, ownership dynamics and accountability of a company—not just the size of its bank account.",
+      "q": "Which is a major trade-off of moving from private to public markets?",
+      "options": ["A company no longer needs investors", "It gains potential access to capital but accepts more disclosure and market scrutiny", "Its valuation becomes permanently fixed", "Founders automatically keep full control"],
+      "correct": 1,
+      "prompt": "In one sentence, explain when a public listing could make more sense than another private funding round.",
+      "keywords": ["ipo", "capital", "liquidity", "disclosure", "public", "private", "valuation", "investors"],
+      "publishedAt": "2026-09-24T20:55:00Z",
+      "priority": 98
     },
     {
       "id": "2026-09-24-lean-startup-build-measure-learn",
       "icon": "🚀",
-      "topic": "Entrepreneurship · The Lean Startup",
+      "topic": "LEARN · Entrepreneurship",
       "time": "3 min",
       "title": "Build–Measure–Learn: The Core Loop of The Lean Startup",
       "hook": "A startup should not ask ‘Can we build this?’ first. It should ask ‘What do we need to learn next?’",
@@ -70,32 +95,55 @@
       "lead": "Eric Ries treats a startup as an experiment under extreme uncertainty. Progress is not simply shipping more features; it is learning, with evidence, what customers actually value.",
       "sections": [
         ["Start with the risky assumption", "Every new venture rests on assumptions. Two especially important ones are the <b>value hypothesis</b>—whether the product creates enough value for customers—and the <b>growth hypothesis</b>—how adoption could spread. Instead of polishing a complete product first, identify the assumption that could kill the idea if it is wrong."],
-        ["The MVP is a learning tool", "A <b>minimum viable product</b> is the smallest experiment that can produce useful evidence about a key assumption. ‘Minimum’ does not mean careless or low quality. It means avoiding work that does not help answer the current question. Sometimes the MVP is software; sometimes it is a landing page, manual service, prototype or direct customer test."],
-        ["Measure, then pivot or persevere", "After building the experiment, measure behaviour rather than relying only on compliments. Compare what happened with what you expected. If the evidence supports the underlying assumptions, improve and continue. If it repeatedly contradicts them, change an important part of the strategy—a <b>pivot</b>—while keeping what you have learned."],
-        ["Sources", "<a href=\"https://theleanstartup.com/principles\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">The Lean Startup · Methodology & Build–Measure–Learn ↗</a><a href=\"https://theleanstartup.com/book\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">The Lean Startup · Book overview ↗</a>"]
+        ["The MVP is a learning tool", "A <b>minimum viable product</b> is the smallest experiment that can produce useful evidence about a key assumption. ‘Minimum’ does not mean careless or low quality. It means avoiding work that does not help answer the current question."],
+        ["Measure, then pivot or persevere", "After building the experiment, measure behaviour rather than relying only on compliments. If evidence repeatedly contradicts the strategy, change an important part of it—a <b>pivot</b>—while keeping what you learned."],
+        ["Sources", "<a href=\"https://theleanstartup.com/principles\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">The Lean Startup · Principles ↗</a><a href=\"https://theleanstartup.com/book\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">The Lean Startup · Book ↗</a>"]
       ],
-      "takeaway": "Build–Measure–Learn turns product development into a sequence of experiments: identify a risky assumption, test it cheaply, measure real behaviour and let the evidence shape the next move.",
-      "q": "What is the primary purpose of an MVP in Lean Startup thinking?",
-      "options": ["To launch the cheapest possible finished product", "To impress investors with as many features as possible", "To test a key assumption and generate validated learning", "To avoid speaking with customers until the product is polished"],
+      "takeaway": "Build–Measure–Learn turns product development into a sequence of experiments rather than a sequence of assumptions.",
+      "q": "What is the primary purpose of an MVP?",
+      "options": ["To launch the cheapest possible finished product", "To impress investors with many features", "To test a key assumption and generate validated learning", "To avoid speaking with customers"],
       "correct": 2,
       "prompt": "For one idea you are working on, state one risky assumption and the smallest experiment that could test it.",
       "keywords": ["assumption", "hypothesis", "experiment", "customer", "test", "evidence", "learn", "mvp", "measure", "pivot"],
       "publishedAt": "2026-09-24T19:40:00Z",
-      "priority": 100
+      "priority": 95
+    },
+    {
+      "id": "2026-09-24-sunk-cost-test",
+      "icon": "🧠",
+      "topic": "LEARN · Psychology",
+      "time": "3 min",
+      "title": "The Sunk-Cost Trap: Why Past Effort Shouldn’t Decide Your Next Move",
+      "hook": "The more time, money or pride you have invested, the harder it becomes to walk away—even when walking away is rational.",
+      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
+      "lead": "A sunk cost is a cost you cannot recover. Rationally, it should not affect what you do next. Psychologically, however, people often keep investing because stopping would make the earlier investment feel wasted.",
+      "sections": [
+        ["Past cost vs. future value", "The useful question is not ‘How much have we invested?’ but ‘Given what we know now, where should the next hour or euro go?’ Only future costs and future benefits should drive the choice."],
+        ["A practical countermeasure", "Use a reset question: <b>If I had not already invested anything, would I choose this option today?</b> Another method is to define exit criteria before emotion and ego become involved."],
+        ["Sources", "<a href=\"https://dictionary.apa.org/behavioral-economics\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">APA Dictionary · Behavioral economics ↗</a>"]
+      ],
+      "takeaway": "Judge the next step by future value, not by costs that are already irreversible.",
+      "q": "Which question best counters the sunk-cost fallacy?",
+      "options": ["How much have I already spent?", "Who will be disappointed if I stop?", "Would I choose this option today if I were starting fresh?", "Can I spend more to justify the first spend?"],
+      "correct": 2,
+      "prompt": "Name one current commitment where a ‘start fresh today’ test could improve your decision.",
+      "keywords": ["project", "module", "subscription", "commitment", "today", "fresh", "continue", "stop", "future"],
+      "publishedAt": "2026-09-24T19:45:00Z",
+      "priority": 90
     },
     {
       "id": "hops",
       "icon": "🌿",
-      "topic": "Agriculture & Science",
+      "topic": "LEARN · Agriculture & Science",
       "time": "3 min",
       "title": "What Hop Oils Actually Change in Beer",
       "hook": "Two hop lots can share the same alpha percentage and still smell completely different.",
       "img": "https://images.unsplash.com/photo-1505075106905-fb052892c116?auto=format&fit=crop&w=1200&q=80",
       "lead": "Two hop lots can share the same alpha percentage and still smell completely different.",
       "sections": [
-        ["Bitterness is not aroma", "During boiling, alpha acids become more soluble iso-alpha acids and make a major contribution to bitterness. Aroma is driven much more by <b>volatile essential oils</b>. Their many compounds combine into impressions such as citrus, resin, spice, flowers or herbs. Because these compounds are volatile and sensitive, timing changes the result. A long boil drives off many aroma molecules. Late additions, whirlpool use and dry hopping preserve different parts of the aroma profile."],
-        ["Why provenance matters", "Variety is only the beginning. Site, weather, plant health, harvest timing, drying, pelletisation and storage all influence the eventual sensory effect. That makes traceability and lot-level documentation operational information, not decorative marketing. For a brewer, the useful question is not only ‘How much alpha?’ but ‘What should this particular lot do in this particular recipe?’"],
-        ["Sources", "<a href=\"https://shop.hopsteiner.com/all-products/aroma\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Hopsteiner · Hop aroma, alpha acids & total oil ↗</a><a href=\"https://shop.hopsteiner.com/all-products/advanced-products/co2-extract/71344747.html\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Hopsteiner · CO₂ hop extract composition ↗</a>"]
+        ["Bitterness is not aroma", "During boiling, alpha acids become more soluble iso-alpha acids and contribute strongly to bitterness. Aroma is driven much more by <b>volatile essential oils</b>. Their compounds combine into impressions such as citrus, resin, spice, flowers or herbs."],
+        ["Why provenance matters", "Variety is only the beginning. Site, weather, harvest timing, drying, pelletisation and storage all influence the eventual sensory effect. That makes traceability and lot-level documentation operational information, not decorative marketing."],
+        ["Sources", "<a href=\"https://shop.hopsteiner.com/all-products/aroma\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">Hopsteiner · Hop aroma, alpha acids & total oil ↗</a>"]
       ],
       "takeaway": "Alpha helps calculate bitterness; aroma comes from a much richer and more fragile chemical profile.",
       "q": "Which statement is most accurate?",
@@ -104,22 +152,22 @@
       "prompt": "In one sentence, name the most useful information Barthhof should give a brewer besides alpha percentage.",
       "keywords": ["aroma", "sensory", "harvest", "storage", "drying", "oil", "lot", "traceability", "recipe"],
       "publishedAt": "2026-09-24T20:48:00Z",
-      "priority": 80
+      "priority": 85
     },
     {
       "id": "container",
       "icon": "📦",
-      "topic": "History & Economics",
+      "topic": "LEARN · History & Economics",
       "time": "3 min",
       "title": "How One Metal Box Rewired Global Trade",
       "hook": "A boring steel box changed which ports, factories and cities could compete.",
       "img": "https://images.unsplash.com/photo-1494412651409-8963ce7935a7?auto=format&fit=crop&w=1200&q=80",
       "lead": "A boring steel box changed which ports, factories and cities could compete in the world economy.",
       "sections": [
-        ["Before the box", "For most of shipping history, cargo arrived as separate sacks, barrels and crates. Workers loaded and unloaded each item by hand. Ships spent days in port, damage and theft were common, and every transfer between a truck, train and ship created another costly handling step."],
-        ["Standardisation was the real invention", "From the 1950s onward, standard containers could move sealed between ships, trains and trucks. The breakthrough was not simply stronger packaging. Ports, cranes, vehicles and firms adopted the same dimensions, corner fittings and handling rules. That common interface removed friction at every handoff. Ships turned around faster, schedules became more reliable and transport costs fell."],
-        ["Use the idea", "ForBrewers faces a smaller version of the same problem if every brewery sends orders in a different format. A standard order pack—variety, harvest year, alpha level, volume, pellet format, delivery window and certificates—can travel through each handoff without repeated clarification."],
-        ["Sources", "<a href=\"https://www.worldbank.org/en/news/press-release/2025/12/11/international-standards-proliferate-reshaping-global-economy-too-many-developing-countries-are-left-behind-report-finds\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">World Bank · Standards and the shipping container ↗</a>"]
+        ["Before the box", "Cargo once arrived as separate sacks, barrels and crates. Workers handled items individually, ships spent days in port, and every transfer between truck, train and ship created another costly coordination step."],
+        ["Standardisation was the real invention", "From the 1950s onward, standard containers could move sealed between ships, trains and trucks. The breakthrough was a common interface: ports, cranes, vehicles and firms adopted compatible dimensions and handling rules."],
+        ["Use the idea", "ForBrewers faces a smaller version of the same problem if every brewery orders differently. A standard order pack—variety, harvest year, alpha level, volume, pellet format, delivery window and certificates—reduces repeated clarification."],
+        ["Sources", "<a href=\"https://www.worldbank.org/en/news/press-release/2025/12/11/international-standards-proliferate-reshaping-global-economy-too-many-developing-countries-are-left-behind-report-finds\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">World Bank · Why standards shape trade ↗</a>"]
       ],
       "takeaway": "Standardisation creates value when one trusted unit can cross many boundaries without being rebuilt.",
       "q": "Which mechanism best explains the container’s economic impact?",
@@ -128,30 +176,7 @@
       "prompt": "In one sentence, apply containerisation logic to a fragmented workflow: what should be standardised, and why?",
       "keywords": ["standard", "format", "handoff", "interface", "friction", "workflow", "coordination", "repeat", "consistent"],
       "publishedAt": "2026-09-24T20:48:00Z",
-      "priority": 75
-    },
-    {
-      "id": "agents",
-      "icon": "🤖",
-      "topic": "AI & Technology",
-      "time": "3 min",
-      "title": "Why AI Agents Need Checkpoints, Not Just Goals",
-      "hook": "One early agent mistake can quietly contaminate every later step.",
-      "img": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
-      "lead": "Give an AI agent a broad goal and it may produce a confident result quickly—while quietly carrying one early mistake through every later step.",
-      "sections": [
-        ["Why goals are not enough", "An agent does more than answer once. It may search, choose sources, transform data and take actions. Each step depends on the previous one. If the agent misidentifies a company in step one, a perfect email in step five is still addressed to the wrong person. A <b>checkpoint</b> interrupts that chain."],
-        ["Good checkpoint design", "A useful checkpoint has three parts: <b>Object</b>—what is being checked; <b>Evidence</b>—what must be true; and <b>Fallback</b>—what happens when the test fails. For example, before sending a brewery outreach email, verify the brewery name against its official website, confirm the recipient’s role and stop for review if either is uncertain."],
-        ["Sources", "<a href=\"https://developers.openai.com/api/docs/guides/agents/guardrails-approvals\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">OpenAI · Guardrails and human review ↗</a><a href=\"https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/\" style=\"display:block;color:#8fb1ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:8px 0;border:1px solid #303947;border-radius:14px;background:#171c24\">OpenAI · Practical guide to building agents ↗</a>"]
-      ],
-      "takeaway": "Reliable autonomy comes from goals plus feedback, boundaries and deliberate stops.",
-      "q": "Which design best reduces compounding agent errors?",
-      "options": ["One broad goal with no review", "More autonomy without feedback", "Checkpoints that test outputs and permissions before the next step", "A longer prompt alone"],
-      "correct": 2,
-      "prompt": "In one sentence, write one checkpoint for an AI agent preparing a brewery outreach list or a UCL research task.",
-      "keywords": ["verify", "source", "permission", "check", "evidence", "fallback", "stop", "review", "official", "record"],
-      "publishedAt": "2026-09-24T20:48:00Z",
-      "priority": 90
+      "priority": 80
     }
   ]
 }
