@@ -1,0 +1,54 @@
+/* HOME To-Do — cinematic, quiet, aligned with HOME + Calendar. */
+#todosScreen{
+  min-height:100svh;position:relative;isolation:isolate;overflow-x:hidden;color:#f7f8fa;background-color:#08110d;
+  background-image:linear-gradient(180deg,rgba(5,13,9,.25) 0%,rgba(6,13,10,.52) 35%,rgba(6,10,8,.88) 100%),url('https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1800&q=90');
+  background-size:cover;background-position:center top;background-attachment:fixed;
+}
+#todosScreen::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 18% 18%,rgba(112,177,131,.20),transparent 29%),linear-gradient(180deg,transparent 0%,rgba(4,9,7,.18) 28%,rgba(5,9,7,.70) 100%)}
+#todosScreen .header{position:relative;top:auto;z-index:4;display:grid;grid-template-columns:66px 1fr auto;align-items:center;gap:17px;padding:calc(var(--safeT) + 12px) 22px 12px;background:transparent}
+#todosScreen .back{width:62px;height:62px;border-radius:50%;border:1px solid rgba(255,255,255,.23);background:rgba(20,40,30,.38);color:#fff;font-size:34px;font-weight:260;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 30px rgba(0,0,0,.18);backdrop-filter:blur(20px) saturate(1.08);-webkit-backdrop-filter:blur(20px) saturate(1.08)}
+#todosScreen .eyebrow{font-size:10px;line-height:1;font-weight:700;letter-spacing:.32em;color:rgba(217,239,225,.74);margin-bottom:7px}
+#todosScreen .headerTitle h1{font-size:0!important;margin:0;color:#fff}
+#todosScreen .headerTitle h1::after{content:"Your focus";display:block;font-family:Georgia,'Times New Roman',serif;font-size:43px;line-height:.94;font-weight:400;letter-spacing:-.035em;color:#fff;text-shadow:0 5px 20px rgba(0,0,0,.22)}
+#todosScreen .ghostBtn{min-width:92px;height:50px;border-radius:25px;border:1px solid rgba(255,255,255,.22);background:rgba(35,57,45,.34);color:#fff;padding:0 17px;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:400;box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 10px 26px rgba(0,0,0,.15);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+#todosScreen>.pad{padding:24px 22px calc(118px + env(safe-area-inset-bottom))!important;position:relative;z-index:2}
+#todosScreen .todoTop{align-items:flex-end;margin:0 0 18px;padding:0 2px}
+#todosScreen .todoTop .dateLabel{font-size:0!important}
+#todosScreen .todoTop .dateLabel::after{content:"Today";display:block;font-family:Georgia,'Times New Roman',serif;font-size:clamp(38px,9vw,52px);font-weight:400;letter-spacing:-.045em;line-height:.98;color:#fff;text-shadow:0 5px 24px rgba(0,0,0,.25)}
+#todosScreen .todoTop .dateSub{font-size:0!important;margin-top:9px;color:rgba(225,234,229,.68)}
+#todosScreen .todoTop .dateSub::after{content:"Only what matters. Tap a task to open it.";font-size:12px;line-height:1.45}
+#todosScreen .todoStats{font-size:12px;color:rgba(232,240,235,.72);white-space:nowrap;padding-bottom:4px}
+
+/* Healthy HOME Sync runs silently. Only a real connection problem is shown. */
+#todosScreen .syncBar{display:none!important}
+#todosScreen .syncBar.homeSyncProblem{display:flex!important;margin:0 0 14px;padding:10px 12px;border-radius:17px;border:1px solid rgba(218,151,124,.25);background:rgba(74,39,29,.52);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+#todosScreen .syncBar.homeSyncProblem span{color:#f4d5c8;font-size:11px}
+#todosScreen .syncBar.homeSyncProblem button{border-radius:12px;background:#5b372e;border-color:#815044;color:#fff0ea}
+#todosScreen .syncBar.homeSyncProblem #disconnectButton{display:none!important}
+
+#todosScreen .composer{gap:9px;margin:0 0 15px;padding:6px;border-radius:23px;border:1px solid rgba(224,238,230,.18);background:rgba(18,29,23,.56);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 14px 34px rgba(0,0,0,.16);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+#todosScreen .composer input{height:50px;border:0!important;border-radius:17px;background:transparent!important;color:#fff;padding:0 14px;font-size:14px;box-shadow:none!important}
+#todosScreen .composer input::placeholder{color:rgba(233,239,235,.48)}
+#todosScreen .composer button{min-width:72px;border:1px solid rgba(163,216,179,.22);border-radius:17px;background:linear-gradient(145deg,rgba(49,96,65,.86),rgba(31,71,47,.90));color:#f2fff6;padding:0 17px;font-size:13px;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+#todosScreen .todoList{gap:12px!important}
+#todosScreen .todo{min-height:96px;grid-template-columns:46px minmax(0,1fr) auto!important;gap:14px!important;align-items:center;border-radius:27px!important;border:1px solid rgba(219,233,224,.18)!important;padding:17px 18px!important;background:linear-gradient(105deg,rgba(17,29,23,.72),rgba(20,25,23,.62))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 18px 42px rgba(0,0,0,.20)!important;backdrop-filter:blur(22px) saturate(1.08);-webkit-backdrop-filter:blur(22px) saturate(1.08);position:relative;overflow:hidden;opacity:1!important;transform:none!important;filter:none!important}
+#todosScreen .todo::before{content:"";position:absolute;left:0;top:19px;bottom:19px;width:3px;border-radius:8px;background:linear-gradient(#9bcca9,#4d8d65);opacity:.76}
+#todosScreen .todo:nth-child(3n+2)::before{background:linear-gradient(#9fbce8,#5e7fae)}
+#todosScreen .todo:nth-child(3n+3)::before{background:linear-gradient(#c2a9df,#8268a7)}
+#todosScreen .todo:active{transform:scale(.989)!important;border-color:rgba(172,219,186,.33)!important}
+#todosScreen .todoCheck{width:42px!important;height:42px!important;border-radius:15px!important;border:1px solid rgba(224,237,229,.24)!important;background:rgba(7,13,10,.30)!important;color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+#todosScreen .todoBody{min-width:0}
+#todosScreen .todoBody h3{font-size:18px!important;line-height:1.18!important;font-weight:680!important;letter-spacing:-.018em;margin:0 0 7px!important;color:#fbfcfb}
+#todosScreen .todoMeta{display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;font-size:11.5px!important;line-height:1.35!important;color:rgba(219,228,222,.61)!important}
+#todosScreen .tag{align-self:center;font-size:10px!important;font-weight:760!important;padding:7px 9px!important;border-radius:999px!important;background:rgba(235,244,238,.075)!important;border:1px solid rgba(235,244,238,.08);color:rgba(235,242,238,.76)!important;max-width:108px;overflow:hidden;text-overflow:ellipsis}
+#todosScreen .adaptiveSecondary{opacity:1!important;transform:none!important;filter:none!important}
+#todosScreen .adaptiveHidden{display:none!important}
+#todosScreen .adaptiveMore{border-color:rgba(255,255,255,.13)!important;border-radius:18px!important;background:rgba(15,25,20,.50)!important;color:rgba(239,246,241,.75)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#todosScreen .archiveHeader{margin:28px 3px 11px;padding-top:8px;border-top:1px solid rgba(255,255,255,.10)}
+#todosScreen .archiveHeader h2{font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:400}
+#todosScreen .archiveItem{opacity:.58!important}
+#todosScreen .archiveItem::before{background:#729a7d}
+#todosScreen .archiveItem .todoCheck{color:#fff!important;background:rgba(45,91,60,.70)!important;border-color:rgba(123,188,143,.34)!important}
+#todosScreen .undo{color:#c4ddcc!important}
+@media(max-width:430px){#todosScreen .header{grid-template-columns:58px 1fr auto;gap:12px;padding-left:18px;padding-right:18px}#todosScreen .back{width:56px;height:56px}#todosScreen .headerTitle h1::after{font-size:39px}#todosScreen .ghostBtn{min-width:82px;height:46px;padding:0 14px;font-size:16px}#todosScreen>.pad{padding-left:18px!important;padding-right:18px!important}#todosScreen .todo{grid-template-columns:42px minmax(0,1fr) auto!important;padding:16px!important;gap:12px!important}#todosScreen .todoCheck{width:38px!important;height:38px!important;border-radius:14px!important}#todosScreen .todoBody h3{font-size:17px!important}#todosScreen .tag{max-width:82px}}
+@media(max-width:360px){#todosScreen .headerTitle h1::after{font-size:35px}#todosScreen .ghostBtn{min-width:70px;padding:0 11px}#todosScreen .tag{display:none}}
