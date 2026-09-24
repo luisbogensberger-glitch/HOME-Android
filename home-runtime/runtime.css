@@ -1,4 +1,62 @@
-/* HOME remote runtime CSS. Safe to change at any time; no APK rebuild required. */
-:root{--home-remote-version:1}
-/* Intentionally light by default. adaptive-runtime.css contains the stable component library.
-   Future experiments may completely restyle/restructure Tube Learning and To-Dos here. */
+/* HOME remote runtime CSS v2 — safe to update without rebuilding the APK. */
+:root{--home-remote-version:2}
+
+/* Restored rich card formatting + sources */
+#tubeScreen .section p b,#tubeScreen .section p strong,#tubeScreen .lead b,#tubeScreen .lead strong{font-weight:800;color:#f4f7fb}
+#tubeScreen .homeSourcesSection{margin-top:24px}
+#tubeScreen .homeSourcesSection h3{margin-bottom:10px}
+#tubeScreen .homeSourcesBody{display:grid;gap:8px}
+#tubeScreen .homeSourceLink{display:block;color:#9db7ff;text-decoration:none;font-weight:750;padding:12px 14px;margin:0;border:1px solid #303947;border-radius:14px;background:#171c24;line-height:1.35}
+#tubeScreen .homeSourceLink:active{transform:scale(.99);background:#1d2430}
+
+/* Fourth HOME card: Gym */
+#homeScreen .homeCard.gym{
+  background-image:
+    linear-gradient(135deg,rgba(87,46,31,.88),rgba(25,18,20,.88)),
+    url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1400&q=84');
+  background-size:cover;background-position:center 44%;border-color:rgba(235,166,125,.22)
+}
+#homeScreen .homeCard.gym:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 82% 22%,rgba(255,190,130,.18),transparent 34%);pointer-events:none}
+#homeScreen.homeReady .homeCard.gym,.homeReady .homeCard.gym{animation:homeCardUp .72s cubic-bezier(.16,1,.3,1) .57s both}
+.homeGymRow{display:flex;align-items:center;gap:17px;position:relative;z-index:2}
+.homeGymIcon{width:74px;height:74px;flex:0 0 74px;border-radius:21px;display:grid;place-items:center;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.09);font-size:34px;font-weight:250;transform:rotate(-45deg);color:rgba(255,255,255,.9)}
+
+/* Gym screen */
+#gymScreen{background:#0a0c0f;color:#f5f7fb;min-height:100svh}
+.gymHero{position:relative;padding:max(20px,env(safe-area-inset-top)) 18px 28px;min-height:230px;background-image:linear-gradient(180deg,rgba(8,10,13,.20),rgba(8,10,13,.50) 56%,#0a0c0f 100%),url('https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=1500&q=84');background-size:cover;background-position:center 42%}
+.gymTop{display:grid;grid-template-columns:46px 1fr auto;align-items:center;gap:12px;padding-top:8px}
+.gymBack{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(12,15,19,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:white;font-size:30px;line-height:1}
+.gymEyebrow{font-size:10px;letter-spacing:.19em;font-weight:850;color:rgba(255,255,255,.72)}
+.gymTop h1{font-family:Georgia,'Times New Roman',serif;font-size:35px;line-height:1;margin:4px 0 0;font-weight:500;letter-spacing:-.025em}
+.gymWeek{font-size:11px;font-weight:800;padding:9px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(10,12,15,.40);backdrop-filter:blur(12px);white-space:nowrap}
+.gymHero>p{margin:52px 4px 0;color:rgba(255,255,255,.72);font-size:13px;line-height:1.45;max-width:320px}
+.gymPad{padding:0 15px calc(28px + env(safe-area-inset-bottom));margin-top:-8px;position:relative;z-index:2}
+.gymPlanTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:13px}
+.gymPlanTabs button{border:1px solid rgba(255,255,255,.10);border-radius:17px;background:#14171c;color:#c7ced8;padding:12px 7px 10px;text-align:left;min-width:0}
+.gymPlanTabs button b{display:block;font-size:12px;color:#eef2f7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gymPlanTabs button span{display:block;font-size:10px;color:#7f8895;margin-top:4px}
+.gymPlanTabs button.selected{border-color:rgba(224,143,101,.46);background:linear-gradient(145deg,#2b211f,#1b1718);box-shadow:0 10px 24px rgba(0,0,0,.24)}
+.gymPlanTabs button:disabled{opacity:.62}
+.gymSession{border:1px solid rgba(255,255,255,.105);border-radius:27px;background:linear-gradient(145deg,rgba(26,29,34,.96),rgba(16,18,22,.96));box-shadow:0 18px 48px rgba(0,0,0,.28);padding:19px}
+.gymSessionHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}
+.gymKicker{font-size:9px;letter-spacing:.16em;color:#c98e71;font-weight:850}
+.gymSessionHead h2{font-size:24px;line-height:1.05;margin:5px 0 5px;letter-spacing:-.025em}
+.gymSessionHead p{font-size:11px;color:#818a96;margin:0}
+.gymClock{min-width:61px;height:61px;border-radius:20px;display:grid;place-items:center;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-size:15px;font-variant-numeric:tabular-nums;color:#eef2f7}
+.gymExercises{display:grid;gap:7px}
+.gymExercise{width:100%;display:grid;grid-template-columns:31px 1fr;gap:10px;align-items:center;border:1px solid rgba(255,255,255,.07);border-radius:15px;background:#111419;color:#e9edf4;padding:10px 11px;text-align:left}
+.gymExercise:disabled{opacity:.74}
+.gymExercise.done{background:#15201a;border-color:rgba(84,159,108,.28)}
+.gymCheck{width:27px;height:27px;border-radius:9px;border:1px solid #3a414b;display:grid;place-items:center;color:#dff5e5;background:#171a1f}
+.gymExercise.done .gymCheck{background:#244732;border-color:#3e7552}
+.gymExercise b{display:block;font-size:13px;line-height:1.2}
+.gymExercise small{display:block;font-size:10px;color:#7f8894;margin-top:4px}
+.gymPrimary{width:100%;margin-top:14px;border:0;border-radius:16px;padding:14px 15px;background:#e6e9ef;color:#111318;font-weight:850;font-size:13px}
+.gymPrimary.finish{background:#512c28;color:#ffdcd1;border:1px solid #72413a}
+.gymRecent{margin-top:18px}
+.gymRecentLabel{font-size:9px;letter-spacing:.15em;font-weight:850;color:#777f89;margin:0 4px 8px}
+.gymRecentCard{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #222831;border-bottom:1px solid #222831;padding:13px 4px}
+.gymRecentCard b{font-size:12px}.gymRecentCard span{font-size:10px;color:#7f8894;text-align:right;line-height:1.35;max-width:58%}
+
+@media(min-width:720px){#gymScreen .gymHero,#gymScreen .gymPad{max-width:760px;margin-left:auto;margin-right:auto}.gymPad{margin-top:-8px}}
+@media(max-width:370px){.gymTop{grid-template-columns:42px 1fr}.gymWeek{display:none}.gymPlanTabs{gap:6px}.gymPlanTabs button{padding:11px 5px}}
