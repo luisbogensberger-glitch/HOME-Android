@@ -1,0 +1,32 @@
+name: Adapt HOME from usage
+
+on:
+  schedule:
+    - cron: '15 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  adapt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Derive adaptive UI settings from private HOME activity
+        env:
+          HOME_TOKEN: ${{ secrets.HOME_TOKEN }}
+          HOME_API: https://luis-home-sync.luisbogensberger.workers.dev
+        run: python3 scripts/adapt_home.py
+      - name: Commit config only when behavior warrants a change
+        shell: bash
+        run: |
+          if git diff --quiet -- adaptive-ui.json; then
+            echo "No adaptive config change."
+            exit 0
+          fi
+          git config user.name "HOME Adaptive"
+          git config user.email "home-adaptive@users.noreply.github.com"
+          git add adaptive-ui.json
+          git commit -m "Adapt HOME interface from recent usage"
+          git push
