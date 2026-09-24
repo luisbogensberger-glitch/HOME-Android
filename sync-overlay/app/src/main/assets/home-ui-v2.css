@@ -1,0 +1,178 @@
+/* HOME dashboard v2 — intentionally only overrides the launch/home screen. */
+#homeScreen{
+  min-height:100svh;
+  background:#080b10;
+  overflow-x:hidden;
+}
+#homeScreen .homeHero{
+  height:min(41svh,390px);
+  min-height:300px;
+  position:relative;
+  background-image:
+    linear-gradient(180deg,rgba(4,8,13,.08) 0%,rgba(4,8,13,.16) 38%,rgba(6,10,15,.82) 100%),
+    url('https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1800&q=88');
+  background-size:cover;
+  background-position:center 43%;
+  overflow:hidden;
+}
+#homeScreen .homeHero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at 70% 22%,rgba(255,196,139,.16),transparent 34%);
+  pointer-events:none;
+}
+#homeScreen .homeHero::after{
+  height:120px;
+  background:linear-gradient(180deg,transparent 0%,rgba(8,11,16,.48) 48%,#080b10 100%);
+}
+.homeBrand{
+  position:absolute;
+  z-index:2;
+  left:0;right:0;
+  bottom:72px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  color:#fff;
+  text-shadow:0 4px 26px rgba(0,0,0,.28);
+  opacity:0;
+  transform:translateY(14px) scale(.98);
+}
+.homeReady .homeBrand{
+  animation:homeBrandIn .85s cubic-bezier(.16,1,.3,1) .05s both;
+}
+.homeMonogram{
+  width:80px;
+  height:104px;
+  position:relative;
+  margin-bottom:13px;
+}
+.homeMonogram::before,.homeMonogram::after{
+  content:"";
+  position:absolute;
+  top:0;bottom:0;
+  width:1.5px;
+  background:rgba(255,255,255,.92);
+  box-shadow:0 0 12px rgba(255,255,255,.08);
+}
+.homeMonogram::before{left:13px}.homeMonogram::after{right:13px}
+.homeMonogram span::before,.homeMonogram span::after{
+  content:"";
+  position:absolute;
+  top:0;
+  width:1.5px;
+  height:100%;
+  background:rgba(255,255,255,.92);
+}
+.homeMonogram span::before{left:29px}.homeMonogram span::after{right:29px}
+.homeMonogram i{
+  position:absolute;
+  left:29px;right:29px;
+  top:50%;
+  height:1.5px;
+  background:rgba(255,255,255,.92);
+  transform:translateY(-50%);
+}
+.homeBrandName{
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.32em;
+  text-transform:uppercase;
+  padding-left:.32em;
+  color:rgba(255,255,255,.9);
+}
+#homeScreen .homeInner{
+  padding:0 15px calc(26px + env(safe-area-inset-bottom));
+  margin-top:-46px;
+  position:relative;
+  z-index:4;
+}
+#homeScreen .homeGrid{display:grid;gap:13px}
+#homeScreen .homeCard{
+  width:100%;
+  min-height:142px;
+  padding:19px 20px;
+  border-radius:27px;
+  border:1px solid rgba(255,255,255,.14);
+  color:#fff;
+  text-align:left;
+  position:relative;
+  overflow:hidden;
+  cursor:pointer;
+  opacity:0;
+  transform:translateY(34px) scale(.96);
+  box-shadow:0 18px 50px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.07);
+  backdrop-filter:blur(22px) saturate(1.12);
+  -webkit-backdrop-filter:blur(22px) saturate(1.12);
+  transition:transform .16s ease,border-color .16s ease,filter .16s ease;
+}
+#homeScreen .homeCard::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(145deg,rgba(255,255,255,.07),transparent 42%,rgba(0,0,0,.08));
+}
+#homeScreen .homeCard.calendar{background:linear-gradient(135deg,rgba(44,83,118,.82),rgba(18,33,49,.82));border-color:rgba(126,180,222,.22)}
+#homeScreen .homeCard.todos{background:linear-gradient(135deg,rgba(48,86,61,.86),rgba(20,50,36,.84));border-color:rgba(133,190,151,.22)}
+#homeScreen .homeCard.tube{background:linear-gradient(135deg,rgba(85,54,92,.88),rgba(44,29,56,.86));border-color:rgba(193,142,219,.22)}
+.homeReady .homeCard.calendar{animation:homeCardLeft .72s cubic-bezier(.16,1,.3,1) .18s both}
+.homeReady .homeCard.todos{animation:homeCardRight .72s cubic-bezier(.16,1,.3,1) .31s both}
+.homeReady .homeCard.tube{animation:homeCardUp .72s cubic-bezier(.16,1,.3,1) .44s both}
+#homeScreen .homeCard:active{transform:scale(.982)!important;filter:brightness(.96)}
+.homeCardHead{display:flex;align-items:center;justify-content:space-between;gap:14px;position:relative;z-index:2;margin-bottom:14px}
+.homeCardLabel{font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.76)}
+.homeCardMetric{font-size:12px;font-weight:620;color:rgba(255,255,255,.7);white-space:nowrap}
+.homeCardChevron{font-size:28px;font-weight:300;line-height:1;color:rgba(255,255,255,.48);margin-left:3px}
+.homeMetricRow{display:flex;align-items:center;gap:17px;position:relative;z-index:2}
+.homeDateTile{
+  width:74px;height:79px;flex:0 0 74px;
+  border-radius:20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.homeDateTile strong{font-size:32px;line-height:.95;font-weight:420;letter-spacing:-.045em}
+.homeDateTile span{font-size:11px;letter-spacing:.13em;margin-top:8px;color:rgba(255,255,255,.72);text-transform:uppercase}
+.homeSummary{min-width:0;flex:1}
+.homeSummary h2{font-size:24px;line-height:1.05;margin:0 0 7px;font-weight:560;letter-spacing:-.025em}
+.homeSummary p{font-size:13px;line-height:1.35;margin:0;color:rgba(255,255,255,.64);max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.homeTaskVisual{display:flex;align-items:center;gap:8px;margin-top:3px}
+.homeTaskDot{width:24px;height:24px;border-radius:50%;border:1.4px solid rgba(255,255,255,.58);background:rgba(255,255,255,.03)}
+.homeTaskLines{display:grid;gap:5px;flex:1;max-width:132px}
+.homeTaskLines i{display:block;height:4px;border-radius:9px;background:rgba(255,255,255,.26)}
+.homeTaskLines i:nth-child(2){width:72%}
+.homeLearnRow{display:flex;align-items:center;justify-content:space-between;gap:18px;position:relative;z-index:2}
+.homeLearnCopy h2{font-size:25px;line-height:1.04;margin:0 0 8px;font-weight:520;letter-spacing:-.025em}
+.homeLearnCopy p{font-size:13px;line-height:1.3;color:rgba(255,255,255,.64);margin:0}
+.homeLearnRing{
+  --learn-angle:0deg;
+  width:76px;height:76px;flex:0 0 76px;border-radius:50%;
+  background:conic-gradient(#b88cff 0 var(--learn-angle),rgba(255,255,255,.12) var(--learn-angle) 360deg);
+  display:grid;place-items:center;position:relative;
+}
+.homeLearnRing::after{content:"";position:absolute;inset:7px;border-radius:50%;background:#392940;box-shadow:inset 0 0 18px rgba(0,0,0,.12)}
+.homeLearnRingInner{position:relative;z-index:2;text-align:center;line-height:1}
+.homeLearnRingInner strong{font-size:22px;font-weight:500;display:block}
+.homeLearnRingInner span{font-size:9px;color:rgba(255,255,255,.64);display:block;margin-top:5px;text-transform:uppercase;letter-spacing:.06em}
+@keyframes homeBrandIn{to{opacity:1;transform:none}}
+@keyframes homeCardLeft{0%{opacity:0;transform:translate3d(-48px,38px,0) scale(.94) rotate(-.8deg)}100%{opacity:1;transform:none}}
+@keyframes homeCardRight{0%{opacity:0;transform:translate3d(48px,38px,0) scale(.94) rotate(.8deg)}100%{opacity:1;transform:none}}
+@keyframes homeCardUp{0%{opacity:0;transform:translate3d(0,54px,0) scale(.94)}100%{opacity:1;transform:none}}
+@media(max-height:760px){
+  #homeScreen .homeHero{height:300px;min-height:300px}
+  .homeBrand{bottom:60px}
+  #homeScreen .homeInner{margin-top:-42px}
+  #homeScreen .homeCard{min-height:126px;padding:16px 18px}
+  .homeCardHead{margin-bottom:10px}
+}
+@media(min-width:720px){
+  #homeScreen .homeInner{max-width:760px;margin-left:auto;margin-right:auto}
+  #homeScreen .homeGrid{grid-template-columns:1fr 1fr}
+  #homeScreen .homeCard.tube{grid-column:1/-1}
+}
+@media(prefers-reduced-motion:reduce){
+  #homeScreen .homeBrand,#homeScreen .homeCard{opacity:1!important;transform:none!important;animation:none!important}
+}
