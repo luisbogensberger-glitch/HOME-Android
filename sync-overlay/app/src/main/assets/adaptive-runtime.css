@@ -1,0 +1,76 @@
+/* HOME adaptive component library. Remote JSON selects among these modes. */
+:root{
+  --adaptive-radius:22px;
+  --adaptive-accent:#8ea8ff;
+  --adaptive-surface-opacity:.78;
+  --adaptive-image-ratio:.34;
+}
+.adaptiveHidden{display:none!important}.adaptiveMetaHidden{display:none!important}
+
+/* To-Dos */
+#todosScreen .todoList[data-layout="cards"]{gap:11px}
+#todosScreen .todoList[data-layout="cards"] .todo{border-radius:var(--adaptive-radius);background:linear-gradient(145deg,rgba(31,36,44,.94),rgba(21,24,29,.94));box-shadow:0 14px 34px rgba(0,0,0,.18)}
+#todosScreen .todoList[data-layout="compact"]{gap:5px}
+#todosScreen .todoList[data-layout="compact"] .todo{border-radius:14px;padding:10px 11px;grid-template-columns:30px 1fr auto;background:rgba(25,28,33,.86)}
+#todosScreen .todoList[data-layout="compact"] .todoCheck{width:28px;height:28px;border-radius:10px}
+#todosScreen .todoList[data-layout="compact"] .todoBody h3{font-size:14px;margin-bottom:2px}
+#todosScreen .todoList[data-layout="compact"] .todoMeta{font-size:10px}
+#todosScreen .todoList[data-layout="focus"]{gap:10px}
+#todosScreen .todoList[data-layout="focus"] .todo{border-radius:24px;background:linear-gradient(145deg,rgba(31,39,48,.97),rgba(20,25,31,.96));border-color:rgba(142,168,255,.17);box-shadow:0 18px 38px rgba(0,0,0,.22)}
+#todosScreen .todoList[data-layout="focus"] .todo:not(.adaptiveSecondary){min-height:84px;padding:17px}
+#todosScreen .todoList[data-layout="focus"] .adaptiveSecondary{opacity:.54;transform:scale(.985);filter:saturate(.75)}
+#todosScreen .todoList[data-layout="timeline"]{position:relative;gap:12px;padding-left:12px}
+#todosScreen .todoList[data-layout="timeline"]:before{content:"";position:absolute;left:26px;top:18px;bottom:18px;width:1px;background:linear-gradient(var(--adaptive-accent),rgba(255,255,255,.08))}
+#todosScreen .todoList[data-layout="timeline"] .todo{grid-template-columns:34px 1fr auto;background:rgba(23,27,33,.86);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px)}
+#todosScreen .adaptiveMore{width:100%;border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:12px;background:rgba(255,255,255,.035);color:#c8d0dd;font-size:12px;font-weight:760}
+html[data-home-density="compact"] #todosScreen .todo{padding-top:10px;padding-bottom:10px}
+html[data-home-density="compact"] #todosScreen .composer{margin-bottom:9px}
+
+/* Tube deck */
+#tubeScreen #grid[data-layout="stack"]{display:grid;grid-template-columns:1fr;gap:11px}
+#tubeScreen #grid[data-layout="grid"]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#tubeScreen #grid[data-layout="grid"] .card{display:block;min-height:230px;border-radius:22px}
+#tubeScreen #grid[data-layout="grid"] .art{height:118px;min-height:118px}
+#tubeScreen #grid[data-layout="grid"] .cardbody{padding:12px;min-height:108px;display:block}
+#tubeScreen #grid[data-layout="grid"] .card h2{font-size:15px;margin-top:6px}
+#tubeScreen #grid[data-layout="grid"] .hook{font-size:11.5px}
+#tubeScreen #grid[data-layout="swipe"]{display:flex;overflow-x:auto;gap:13px;scroll-snap-type:x mandatory;padding:0 1px 7px;overscroll-behavior-x:contain;scrollbar-width:none}
+#tubeScreen #grid[data-layout="swipe"]::-webkit-scrollbar{display:none}
+#tubeScreen #grid[data-layout="swipe"] .card{flex:0 0 88%;min-height:58svh;display:flex;flex-direction:column;scroll-snap-align:center;border-radius:28px;background:#171a1f}
+#tubeScreen #grid[data-layout="swipe"] .art{height:36svh;min-height:250px;width:100%;background-position:center}
+#tubeScreen #grid[data-layout="swipe"] .art:after{background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.48))}
+#tubeScreen #grid[data-layout="swipe"] .cardbody{min-height:160px;padding:20px;display:block}
+#tubeScreen #grid[data-layout="swipe"] .card h2{font-size:24px;line-height:1.05;margin:8px 0 10px}
+#tubeScreen #grid[data-layout="swipe"] .hook{font-size:14px;line-height:1.45;-webkit-line-clamp:4}
+#tubeScreen #grid[data-layout="story"]{height:calc(100svh - 150px);overflow-y:auto;display:flex;flex-direction:column;gap:0;scroll-snap-type:y mandatory;border-radius:26px;scrollbar-width:none}
+#tubeScreen #grid[data-layout="story"]::-webkit-scrollbar{display:none}
+#tubeScreen #grid[data-layout="story"] .card{flex:0 0 100%;min-height:100%;scroll-snap-align:start;border:0;border-radius:26px;display:flex;flex-direction:column;justify-content:flex-end;background:#111;position:relative}
+#tubeScreen #grid[data-layout="story"] .art{position:absolute;inset:0;min-height:100%;z-index:0}
+#tubeScreen #grid[data-layout="story"] .art:after{background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.15) 48%,rgba(0,0,0,.90) 100%)}
+#tubeScreen #grid[data-layout="story"] .cardbody{position:relative;z-index:2;padding:26px 22px 30px;display:block}
+#tubeScreen #grid[data-layout="story"] .card h2{font-size:30px;line-height:1.02;margin:8px 0 11px}
+#tubeScreen #grid[data-layout="story"] .hook{font-size:15px;color:rgba(255,255,255,.82);-webkit-line-clamp:5}
+#tubeScreen #grid[data-layout="story"] .chev{z-index:4;top:18px;right:18px}
+
+/* Reader density */
+#tubeScreen .adaptiveReader{font-size:calc(1rem * var(--adaptive-paragraph-scale,1))}
+#tubeScreen .adaptiveReader .section p{font-size:calc(15px * var(--adaptive-paragraph-scale,1))}
+html[data-home-density="compact"] #tubeScreen .adaptiveReader .section{margin-bottom:14px}
+html[data-home-density="compact"] #tubeScreen .adaptiveReader .lead{margin-bottom:14px;font-size:16px}
+html[data-home-density="compact"] #tubeScreen .hero{min-height:205px}
+
+/* Adaptive quiz formats */
+#tubeScreen .adaptiveQuiz[data-mode="mcq"] .submit{margin-top:14px}
+#tubeScreen .adaptiveQuiz[data-mode="reflection"] .prompt{margin-top:2px}
+#tubeScreen .adaptiveReveal{display:block;width:100%;margin-top:14px}
+#tubeScreen .adaptiveConfidence{display:none;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+#tubeScreen .adaptiveConfidence.show{display:grid}
+#tubeScreen .adaptiveConfidence button{border:1px solid #303743;background:#1b2027;color:#eef2f8;border-radius:15px;padding:13px 10px;font-weight:800}
+#tubeScreen .adaptiveConfidence button:first-child{border-color:#356849;background:#193426;color:#e3f7ea}
+
+@media(max-width:430px){
+  #tubeScreen #grid[data-layout="grid"]{grid-template-columns:1fr 1fr}
+  #tubeScreen #grid[data-layout="grid"] .card{min-height:216px}
+}
+@media(max-width:360px){#tubeScreen #grid[data-layout="grid"]{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){#tubeScreen #grid[data-layout="swipe"],#tubeScreen #grid[data-layout="story"]{scroll-behavior:auto}}
