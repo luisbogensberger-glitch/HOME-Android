@@ -1,0 +1,4 @@
+    @JavascriptInterface
+         public void openCalendarEvent(String eventId) {
+             try {
+                 long id = Long.parseLong(eventId);
