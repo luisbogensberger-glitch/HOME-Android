@@ -1,0 +1,31 @@
+d===id);if(i<0)return;const [t]=todoState.active.splice(i,1);t.completedAt=Date.now();todoState.archive.push(t);saveStore('todoState',todoState);renderTodos()}
+ function restoreTodo(id){const i=todoState.archive.findIndex(x=>x.id===id);if(i<0)return;const [t]=todoState.archive.splice(i,1);delete t.completedAt;todoState.active.push(t);saveStore('todoState',todoState);renderTodos()}
+-function addTodo(){const input=document.getElementById('newTodo');const title=input.value.trim();if(!title)return;todoState.active.push({id:'local-'+Date.now(),title,minutes:0,area:'Personal',note:''});input.value='';saveStore('todoState',todoState);renderTodos()}
++function addTodo(){const input=document.getElementById('newTodo');const title=input.value.trim();if(!title)return;todoState.active.push({id:'local-'+Date.now(),title,minutes:0,area:'Personal',note:'',details:{outcome:'',info:[],tips:[],links:[],personalNote:''}});input.value='';saveStore('todoState',todoState);renderTodos()}
+ document.getElementById('newTodo').addEventListener('keydown',e=>{if(e.key==='Enter')addTodo()});
+ function toggleArchive(){document.getElementById('archiveArea').classList.toggle('hidden')}
++function openTodoDetail(id){const t=findTodo(id);if(!t)return;currentTodoDetailId=id;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('show'));document.getElementById('todoDetailScreen').classList.add('show');currentScreen='todoDetail';renderTodoDetail();window.scrollTo(0,0)}
++function closeTodoDetail(){currentTodoDetailId=null;showScreen('todos')}
++function openTodoLink(url){if(!url)return;try{if(hasNative()&&typeof Native.openUrl==='function')Native.openUrl(url);else window.location.href=url}catch(e){window.location.href=url}}
++function renderTodoDetail(){const t=findTodo(currentTodoDetailId);if(!t){closeTodoDetail();return}const d=t.details||{};document.getElementById('detailTitle').textContent=t.title;document.getElementById('detailMeta').innerHTML=`${t.minutes?`<span class="detailChip">${esc(t.minutes)} min</span>`:''}<span class="detailChip">${esc(t.area||'Personal')}</span>`;const outcomeWrap=document.getElementById('detailOutcomeWrap');if(d.outcome){outcomeWrap.classList.remove('hidden');document.getElementById('detailOutcome').textContent=d.outcome}else outcomeWrap.classList.add('hidden');const infoWrap=document.getElementById('detailInfoWrap'),info=document.getElementById('detailInfo');info.innerHTML='';(d.info||[]).forEach(x=>{const v=document.createElement('div');v.className='detailInfoItem';v.textContent=x;info.appendChild(v)});infoWrap.classList.toggle('hidden',!(d.info||[]).length);const tipsWrap=document.getElementById('detailTipsWrap'),tips=document.getElementById('detailTips');tips.innerHTML='';(d.tips||[]).forEach(x=>{const li=document.createElement('li');li.textContent=x;tips.appendChild(li)});tipsWrap.classList.toggle('hidden',!(d.tips||[]).length);const links=document.getElementById('detailLinks');links.innerHTML='';if((d.links||[]).length){d.links.forEach(l=>{const b=document.createElement('button');b.className='detailLink';b.innerHTML=`<span>${esc(l.label||l.url)}</span><span>↗</span>`;b.onclick=()=>openTodoLink(l.url);links.appendChild(b)})}else links.innerHTML='<div class="detailEmpty">No direct links saved for this task.</div>';const note=document.getElementById('detailPersonalNote');note.value=d.personalNote||'';note.oninput=()=>{const live=findTodo(currentTodoDetailId);if(!live)return;live.details=live.details||{outcome:'',info:[],tips:[],links:[]};live.details.personalNote=note.value;saveStore('todoState',todoState)};const active=todoState.active.some(x=>x.id===t.id),action=document.getElementById('detailAction');action.textContent=active?'Done':'Restore';action.classList.toggle('detailActionDone',active);action.classList.toggle('detailActionRestore',!active)}
++function todoDetailAction(){const id=currentTodoDetailId;if(!id)return;if(todoState.active.some(x=>x.id===id))completeTodo(id);else restoreTodo(id);showScreen('todos')}
+ 
+ /* ---------- Tube Learning ---------- */
+ const cards=[
+diff -ruN v1src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
+--- v1src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java	2026-09-24 16:44:12.000000000 +0000
++++ luis-home-app/app/src/main/java/com/luis/home/MainActivity.java	2026-09-24 17:25:56.367959449 +0000
+@@ -144,6 +144,16 @@
+         }
+ 
+         @JavascriptInterface
++        public void openUrl(String url) {
++            if (url == null || url.trim().isEmpty()) return;
++            try {
++                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
++                startActivity(intent);
++            } catch (Exception ignored) {
++            }
++        }
++
++    
