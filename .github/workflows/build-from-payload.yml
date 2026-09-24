@@ -6,12 +6,14 @@ on:
     paths-ignore:
       - 'tube-feed.json'
       - 'adaptive-ui.json'
+      - 'home-runtime/**'
       - 'home-bridge/**'
   pull_request:
     branches: [ main ]
     paths-ignore:
       - 'tube-feed.json'
       - 'adaptive-ui.json'
+      - 'home-runtime/**'
       - 'home-bridge/**'
   workflow_dispatch:
 
@@ -101,16 +103,20 @@ jobs:
           sed -i 's/Open full task guidance in Notion ↗/Open full task guidance ↗/g' "$FILE"
       - name: Add Lean Startup learning card fallback
         run: python3 scripts/add_lean_card.py
-      - name: Enable live Tube feed
+      - name: Enable live Tube feed and hot-swappable remote UI extension
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('src/luis-home-app/app/src/main/assets/index.html')
           s=p.read_text(encoding='utf-8')
-          tag='<script src="tube-remote.js"></script>'
-          if tag not in s:
-              s=s.replace('</body>', tag+'\n</body>', 1)
+          tags=[
+              '<script src="tube-remote.js"></script>',
+              '<script src="remote-extension-loader.js"></script>',
+          ]
+          for tag in tags:
+              if tag not in s:
+                  s=s.replace('</body>', tag+'\n</body>', 1)
           p.write_text(s, encoding='utf-8')
           PY
       - name: Set up Java 17
