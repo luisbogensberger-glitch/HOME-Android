@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "commands": [
+    {
+      "op": "upsert_task",
+      "task": {
+        "id": "chatgpt-20260924-fintech-modules",
+        "title": "Research FinTech and related UCL module options",
+        "area": "UCL",
+        "minutes": 30,
+        "done": false,
+        "source": "chatgpt-bridge"
+      }
+    }
+  ]
+}
