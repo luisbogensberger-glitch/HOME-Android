@@ -39,8 +39,20 @@ jobs:
           sed -i 's/Could not read Notion tasks/Could not read HOME tasks/g' "$FILE"
           sed -i 's/Adding to Notion…/Adding to HOME Sync…/g' "$FILE"
           sed -i 's/Open full task guidance in Notion ↗/Open full task guidance ↗/g' "$FILE"
-      - name: Add Lean Startup learning card
+      - name: Add Lean Startup learning card fallback
         run: python3 scripts/add_lean_card.py
+      - name: Enable live Tube feed
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/luis-home-app/app/src/main/assets/index.html')
+          s=p.read_text(encoding='utf-8')
+          tag='<script src="tube-remote.js"></script>'
+          if tag not in s:
+              s=s.replace('</body>', tag+'\n</body>', 1)
+          p.write_text(s, encoding='utf-8')
+          PY
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
