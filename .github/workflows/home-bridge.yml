@@ -1,0 +1,37 @@
+name: HOME Command Bridge
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'home-bridge/queue.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: home-command-bridge
+  cancel-in-progress: false
+
+jobs:
+  push-home-commands:
+    runs-on: ubuntu-latest
+    env:
+      HOME_TOKEN: ${{ secrets.HOME_TOKEN }}
+      HOME_API: https://luis-home-sync.luisbogensberger.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push queued commands to HOME Sync
+        run: python3 home-bridge/push_commands.py
+      - name: Acknowledge processed commands
+        shell: bash
+        run: |
+          if git diff --quiet -- home-bridge/queue.json; then
+            exit 0
+          fi
+          git config user.name "HOME Bridge"
+          git config user.email "home-bridge@users.noreply.github.com"
+          git add home-bridge/queue.json
+          git commit -m "Acknowledge HOME bridge commands [skip ci]"
+          git push
