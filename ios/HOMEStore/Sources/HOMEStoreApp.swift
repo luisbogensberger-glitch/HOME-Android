@@ -8,8 +8,7 @@ struct HOMEStoreApp: App {
         WindowGroup {
             Group {
                 if session.isSignedIn {
-                    HomeWebView(session: session)
-                        .ignoresSafeArea()
+                    HomeShellView(session: session)
                 } else {
                     AccountView(session: session)
                 }
