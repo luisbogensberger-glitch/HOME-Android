@@ -22,4 +22,14 @@ html[data-behaviour-todo-density="focus"] #todosScreen #todoList[data-layout="fo
   background-size:cover !important;
 }
 
+/* Stability kill-switch: behaviour intelligence UI is disabled until normal HOME navigation is confirmed stable. */
+#homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4,
+#homeBehaviourOverlayV2,#homeBehaviourOverlayV3,#homeBehaviourOverlayV4,
+.hbQuestHint{
+  display:none !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
+body{overflow:auto !important;}
+
 @media(max-width:390px){#homeMomentum{padding:11px 12px}.homeMomentumMain{font-size:11.5px}.homeMomentumXp{font-size:9px}}
