@@ -40,6 +40,7 @@
     await safeLoad('habit-adaptation-v1.js','home-habit-adaptation-v1.js');
     await safeLoad('todo-pressure-v1.js','home-todo-pressure-v1.js');
     await safeLoad('post-install-resilience-v1.js','home-post-install-resilience-v1.js');
-    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,postInstall:1,behaviourMap:0,recovery:'behaviour-ui-disabled'})}catch(e){}
+    const feedback=await safeLoad('feedback-pulse-v1.js','home-feedback-pulse-v1.js');
+    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,postInstall:1,feedbackPulse:feedback?1:0,behaviourMap:0,recovery:'behaviour-ui-disabled'})}catch(e){}
   })();
 })();
