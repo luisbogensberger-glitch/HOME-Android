@@ -50,6 +50,12 @@ async function openAIReview(env, input) {
   const sentence = safeText(input.sentence, 2400);
   if (sentence.length < 3) throw new HttpError(400, 'Sentence is required');
 
+  const sections = Array.isArray(input.sections)
+    ? input.sections.slice(0, 5).map(s => Array.isArray(s)
+        ? [safeText(s[0], 180), safeText(s[1], 900)]
+        : safeText(s, 900))
+    : [];
+
   const context = {
     title: safeText(input.title, 220),
     topic: safeText(input.topic, 120),
@@ -57,7 +63,9 @@ async function openAIReview(env, input) {
     content_depth: safeText(input.contentDepth, 60),
     question: safeText(input.question, 1000),
     prompt: safeText(input.prompt, 1000),
+    lead: safeText(input.lead, 1200),
     takeaway: safeText(input.takeaway, 1200),
+    sections,
     options: Array.isArray(input.options) ? input.options.slice(0, 4).map(x => safeText(x, 500)) : [],
     selected: Number.isInteger(input.selected) ? input.selected : null,
     correct: Number.isInteger(input.correct) ? input.correct : null,
@@ -148,6 +156,7 @@ async function openAIReview(env, input) {
 
   return {
     requestId: safeText(input.requestId, 120),
+    attemptId: safeText(input.attemptId, 180),
     cardId: safeText(input.cardId, 160),
     reviewedAt: stamp(),
     model: 'gpt-5.6-terra',
@@ -183,6 +192,16 @@ export default {
         await db.prepare(`INSERT INTO ${table} (id,body,updated_at) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body,updated_at=excluded.updated_at`)
           .bind(record.id, JSON.stringify(record), record.updatedAt).run();
         return record;
+      };
+      const mergeAttempt = async input => {
+        const attemptId = safeText(input.id || input.attemptId, 180) || uuid();
+        const previous = await get('attempts', attemptId) || {};
+        const cardId = safeText(input.cardId || previous.cardId || input.id, 160) || 'unknown';
+        const createdAt = safeText(input.createdAt || previous.createdAt, 80) || (Number(input.at) > 0 ? new Date(Number(input.at)).toISOString() : stamp());
+        const item = { ...previous, ...input, id: attemptId, cardId, createdAt };
+        await db.prepare('INSERT INTO attempts (id,card_id,body,created_at) VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET card_id=excluded.card_id,body=excluded.body,created_at=excluded.created_at')
+          .bind(item.id, item.cardId, JSON.stringify(item), item.createdAt).run();
+        return item;
       };
 
       if (path === '/api/snapshot' && method === 'GET') {
@@ -230,14 +249,7 @@ export default {
       }
 
       if (path === '/api/attempts' && method === 'POST') {
-        const input = await readJson(request);
-        const attemptId = safeText(input.id, 180) || uuid();
-        const cardId = safeText(input.cardId || input.id, 160) || 'unknown';
-        const createdAt = safeText(input.createdAt, 80) || (Number(input.at) > 0 ? new Date(Number(input.at)).toISOString() : stamp());
-        const item = { ...input, id: attemptId, cardId, createdAt };
-        await db.prepare('INSERT INTO attempts (id,card_id,body,created_at) VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET card_id=excluded.card_id,body=excluded.body,created_at=excluded.created_at')
-          .bind(item.id, item.cardId, JSON.stringify(item), item.createdAt).run();
-        return reply(201, item);
+        return reply(201, await mergeAttempt(await readJson(request)));
       }
 
       if (path === '/api/activity' && method === 'POST') {
@@ -255,7 +267,28 @@ export default {
 
       if (path === '/api/review-sentence' && method === 'POST') {
         const input = await readJson(request);
-        return reply(200, await openAIReview(env, input));
+        const result = await openAIReview(env, input);
+        if (result.attemptId) {
+          await mergeAttempt({
+            id: result.attemptId,
+            cardId: result.cardId,
+            title: safeText(input.title, 220),
+            topic: safeText(input.topic, 120),
+            prompt: safeText(input.prompt, 1000),
+            question: safeText(input.question, 1000),
+            sentence: safeText(input.sentence, 2400),
+            selected: Number.isInteger(input.selected) ? input.selected : null,
+            correct: Number.isInteger(input.correct) ? input.correct : null,
+            learningMethod: safeText(input.method, 60),
+            contentDepth: safeText(input.contentDepth, 60),
+            reviewRequestId: result.requestId,
+            semanticReview: result.review,
+            semanticReviewedAt: result.reviewedAt,
+            semanticModel: result.model,
+            at: Number(input.at) || Date.now(),
+          });
+        }
+        return reply(200, result);
       }
 
       // Compatibility with the first HOME Worker prototype.
