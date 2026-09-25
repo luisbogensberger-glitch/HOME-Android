@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "updatedAt": "2026-09-25T04:29:23.848050Z",
+  "version": 4,
+  "updatedAt": "2026-09-25T10:03:00+01:00",
   "theme": {
     "radius": 22,
     "density": "comfortable",
@@ -30,7 +30,7 @@
     }
   },
   "tube": {
-    "layout": "stack",
+    "layout": "swipe",
     "visibleCount": 5,
     "cardImageRatio": 0.34,
     "showHooks": true,
@@ -42,7 +42,7 @@
     "sentenceMinWords": 5,
     "sentenceTargetWords": 14,
     "completionAction": "replace_card",
-    "swipeDirection": "vertical",
+    "swipeDirection": "horizontal",
     "allowedLayouts": [
       "stack",
       "swipe",
