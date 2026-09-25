@@ -13,7 +13,7 @@
     await safeLoad('habit-adaptation-v1.js','home-habit-adaptation-v1.js');
     await safeLoad('todo-pressure-v1.js','home-todo-pressure-v1.js');
     await safeLoad('post-install-resilience-v1.js','home-post-install-resilience-v1.js');
-    const mapOk=await safeLoad('behaviour-map-v3.js','home-behaviour-map-v3.js');
-    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,postInstall:1,behaviourMap:mapOk?3:0})}catch(e){}
+    const mapOk=await safeLoad('behaviour-map-v4.js','home-behaviour-map-v4.js');
+    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,postInstall:1,behaviourMap:mapOk?4:0})}catch(e){}
   })();
 })();
