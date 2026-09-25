@@ -1,5 +1,15 @@
 {
-  "commands": [],
+  "commands": [
+    {
+      "alg": "X25519-HKDF-SHA256+A256GCM",
+      "ciphertext": "lH6QxZVfVmVXU_GKJ0lJyx1dj4h_h8EQgnk4g8NwcRwKtVqH1CT-W7-fiRRybqaldj7Jeo-Q-6PvMfLwc9nPt5_LzeArDDAtEmoHMfWzxlmN2aRtaJ9FIhputZ04Gx8LTAgXZTwk8PHy1N52VvhMiUSmKuuG6E5ILncJZUYm6J-DbxBnW8uNLLpwHZKLYZLwljIH6TOISdTDwvIWPOsrbFRY4x1q2JLUPfJA1NS0h6yf-MppPbPoVF-4COjeRH6ZInghCl-VXQWx7EBYjVhJxvDMAFDzUniTYxILk6mDvuHHgT9leyoYotcPfgCvwJgY3fYKIS75fK9bKhOrMDumgeWU",
+      "ephemeralPublicKey": "n9TVoHdORtCX1hoVYHV613ro1T4pqA798_XonqdS8gQ",
+      "id": "cmd-25111c849c4544a2a4b38dafc1a2c5a4",
+      "nonce": "DuY_GFHLFlT9vAnh",
+      "salt": "sl5mYCScC3uOBpsjzmD7Gg",
+      "v": 2
+    }
+  ],
   "lastProcessedAtMs": 1790294884961,
   "lastProcessedCount": 1,
   "version": 2
