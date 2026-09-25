@@ -1,6 +1,6 @@
 {
-  "version": 5,
-  "updatedAt": "2026-09-25T11:48:00+01:00",
+  "version": 6,
+  "updatedAt": "2026-09-25T15:08:00+01:00",
   "theme": {
     "radius": 22,
     "density": "comfortable",
@@ -69,10 +69,20 @@
     "enabled": true,
     "localDaily": true,
     "allowLayoutChanges": false,
+    "allowCardPriorityChanges": true,
+    "allowGoalReframes": true,
+    "allowMicroActions": true,
     "allowQuizChanges": true,
     "allowDensityChanges": true,
-    "minEventsBeforeChange": 12,
-    "cooldownHours": 20
+    "learnFromMeaningfulActionsNotClicks": true,
+    "inactiveDays": {
+      "gentle": 2,
+      "lowFriction": 4,
+      "recovery": 7
+    },
+    "minEventsBeforeMajorChange": 12,
+    "cooldownHours": 20,
+    "maxMajorExperimentsPerDay": 1
   },
   "generatedBy": "private-home-behavior-engine"
 }
