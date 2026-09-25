@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebView;
 
 import org.json.JSONObject;
 
@@ -21,12 +22,14 @@ final class AdaptiveBridge {
     private final Context context;
     private final WorkerSync worker;
     private final ExecutorService queue;
+    private final WebView webView;
 
-    AdaptiveBridge(Activity activity, WorkerSync worker, ExecutorService queue) {
+    AdaptiveBridge(Activity activity, WorkerSync worker, ExecutorService queue, WebView webView) {
         this.activity = activity;
         this.context = activity.getApplicationContext();
         this.worker = worker;
         this.queue = queue;
+        this.webView = webView;
     }
 
     @JavascriptInterface
@@ -42,6 +45,54 @@ final class AdaptiveBridge {
                 worker.saveActivity(activity);
             } catch (Exception ignored) { }
         });
+    }
+
+    /**
+     * Explicit private learning channel. Unlike generic telemetry, this method is allowed
+     * to send the raw one-sentence answer because the user asked HOME to have the model
+     * judge the actual text. It travels only to the authenticated HOME Worker.
+     */
+    @JavascriptInterface
+    public void reviewSentence(String rawJson) {
+        if (rawJson == null || rawJson.trim().isEmpty()) return;
+        if (rawJson.length() > 20000) {
+            deliverReviewError("", "Sentence review payload is too large.");
+            return;
+        }
+
+        final String payload = rawJson;
+        queue.execute(() -> {
+            String requestId = "";
+            try {
+                JSONObject input = new JSONObject(payload);
+                requestId = input.optString("requestId", "");
+                String sentence = input.optString("sentence", "").trim();
+                if (sentence.isEmpty() || sentence.length() > 2400) {
+                    throw new IllegalArgumentException("Enter a short answer before requesting review.");
+                }
+                JSONObject result = worker.reviewSentence(input);
+                deliver("onHomeSentenceReview", result);
+            } catch (Exception ex) {
+                deliverReviewError(requestId, ex.getMessage() == null ? "Sentence review failed." : ex.getMessage());
+            }
+        });
+    }
+
+    private void deliverReviewError(String requestId, String message) {
+        try {
+            JSONObject error = new JSONObject()
+                    .put("requestId", requestId == null ? "" : requestId)
+                    .put("error", clean(message, 300));
+            deliver("onHomeSentenceReview", error);
+        } catch (Exception ignored) { }
+    }
+
+    private void deliver(String callbackName, JSONObject payload) {
+        if (webView == null || callbackName == null || payload == null) return;
+        final String json = payload.toString();
+        activity.runOnUiThread(() -> webView.evaluateJavascript(
+                "(function(){try{if(window." + callbackName + ")window." + callbackName + "(" + json + ");}catch(e){}})();",
+                null));
     }
 
     @JavascriptInterface
