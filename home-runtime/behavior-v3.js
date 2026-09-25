@@ -8,13 +8,13 @@
     try{
       const [behaviour,learning,interfacePolicy]=await Promise.all([
         get('behavior-v3-base.js'),
-        get('learning-engine-v9.js'),
+        get('learning-engine-v10.js'),
         get('interface-policy-v10.js')
       ]);
       run(behaviour,'home-behaviour-v3-base.js');
-      run(learning,'home-learning-engine-v9.js');
+      run(learning,'home-learning-engine-v10.js');
       run(interfacePolicy,'home-interface-policy-v10.js');
-      try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:9,interfacePolicy:10})}catch(e){}
+      try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,interfacePolicy:10})}catch(e){}
     }catch(e){
       try{console.warn('HOME live bootstrap failed',e)}catch(_){}
     }
