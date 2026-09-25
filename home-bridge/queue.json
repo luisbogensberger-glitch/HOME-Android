@@ -1,4 +1,14 @@
 {
-  "commands": [],
+  "commands": [
+    {
+      "alg": "X25519-HKDF-SHA256+A256GCM",
+      "ciphertext": "cjbWcWF0VWhcI8KEvnujf3EuP9Ad79xzBBDWFygcxnSo0L1meKi0XfmEqNo7sa88d8Bba0_UZ7W7gZA0fpRYip7czwEtIEsOmYrm0bOuuOAvItjDmYkg8OzjUfmkE1ot4CuMWKQGIA_4mLYbSbawsibUWrUIcymtleL2z723dYCZ_bc00PxtTfm-YU28OFLuPH-mfVcKOSew-BGiSPGeGLqXccFKAdL5uo8UylU8kzQ7CW1OeIh9VAsgXwY-Mby4NbpPnqZ2QxL5juMTPPQQ7RQLPOM33mRP7J0FQxZoVqxpJx16JzYF9ndZka5-Sl-9ZTxum7-di77Xa6jCieXfi0sROg1FJt1w3kiITbNaHZsCcfqVsNx8l7_D5tH37qSyIDMTHvgK6xgi-KKiLUUp3K4qYKlVGgRG05bChAT-OyQtSt4RqSR1xp8UAaohHPTh5bfFTEMj6Cp5GzKu7PG_jlVWaR5I91EpWFDEEwQmrDN-AdzgdhwjQmK3iA3MVUh-pFGznKRlwOxfU6hJkm6ZfNMcH0gXpgPQeDP8fD3kY8XdJfYQvIKVbqeAmkYUuHw6okxxK7y3a7lPGQ",
+      "ephemeralPublicKey": "D-_iK0GAX_Un439lPNblxe-eadvmE2_Ir9hboNgNqjE",
+      "id": "cmd-76a64f87dbd34b3481d0e09638092350",
+      "nonce": "cEO4e7XOnhr2qk9o",
+      "salt": "Rrm7VbqDhYs1UNJIpUHRQg",
+      "v": 2
+    }
+  ],
   "version": 2
 }
