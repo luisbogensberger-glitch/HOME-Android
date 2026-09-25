@@ -69,12 +69,15 @@ Verified production state:
 3. Authorization path is `/oauth/consent`.
 4. Production HOME consent UI is HTTPS-hosted.
 5. OAuth discovery publishes authorization, token, JWKS, and dynamic-registration endpoints and PKCE support.
-6. Vercel production deployment is public rather than protected by Vercel Authentication.
+6. Supabase JWT signing is asymmetric **ES256**, with one `EC` / `P-256` signing key in public JWKS.
+7. Vercel production deployment is public rather than protected by Vercel Authentication.
+8. Unauthenticated `/mcp` requests return **401 Unauthorized**.
+9. Protected Resource Metadata is published on the same Vercel origin and identifies the Vercel `/mcp` resource plus the Supabase OAuth authorization server.
 
 Before public review:
 
-1. Confirm the Supabase JWT signing key is asymmetric (ES256 or RS256).
-2. Create a fully featured demo reviewer account with sample HOME data and no inaccessible 2FA.
+1. Create a fully featured demo reviewer account with sample HOME data and no inaccessible 2FA.
+2. Validate the complete interactive OAuth flow and tool scan in ChatGPT Developer Mode / MCP Inspector.
 3. Insert the exact OpenAI domain-verification token at `/.well-known/openai-apps-challenge`.
 4. Complete publisher identity verification and final legal/support identity fields; do not invent them.
 
