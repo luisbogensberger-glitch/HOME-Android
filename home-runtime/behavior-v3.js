@@ -14,6 +14,7 @@
     await safeLoad('todo-pressure-v1.js','home-todo-pressure-v1.js');
     await safeLoad('post-install-resilience-v1.js','home-post-install-resilience-v1.js');
     const mapOk=await safeLoad('behaviour-map-v2.js','home-behaviour-map-v2.js');
-    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,postInstall:1,behaviourMap:mapOk?2:0})}catch(e){}
+    const launcherOk=await safeLoad('behaviour-launcher-v3.js','home-behaviour-launcher-v3.js');
+    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,postInstall:1,behaviourMap:mapOk?2:0,behaviourLauncher:launcherOk?3:0})}catch(e){}
   })();
 })();
