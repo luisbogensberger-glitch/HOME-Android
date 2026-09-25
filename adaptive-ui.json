@@ -1,12 +1,33 @@
 {
-  "version": 2,
-  "updatedAt": "2026-09-25T00:45:00+01:00",
+  "version": 3,
+  "updatedAt": "2026-09-25T01:35:00+01:00",
   "theme": {
     "radius": 22,
     "density": "comfortable",
     "motion": "smooth",
     "accent": "#8ea8ff",
     "surfaceOpacity": 0.78
+  },
+  "home": {
+    "editable": true,
+    "cards": {
+      "calendar": {
+        "image": "https://images.unsplash.com/photo-1435527173128-983b87201f4d?auto=format&fit=crop&w=1400&q=84",
+        "position": "center 52%"
+      },
+      "todos": {
+        "image": "",
+        "position": "center"
+      },
+      "tube": {
+        "image": "",
+        "position": "center"
+      },
+      "gym": {
+        "image": "",
+        "position": "center"
+      }
+    }
   },
   "tube": {
     "layout": "stack",
@@ -21,7 +42,12 @@
     "sentenceMinWords": 5,
     "sentenceTargetWords": 14,
     "completionAction": "replace_card",
-    "swipeDirection": "vertical"
+    "swipeDirection": "vertical",
+    "allowedLayouts": ["stack", "swipe", "story", "grid", "focus"],
+    "remoteStructure": true,
+    "remoteReader": true,
+    "remoteQuiz": true,
+    "remoteMotion": true
   },
   "todos": {
     "layout": "cards",
