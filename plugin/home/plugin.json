@@ -1,10 +1,12 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "home-personal-os",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "An adaptive personal operating system for capturing tasks, planning days, and learning deliberately inside ChatGPT and Codex.",
   "homepage": "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-mcp",
   "repository": "https://github.com/luisbogensberger-glitch/HOME-Android",
   "license": "UNLICENSED",
-  "keywords": ["productivity", "tasks", "learning", "planning", "personal-os"]
+  "keywords": ["productivity", "tasks", "learning", "planning", "personal-os"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
 }
