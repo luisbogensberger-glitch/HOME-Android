@@ -48,7 +48,6 @@
       const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});
       if(r.ok)return r.text();
     }catch(e){}
-    /* New APKs bake critical behaviour files locally, so Brain also works if GitHub is temporarily unavailable. */
     const local=await fetch(name+'?v='+Date.now(),{cache:'no-store'});
     if(!local.ok)throw new Error('Could not load '+name);
     return local.text();
@@ -67,6 +66,9 @@
     await safeLoad('habit-adaptation-v1.js','home-habit-adaptation-v1.js');
     await safeLoad('todo-pressure-v1.js','home-todo-pressure-v1.js');
     await safeLoad('post-install-resilience-v1.js','home-post-install-resilience-v1.js');
+
+    /* Load the stable Brain engine first. The score-chip binding then has a real target API immediately. */
+    const brain=await safeLoad('behaviour-map-v4.js','home-behaviour-map-v4.js');
     const feedback=await safeLoad('feedback-pulse-v1.js','home-feedback-pulse-v1.js');
 
     repairBrainSafety();
@@ -78,7 +80,7 @@
     try{
       window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{
         version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,
-        postInstall:1,feedbackPulse:feedback?1:0,behaviourMap:4,recovery:'brain-v4-safe'
+        postInstall:1,feedbackPulse:feedback?1:0,behaviourMap:brain?4:0,recovery:'brain-v4-safe'
       });
     }catch(e){}
   })();
