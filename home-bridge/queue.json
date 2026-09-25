@@ -1,5 +1,15 @@
 {
-  "commands": [],
+  "commands": [
+    {
+      "alg": "X25519-HKDF-SHA256+A256GCM",
+      "ciphertext": "7jqD_7OpfmZzo2Oxo5YaXa3zX_XqFtSER-0dzjt2bwMr-cMt6jlkHtShl2MwRQelqmi90WVBU1rOnIXUWEaWg5dvEus3tmo1cz4nXh5Ic4WxUki-xF7_05hytWKIyNYMZ1-ea88242D7000_pFbWUVqjCD5QPyTZH78R-euMOi3k3tRiUl98JB77FreEgrRTPazojw5LNBTe0g9vQFjhgehwrGCjAIcxq4KBBdaFSiRXeF-DxxJFKeEcY_c5wSsg129CAPIQOhVzCX3QZAThnvSP_DChtrOtqij73TYU83tMP8RsE1npNIeHnkzWcMl_QqltZEr9qnNPNAm02UuRFai_QH5Gv7jC4RswNueX5NRajMX3fjgVfH_dCj8qZc6FkLrtmx3NRYD2PU6MDziH2kuzV3nPcLb866liSliWjTfwz9Meufm_0--3YkomZKqjqy-0rlnJiU3XMNkC5uu4nbFuhZeuZftFSvX9KvXP0x5ub4ws3cEKDxHdOpNzhAuX7lwtEIh8lInFZPBvlQv1j5ZmYDL9g1j7ZgI5vN0n9xgALgiMGZo302u4BbzeMpJA7VmM1GvZTlvoOgFK_882CXKmlwfobQVZRe9lemuNz7noreByyZNQ-SKMa-DVdedeNfY3run0IGEd9712xdo1WKF9ubsozFwx-lFPCIjVNnmebj3iDiGdeXEXt-ZHzgiMW1jxzZ_R6bGUi-F1TkjuucLotUqOyXMvLEKD1fDRwxgAnNWAIeX5bXA9cPt0e94nJsFMrf_-xZJ8X6ihiOMWUNkeNGy76d9KXGAJKgDCB-5rBxl60-cbprw3eXsyjFciPpBJJ1ORbQyfLreiFfMjm0hmJLrfC9e-caRmIkUuKuxnYWgrLoQ-nzZ_9E_9Yt0TV3jY6_Sxpatk4Yf5i5VkOVQGXHR9b6gTp50EwTOv2FSyvSIOm9Gr3USsLnhk56rbfzm4Gi5iCChfn8zG84V2sUpYvcZLrdjUd-hE0F8uMyOZlOPa5I91YwQEsawjd8b3KelnmSMkLA_W0R6nsGGPAokHZK567J25B0Iniy68CpF8QiwOhb_Ef6Y7kzSQ4YXfbAY4rrWp9A",
+      "ephemeralPublicKey": "QnRg_b4C-m4BgqE14sNymWpqbPoi6quNy_55lWTzuSA",
+      "id": "cmd-6c1ecfe3a39b4759ba06fb7a9d893224",
+      "nonce": "Lae4rnhp1u3W3aC6",
+      "salt": "_PdM3QTU8CY6EY-m0bixRA",
+      "v": 2
+    }
+  ],
   "lastProcessedAtMs": 1790336300038,
   "lastProcessedCount": 1,
   "version": 2
