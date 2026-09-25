@@ -1,0 +1,15 @@
+name = "home-personal-os-plugin"
+main = "src/index.ts"
+compatibility_date = "2026-09-25"
+
+[vars]
+SUPABASE_URL = "https://example.supabase.co"
+PUBLISHER_NAME = "HOME"
+SUPPORT_EMAIL = "support@example.invalid"
+
+# Set these as Worker secrets/config before production deployment:
+# SUPABASE_PUBLISHABLE_KEY
+# SUPABASE_SECRET_KEY
+# SUPABASE_JWKS
+# OPENAI_APPS_CHALLENGE (set to the exact token shown by the OpenAI submission portal)
+# PUBLISHER_NAME, SUPPORT_EMAIL, and SUPABASE_URL must be replaced with production values.
