@@ -9,23 +9,26 @@ SUPABASE_INGEST = os.environ.get(
     "SUPABASE_INGEST",
     "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-ingest",
 )
-TOKEN = os.environ.get("HOME_TOKEN", "").strip()
+HOME_TOKEN = os.environ.get("HOME_TOKEN", "").strip()
+GITHUB_OIDC_TOKEN = os.environ.get("GITHUB_OIDC_TOKEN", "").strip()
 
-if len(TOKEN) < 16:
+if len(HOME_TOKEN) < 16:
     raise SystemExit("HOME_TOKEN is missing or too short")
+if GITHUB_OIDC_TOKEN.count(".") != 2:
+    raise SystemExit("GitHub OIDC token is missing or invalid")
 
 
-def request_json(url, *, method="GET", body=None):
+def request_json(url, *, method="GET", body=None, bearer=""):
     data = None if body is None else json.dumps(body, separators=(",", ":")).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
         method=method,
         headers={
-            "Authorization": f"Bearer {TOKEN}",
+            "Authorization": f"Bearer {bearer}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "HOME-Learning-Mirror/1.0",
+            "User-Agent": "HOME-Learning-Mirror/1.1",
         },
     )
     try:
@@ -37,7 +40,7 @@ def request_json(url, *, method="GET", body=None):
         raise RuntimeError(f"HTTP {exc.code} from {url}: {detail}") from exc
 
 
-status, snapshot = request_json(f"{HOME_API}/api/snapshot")
+status, snapshot = request_json(f"{HOME_API}/api/snapshot", bearer=HOME_TOKEN)
 if status != 200 or not isinstance(snapshot, dict):
     raise RuntimeError("HOME snapshot response was invalid")
 
@@ -45,7 +48,6 @@ attempts = snapshot.get("attempts") or []
 if not isinstance(attempts, list):
     raise RuntimeError("HOME attempts payload was invalid")
 
-# Only mirror learning records that actually contain a written reflection/sentence.
 eligible = []
 for attempt in attempts:
     if not isinstance(attempt, dict):
@@ -69,6 +71,7 @@ for start in range(0, len(eligible), 200):
         SUPABASE_INGEST,
         method="POST",
         body={"attempts": batch},
+        bearer=GITHUB_OIDC_TOKEN,
     )
     if ingest_status != 200 or not isinstance(result, dict) or result.get("ok") is not True:
         raise RuntimeError("Supabase learning ingest returned an invalid response")
