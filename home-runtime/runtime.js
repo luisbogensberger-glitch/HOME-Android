@@ -153,3 +153,94 @@
   setTimeout(refresh,1800);
   log('remote_runtime_ready',{version:VERSION});
 })();
+
+/* HOME Behaviour Profile v4 — durable aggregate baseline, live-delivered. */
+(function(){
+  'use strict';
+  if(window.__HOME_BEHAVIOUR_PROFILE_V4__)return;window.__HOME_BEHAVIOUR_PROFILE_V4__=true;
+  const ACTIVITY_KEY='homeAdaptiveActivityV1';
+  const PROFILE_KEY='homeBehaviourProfileV4';
+  const PROFILE_HISTORY_KEY='homeBehaviourProfileHistoryV4';
+  const LAST_SYNC_KEY='homeBehaviourProfileLastSyncV4';
+  const SYNC_MS=6*60*60*1000;
+  const SNAPSHOT_EVERY_MS=10*60*1000;
+
+  const load=(k,f)=>{try{const v=JSON.parse(localStorage.getItem(k)||'');return v??f}catch(e){return f}};
+  const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+  const rows=()=>{const v=load(ACTIVITY_KEY,[]);return Array.isArray(v)?v:[]};
+  const dayKey=t=>{const d=new Date(t||Date.now());return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+  const daypart=t=>{const h=new Date(t||Date.now()).getHours();return h<5?'night':h<11?'morning':h<15?'midday':h<21?'evening':'night'};
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+  const round=(n,d=0)=>{const p=Math.pow(10,d);return Math.round((Number(n)||0)*p)/p};
+  const count=(r,type)=>r.filter(x=>x.type===type).length;
+  const preferred=(r,type)=>{
+    const hits=r.filter(x=>x.type===type);if(!hits.length)return{daypart:null,hour:null};
+    const parts={},hours={};hits.forEach(x=>{const p=daypart(x.at),h=new Date(x.at).getHours();parts[p]=(parts[p]||0)+1;hours[h]=(hours[h]||0)+1});
+    const best=(o)=>Object.entries(o).sort((a,b)=>b[1]-a[1])[0]?.[0]??null;
+    const h=best(hours);return{daypart:best(parts),hour:h===null?null:Number(h)};
+  };
+
+  function summarise(){
+    const all=rows();const since=Date.now()-30*86400000;const r=all.filter(x=>Number(x.at)>=since);
+    const behaviour=r.filter(x=>x.type==='behavior_summary');
+    const tubeBehaviour=behaviour.filter(x=>x.data?.screen==='tube');
+    const todoBehaviour=behaviour.filter(x=>x.data?.screen==='todos');
+    const tubeOpens=count(r,'tube_card_open'),tubeDone=count(r,'tube_complete');
+    const todoOpens=count(r,'todo_open'),todoDone=count(r,'todo_complete');
+    const quiz=r.filter(x=>x.type==='tube_complete').map(x=>Number(x.data?.score)).filter(Number.isFinite);
+    const dwell=r.filter(x=>x.type==='tube_reader_dwell').map(x=>Number(x.data?.ms)).filter(n=>n>0&&n<3600000);
+    const activeMs=behaviour.reduce((s,x)=>s+Number(x.data?.activeMs||0),0);
+    const scrollPx=behaviour.reduce((s,x)=>s+Number(x.data?.scrollPx||0),0);
+    const taps=behaviour.reduce((s,x)=>s+Number(x.data?.taps||0),0);
+    const days=[...new Set(r.map(x=>dayKey(x.at)))];
+    const tubePref=preferred(r,'tube_complete'),todoPref=preferred(r,'todo_complete'),gymPref=preferred(r,'gym_complete');
+    return{
+      version:4,
+      generatedAt:Date.now(),
+      windowDays:30,
+      evidence:{events:r.length,days:days.length,oldestAt:r.length?Math.min(...r.map(x=>Number(x.at)||Date.now())):null,newestAt:r.length?Math.max(...r.map(x=>Number(x.at)||0)):null},
+      app:{activeMinutes:round(activeMs/60000,1),scrollPx:Math.round(scrollPx),taps:Math.round(taps)},
+      tube:{opens:tubeOpens,completions:tubeDone,completionRate:tubeOpens?round(tubeDone/tubeOpens,2):null,avgQuizScore:quiz.length?Math.round(avg(quiz)):null,avgReaderSeconds:dwell.length?Math.round(avg(dwell)/1000):null,avgScrollDepth:tubeBehaviour.length?round(avg(tubeBehaviour.map(x=>Number(x.data?.maxDepth||0))),2):null,preferredCompletionDaypart:tubePref.daypart,preferredCompletionHour:tubePref.hour},
+      todos:{opens:todoOpens,completions:todoDone,completionRate:todoOpens?round(todoDone/todoOpens,2):null,avgScrollDepth:todoBehaviour.length?round(avg(todoBehaviour.map(x=>Number(x.data?.maxDepth||0))),2):null,preferredCompletionDaypart:todoPref.daypart,preferredCompletionHour:todoPref.hour},
+      gym:{completions:count(r,'gym_complete'),preferredCompletionDaypart:gymPref.daypart,preferredCompletionHour:gymPref.hour}
+    };
+  }
+
+  function backupOperationalState(){
+    try{
+      if(typeof Native==='undefined'||!Native.saveState||!Native.loadState)return;
+      const tube=Native.loadState('tubeState');if(tube)Native.saveState('tubeStateBackupV1',tube);
+      const todo=Native.loadState('todoState');if(todo)Native.saveState('todoStateBackupV1',todo);
+    }catch(e){}
+  }
+
+  function persistProfile(profile){
+    save(PROFILE_KEY,profile);
+    const history=load(PROFILE_HISTORY_KEY,[]);const arr=Array.isArray(history)?history:[];
+    const last=arr[arr.length-1];
+    if(!last||dayKey(last.generatedAt)!==dayKey(profile.generatedAt))arr.push(profile);else arr[arr.length-1]=profile;
+    if(arr.length>45)arr.splice(0,arr.length-45);save(PROFILE_HISTORY_KEY,arr);
+    try{if(typeof Native!=='undefined'&&Native.saveState)Native.saveState('behaviorProfileV4',JSON.stringify(profile))}catch(e){}
+  }
+
+  function syncProfile(profile,force){
+    const last=Number(localStorage.getItem(LAST_SYNC_KEY)||0);if(!force&&Date.now()-last<SYNC_MS)return;
+    try{
+      if(typeof AdaptiveNative==='undefined'||!AdaptiveNative.logActivity)return;
+      const at=Date.now();
+      const row={id:'profile-v4-'+dayKey(at)+'-'+Math.floor(at/SYNC_MS),type:'behavior_profile_snapshot',at,screen:'system',data:profile};
+      AdaptiveNative.logActivity(JSON.stringify(row));localStorage.setItem(LAST_SYNC_KEY,String(at));
+    }catch(e){}
+  }
+
+  function snapshot(force){
+    const profile=summarise();if(profile.evidence.events<1)return profile;
+    persistProfile(profile);backupOperationalState();syncProfile(profile,!!force);return profile;
+  }
+
+  window.HOMEBehaviourProfile={version:4,get:()=>load(PROFILE_KEY,null),snapshot:()=>snapshot(true)};
+  setTimeout(()=>snapshot(false),2600);
+  setTimeout(()=>snapshot(true),12000);
+  setInterval(()=>snapshot(false),SNAPSHOT_EVERY_MS);
+  window.addEventListener('pagehide',()=>snapshot(false));
+})();
