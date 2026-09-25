@@ -1,16 +1,6 @@
 {
-  "commands": [
-    {
-      "id": "cmd-gmail-ucl-attendance-20260925",
-      "v": 2,
-      "alg": "X25519-HKDF-SHA256+A256GCM",
-      "ephemeralPublicKey": "r82rDE_CwBzm0y3RwcGsNgvC20GGY9PIK415jtSEL3Q",
-      "salt": "6wSr2PjBdPobBn9tYZcTGg",
-      "nonce": "H2PZM453QVeHdS49",
-      "ciphertext": "G85OcgJGCJd06OTGT8uVRWB-HeQHxbANslN21_W86_drEV5kZuPPGtdnLnCJVpQBJTrftsufc5cknGIYsTvx4vrFwbGfBnTZ57jr3Lc3WuTAWwlamMk6zpz3iXNQppnLsj4TvOmegzUGpJDOR4fl4vvYK39ai-LP8N1g-VnIvU4WF03e3OVuLwPJ18DhFUT-OIyoEHTLum0OJG-U3KeBcy2Dt45Li3XALdzh51KXtah9oJ7QuAfo0bvTDFD_B_wTBE22HNB7Rs-WP0JnTJhUvD3Dp69TkZhUwh7fuDJUShNEEKRhsveSl2g1iNhWm4zUm9HE53WJf75gRuxWG0sKOv7lpsDxWD-dzPWnu41o3ZXVEETpuxxZS53a0KAy3i2IFZpCcJnh9AxLS6YqNMFUnI-LoaxLNyfIj6k5OWZgeQvakuhzDiVixFiWxwn8DlFY14fRiMQyon3vuHz9SDXT51OnUGPGKd3H2gjv6xsWPLWrw_P148kwEd5E4lfmI8u27kz7wjqXmTKRDDvHmfAS_Hy63F_oiUeBgJWZSwl9kv4GWnQwXKJlCNyPlAj6zPbO4mVrRjH6caVl9E-wsaYUDFd9XSB6Hq42ICProx4wcxUjb8MDXsu6T23KfKhkBs8Uu8O3FA_PqpdKrNHvSmWT_eNemUru8DwYMj8vhJwflrnlnQ4GGofdZS9BLxjRd-aQxoYpgRK3TuKOdptxlr3J5TSYuQkUR-KzuD7qeld0ccZP7FWDhbPAinQuGzgjxyG6YvQukJCam31sl1I4RqR-5vJ9swFUcJxVB3Tp1-kJ00v_K1Aq"
-    }
-  ],
-  "lastProcessedAtMs": 1790336448034,
+  "commands": [],
+  "lastProcessedAtMs": 1790336723059,
   "lastProcessedCount": 1,
   "version": 2
 }
