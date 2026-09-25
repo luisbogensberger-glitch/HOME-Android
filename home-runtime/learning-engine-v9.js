@@ -24,6 +24,10 @@
     return Array.isArray(v)?v.filter(x=>Number(x.at)>=since):[];
   }
 
+  function decisionHistory(){
+    const h=load(DECISION_KEY,[]);return Array.isArray(h)?h:[];
+  }
+
   function semanticProfile(){
     const journal=load(SEMANTIC_JOURNAL_KEY,[]);const rows=Array.isArray(journal)?journal.slice(-30):[];
     if(!rows.length)return{version:9,count:0,stage:'building',overall:null,understanding:null,application:null,precision:null,depth:null,nextFocus:null,updatedAt:Date.now()};
@@ -52,54 +56,116 @@
 
   function chooseLength(s){
     let level='balanced',sections=3,targetWords=14;
-    const lowCompletion=s.completionRate!=null&&s.completionRate<.43,veryShort=s.readerSeconds!=null&&s.readerSeconds<48,heavyScroll=s.scrollDepth!=null&&s.scrollDepth>.82;
+    // Do not overreact to the first few sessions. HOME needs enough evidence before shrinking content.
+    const enoughBehaviour=s.opens>=7||s.completions>=4||s.semanticCount>=3;
+    const lowCompletion=enoughBehaviour&&s.completionRate!=null&&s.completionRate<.43;
+    const veryShort=enoughBehaviour&&s.readerSeconds!=null&&s.readerSeconds<42;
+    const heavyScroll=enoughBehaviour&&s.scrollDepth!=null&&s.scrollDepth>.88;
     const strongSemantic=s.semanticCount>=2&&s.overall!=null&&s.overall>=82&&s.depth!=null&&s.depth>=75;
-    const strongFallback=s.avgScore!=null&&s.avgScore>=84;
+    const strongFallback=s.completions>=4&&s.avgScore!=null&&s.avgScore>=84;
     if(lowCompletion||veryShort||(heavyScroll&&!strongSemantic&&!strongFallback)){level='micro';sections=2;targetWords=10}
     else if(strongSemantic&&s.completionRate!=null&&s.completionRate>.68){level='deep';sections=5;targetWords=20}
     else if((strongSemantic||strongFallback)&&s.completionRate!=null&&s.completionRate>.58){level='expanded';sections=4;targetWords=17}
     return{level,sections,targetWords};
   }
 
+  function leastRecent(candidates){
+    const hist=decisionHistory().slice(-12).map(x=>x.method);
+    const score=m=>{const rev=[...hist].reverse();const i=rev.indexOf(m);return i<0?999:i};
+    return [...candidates].sort((a,b)=>score(b)-score(a))[0]||candidates[0];
+  }
+
+  function recentRepeat(method,n=2){
+    const h=decisionHistory().slice(-n);return h.length===n&&h.every(x=>x.method===method);
+  }
+
+  function coldStartMethod(){
+    // Purposefully sample different cognitive operations so HOME learns how Luis thinks.
+    const exploratory=['application','scenario','retrieval','teachback','knowledge_check','contrast','precision','prediction'];
+    return leastRecent(exploratory);
+  }
+
+  function targetedMethod(s){
+    let target=null;
+    if(s.nextFocus==='understanding'||(s.understanding!=null&&s.understanding<68))target='retrieval';
+    else if(s.nextFocus==='application'||(s.application!=null&&s.application<68))target='application';
+    else if(s.nextFocus==='precision'||(s.precision!=null&&s.precision<68))target='precision';
+    else if(s.nextFocus==='depth'||(s.depth!=null&&s.depth<70))target='teachback';
+    else if(s.nextFocus==='advance')target=leastRecent(['contrast','scenario','prediction']);
+    return target;
+  }
+
   function chooseMethod(s){
-    if(s.completionRate!=null&&s.completionRate<.38)return'quick_recall';
-    if(s.semanticCount>=2){
-      if(s.nextFocus==='understanding'||(s.understanding!=null&&s.understanding<68))return'retrieval';
-      if(s.nextFocus==='application'||(s.application!=null&&s.application<68))return'application';
-      if(s.nextFocus==='precision'||(s.precision!=null&&s.precision<68))return'precision';
-      if(s.nextFocus==='depth'||(s.depth!=null&&s.depth<70))return'teachback';
-      if(s.nextFocus==='advance')return s.semanticCount%2===0?'contrast':'scenario';
+    // During early learning, exploration is more valuable than prematurely optimizing one format.
+    if(s.semanticCount<4||s.completions<5)return coldStartMethod();
+
+    let method=targetedMethod(s);
+    if(!method){
+      if(s.avgScore!=null&&s.avgScore<66)method='retrieval';
+      else if(s.avgScore!=null&&s.avgScore>86&&s.completionRate!=null&&s.completionRate>.68)method=leastRecent(['contrast','prediction','scenario']);
+      else method=leastRecent(['application','scenario','knowledge_check','teachback','retrieval']);
     }
-    if(s.sentenceCount>=3){
-      if(s.application!=null&&s.application<55)return'application';
-      if(s.causalRate!=null&&s.causalRate<.45)return'teachback';
-      if(s.specificityRate!=null&&s.specificityRate<.45)return'scenario';
+
+    // Never let one learning format become the whole product.
+    if(recentRepeat(method,2))method=leastRecent(['knowledge_check','application','scenario','retrieval','teachback','contrast','prediction','precision'].filter(x=>x!==method));
+
+    // Quick recall is a lightweight intervention, not a default. Use only after enough evidence and never twice in a row.
+    const enoughEvidence=s.opens>=10||s.completions>=6;
+    if(enoughEvidence&&s.completionRate!=null&&s.completionRate<.34&&!recentRepeat('quick_recall',1)){
+      const lastQuick=decisionHistory().slice(-5).some(x=>x.method==='quick_recall');
+      if(!lastQuick)method='quick_recall';
     }
-    if(s.avgScore!=null&&s.avgScore<66)return'retrieval';
-    if(s.avgScore!=null&&s.avgScore>86&&s.completionRate!=null&&s.completionRate>.68)return'contrast';
-    return'application';
+    return method;
+  }
+
+  function chooseQuizMode(method,s){
+    const hist=decisionHistory().slice(-8);
+    const recentModes=hist.map(x=>x.quizMode);
+    if(method==='knowledge_check')return'mcq';
+    if(method==='quick_recall')return'flashcard';
+    if(method==='scenario')return'mcq_sentence';
+    if(method==='retrieval'){
+      // Alternate actual recall with MCQ+explanation; do not always ask the same sentence.
+      return recentModes.includes('mcq_sentence')?'reflection':'mcq_sentence';
+    }
+    if(method==='prediction')return'reflection';
+    if(method==='application'||method==='teachback'||method==='precision'||method==='contrast')return'reflection';
+    return s.semanticCount<2?'mcq_sentence':'reflection';
   }
 
   function decide(card){
-    const s=signals(),length=chooseLength(s),method=chooseMethod(s);let quizMode='reflection';
-    if(method==='retrieval'&&s.semanticCount===0&&s.avgScore!=null&&s.avgScore<55)quizMode='mcq_sentence';
+    const s=signals(),length=chooseLength(s),method=chooseMethod(s),quizMode=chooseQuizMode(method,s);
     const decision={at:Date.now(),cardId:card?.id||'',topic:card?.topic||'',method,content:length.level,sectionLimit:length.sections,sentenceTargetWords:length.targetWords,quizMode,signals:s};
-    const hist=load(DECISION_KEY,[]),arr=Array.isArray(hist)?hist:[];arr.push(decision);save(DECISION_KEY,arr.slice(-100));if(card?.id)decisions.set(card.id,decision);return decision;
+    const hist=decisionHistory();hist.push(decision);save(DECISION_KEY,hist.slice(-100));if(card?.id)decisions.set(card.id,decision);return decision;
+  }
+
+  function recentPersonalAngle(){
+    try{
+      const done=(typeof tubeState!=='undefined'&&Array.isArray(tubeState.completed))?tubeState.completed:[];
+      const recentAnswers=done.slice(-8).map(x=>String(x.sentence||'').trim()).filter(Boolean);
+      if(!recentAnswers.length)return'';
+      const personal=recentAnswers.filter(x=>/\b(i|my|me|we|our|would|could|should)\b/i.test(x)).length;
+      return personal>=Math.ceil(recentAnswers.length/2)?'You often connect ideas to your own decisions; push that connection one level deeper. ':'Use this to reveal how you personally reason, not just what the article said. ';
+    }catch(e){return''}
   }
 
   function promptFor(d,card){
     const topic=String(card?.title||card?.topic||'this idea');
+    const personal=recentPersonalAngle();
     switch(d.method){
-      case'retrieval':return`Without looking back, state the central mechanism behind “${topic}” in one precise sentence.`;
-      case'teachback':return`Explain “${topic}” to an intelligent friend who has never heard of it. Make the causal logic clear.`;
-      case'application':return`Apply “${topic}” to one real decision, project or situation you could actually face. What would you do differently?`;
-      case'precision':return`State the idea behind “${topic}” precisely enough that it could not be confused with a similar concept.`;
-      case'contrast':return`Contrast “${topic}” with the most plausible alternative approach. When would each work better?`;
-      case'scenario':return`Imagine a realistic situation where “${topic}” matters. What is the best action, and why?`;
-      default:return`Without looking back, give the most useful idea from “${topic}” in one precise sentence.`;
+      case'retrieval':return`Without looking back, reconstruct the central mechanism behind “${topic}”. What causes what, and why?`;
+      case'teachback':return`${personal}Explain “${topic}” as if you had to convince a smart sceptic. What would you say, and what would you leave out?`;
+      case'application':return`${personal}Where could “${topic}” actually change a decision you make? Give the decision and explain what you would do differently.`;
+      case'precision':return`What is the most important distinction in “${topic}” that someone could easily misunderstand? State it precisely.`;
+      case'contrast':return`Which alternative view or strategy competes most strongly with “${topic}”? Which would you choose in a real situation, and why?`;
+      case'scenario':return`${personal}Imagine a realistic situation in which “${topic}” matters. What would you do first, and what trade-off are you accepting?`;
+      case'prediction':return`Based on “${topic}”, make one concrete prediction about what would happen if a key condition changed. Explain your reasoning.`;
+      case'quick_recall':return`In your own words, what is the one idea from “${topic}” you would still want to remember tomorrow?`;
+      default:return`What is the most useful insight from “${topic}”, and why does it matter to you?`;
     }
   }
-  function methodLabel(m){return({retrieval:'Recall',teachback:'Teach it',application:'Apply it',precision:'Make it precise',contrast:'Compare',scenario:'Scenario',quick_recall:'Quick recall'})[m]||'Recall'}
+
+  function methodLabel(m){return({retrieval:'Recall + explain',teachback:'Teach it',application:'Apply it',precision:'Make it precise',contrast:'Compare & choose',scenario:'Scenario decision',prediction:'Predict',knowledge_check:'Knowledge check',quick_recall:'Quick recall'})[m]||'Think it through'}
   function applyDecision(d){try{const t=window.HOMEAdaptive?.config?.tube;if(!t)return;t.quizMode=d.quizMode;t.sectionLimit=d.sectionLimit;t.sentenceTargetWords=d.sentenceTargetWords;t.readerDepth=d.content==='micro'?'compact':d.content==='deep'?'deep':'balanced'}catch(e){}}
 
   function cardForReader(){
@@ -109,7 +175,7 @@
 
   function patchOpenCard(){
     if(typeof window.openCard!=='function'||window.openCard.__learningV9)return;
-    const base=window.openCard;const wrapped=function(id,slot){let card=null;try{card=cardMap?.[id]||null}catch(e){}const d=decide(card);applyDecision(d);const r=base.apply(this,arguments);setTimeout(()=>{const reader=document.getElementById('reader');if(!reader)return;reader.dataset.learningCardId=String(id||'');reader.dataset.learningMethod=d.method;reader.dataset.learningDepth=d.content;const title=reader.querySelector('.adaptiveQuiz h2');if(title)title.textContent=methodLabel(d.method);const prompt=reader.querySelector('.promptText');if(prompt)prompt.textContent=promptFor(d,card);const tiny=reader.querySelector('.tiny');if(tiny)tiny.textContent=`HOME chose ${methodLabel(d.method)} · ${d.content} depth from your recent learning behaviour.`},0);log('learning_method_selected',{method:d.method,content:d.content,sections:d.sectionLimit,targetWords:d.sentenceTargetWords,topic:d.topic});return r};wrapped.__learningV9=true;window.openCard=wrapped;
+    const base=window.openCard;const wrapped=function(id,slot){let card=null;try{card=cardMap?.[id]||null}catch(e){}const d=decide(card);applyDecision(d);const r=base.apply(this,arguments);setTimeout(()=>{const reader=document.getElementById('reader');if(!reader)return;reader.dataset.learningCardId=String(id||'');reader.dataset.learningMethod=d.method;reader.dataset.learningDepth=d.content;const title=reader.querySelector('.adaptiveQuiz h2');if(title)title.textContent=methodLabel(d.method);const prompt=reader.querySelector('.promptText');if(prompt)prompt.textContent=promptFor(d,card);const qhint=reader.querySelector('.qhint');if(qhint&&d.method==='knowledge_check')qhint.textContent='Choose the strongest answer. No writing needed this time.';const tiny=reader.querySelector('.tiny');if(tiny)tiny.textContent=`HOME chose ${methodLabel(d.method)} · ${d.content} depth to learn more about how you think and what helps you retain ideas.`},0);log('learning_method_selected',{method:d.method,quizMode:d.quizMode,content:d.content,sections:d.sectionLimit,targetWords:d.sentenceTargetWords,topic:d.topic});return r};wrapped.__learningV9=true;window.openCard=wrapped;
   }
 
   function enrichAttempt(value){
