@@ -38,23 +38,27 @@
   window.HOMEFeedbackPulse={render,choose,version:1};
 })();
 
-/* HOME Brain entry v2 — compatible with APKs that still contain the old CSS kill-switch. */
+/* HOME Brain entry v3 — persistent delegated tap handler + self-healing loader. */
 (function(){
   'use strict';
-  if(window.__HOME_BRAIN_ENTRY_V2__)return;window.__HOME_BRAIN_ENTRY_V2__=true;
+  if(window.__HOME_BRAIN_ENTRY_V3__){try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}return}
+  window.__HOME_BRAIN_ENTRY_V3__=true;
   const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
+  let loading=null;
 
   function installOverride(){
-    let s=document.getElementById('homeBrainEntryV2Style');
-    if(!s){s=document.createElement('style');s.id='homeBrainEntryV2Style';document.head.appendChild(s)}
+    let s=document.getElementById('homeBrainEntryV3Style');
+    if(!s){s=document.createElement('style');s.id='homeBrainEntryV3Style';document.head.appendChild(s)}
     s.textContent=`
       #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4{display:none!important;visibility:hidden!important;pointer-events:none!important}
-      #homeBehaviourOverlayV4{visibility:visible!important;pointer-events:auto!important;opacity:1!important}
-      #homeBehaviourOverlayV4.show{display:block!important;visibility:visible!important;pointer-events:auto!important}
-      #homeMomentum .homeMomentumXp,[data-home-brain-entry="1"]{cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
+      #homeBehaviourOverlayV2,#homeBehaviourOverlayV3{display:none!important;visibility:hidden!important;pointer-events:none!important}
+      #homeBehaviourOverlayV4{opacity:1!important}
+      #homeBehaviourOverlayV4.show{display:block!important;visibility:visible!important;pointer-events:auto!important;opacity:1!important}
+      #homeMomentum .homeMomentumXp{cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
     `;
-    const kill=document.getElementById('homeBehaviourEmergencyDisable');
-    if(kill)kill.textContent=`
+    let kill=document.getElementById('homeBehaviourEmergencyDisable');
+    if(!kill){kill=document.createElement('style');kill.id='homeBehaviourEmergencyDisable';document.head.appendChild(kill)}
+    kill.textContent=`
       #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4,
       #homeBehaviourOverlayV2,#homeBehaviourOverlayV3,
       .hbQuestHint{display:none!important;pointer-events:none!important;visibility:hidden!important}
@@ -62,52 +66,80 @@
     `;
   }
 
-  function openBrain(){
+  function markScore(){
+    const score=document.querySelector('#homeMomentum .homeMomentumXp');
+    if(!score)return null;
+    score.dataset.homeBrainEntry='1';
+    score.setAttribute('role','button');
+    score.setAttribute('tabindex','0');
+    score.setAttribute('aria-label','Open HOME Brain');
+    return score;
+  }
+
+  async function ensureBrain(){
     installOverride();
-    try{window.HOMEBehaviourIntelligence?.open?.()}catch(e){}
-    setTimeout(()=>{
+    if(window.HOMEBehaviourIntelligence?.open)return true;
+    if(loading)return loading;
+    loading=(async()=>{
+      try{
+        const r=await fetch(BASE+'behaviour-map-v4.js?v='+Date.now(),{cache:'no-store'});
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        const js=await r.text();
+        new Function(js+'\n//# sourceURL=home-brain-v4-live.js')();
+        installOverride();markScore();
+        return !!window.HOMEBehaviourIntelligence?.open;
+      }catch(e){
+        try{console.warn('HOME Brain load failed',e)}catch(_){}
+        return false;
+      }finally{loading=null}
+    })();
+    return loading;
+  }
+
+  async function openBrain(){
+    installOverride();markScore();
+    const ok=await ensureBrain();
+    if(!ok)return;
+    try{window.HOMEBehaviourIntelligence.open()}catch(e){}
+    requestAnimationFrame(()=>{
       installOverride();
       const o=document.getElementById('homeBehaviourOverlayV4');
-      if(o){o.classList.add('show');o.style.setProperty('visibility','visible','important');o.style.setProperty('pointer-events','auto','important')}
-    },30);
-  }
-
-  function candidates(){
-    const out=[];
-    const exact=document.querySelector('#homeMomentum .homeMomentumXp');if(exact)out.push(exact);
-    document.querySelectorAll('#homeMomentum *').forEach(el=>{
-      const t=(el.textContent||'').trim();
-      if(/\b(score|xp)\b/i.test(t)&&t.length<45)out.push(el);
+      if(o){
+        o.classList.add('show');
+        o.style.setProperty('display','block','important');
+        o.style.setProperty('visibility','visible','important');
+        o.style.setProperty('pointer-events','auto','important');
+        o.style.setProperty('opacity','1','important');
+        const a=o.querySelector('.hb4Top small'),b=o.querySelector('.hb4Top h1');
+        if(a)a.textContent='HOME BRAIN';if(b)b.textContent='Your living model';
+      }
     });
-    return [...new Set(out)];
   }
 
-  function bind(){
-    installOverride();
-    candidates().forEach(el=>{
-      if(el.dataset.homeBrainBound)return;
-      el.dataset.homeBrainBound='1';el.dataset.homeBrainEntry='1';
-      el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Open HOME Brain');
-      el.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openBrain()},true);
-      el.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();openBrain()},true);
-      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBrain()}},true);
-    });
-    const o=document.getElementById('homeBehaviourOverlayV4');
-    if(o){const a=o.querySelector('.hb4Top small'),b=o.querySelector('.hb4Top h1');if(a)a.textContent='HOME BRAIN';if(b)b.textContent='Your living model'}
+  function isScoreTarget(target){
+    if(!(target instanceof Element))return false;
+    return !!target.closest('#homeMomentum .homeMomentumXp,[data-home-brain-entry="1"]');
   }
 
-  async function loadBrain(){
-    installOverride();
-    if(window.HOMEBehaviourIntelligence){bind();return}
-    try{
-      const r=await fetch(BASE+'behaviour-map-v4.js?v='+Date.now(),{cache:'no-store'});
-      if(!r.ok)return;
-      const js=await r.text();
-      new Function(js+'\n//# sourceURL=home-brain-v4-live.js')();
-      bind();setTimeout(bind,150);setTimeout(bind,700);
-    }catch(e){}
+  function onTap(e){
+    if(!isScoreTarget(e.target))return;
+    e.preventDefault();e.stopPropagation();openBrain();
+  }
+  function onKey(e){
+    if((e.key!=='Enter'&&e.key!==' ')||!isScoreTarget(e.target))return;
+    e.preventDefault();e.stopPropagation();openBrain();
   }
 
-  loadBrain();setTimeout(loadBrain,500);setTimeout(loadBrain,1600);
-  setInterval(bind,2500);
+  /* Delegated listeners survive HOME re-renders and element replacement. */
+  document.addEventListener('pointerup',onTap,true);
+  document.addEventListener('click',onTap,true);
+  document.addEventListener('keydown',onKey,true);
+
+  const observer=new MutationObserver(()=>{installOverride();markScore()});
+  observer.observe(document.documentElement,{subtree:true,childList:true});
+
+  function repair(){installOverride();markScore();ensureBrain()}
+  window.HOMEBrainEntryV3={repair,open:openBrain,version:3};
+
+  repair();setTimeout(repair,300);setTimeout(repair,1000);setTimeout(repair,2500);
 })();
