@@ -7,6 +7,7 @@ on:
     paths:
       - 'plugin/home/**'
       - 'supabase/**'
+      - 'plugin-server/**'
       - '.github/workflows/validate-home-plugin.yml'
 
 permissions:
@@ -23,8 +24,27 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Type-check HOME MCP server
+      - name: Type-check Supabase HOME MCP server
         run: deno check supabase/functions/home-mcp/index.ts
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: plugin-server/package-lock.json
+
+      - name: Install production gateway dependencies
+        working-directory: plugin-server
+        run: npm install --no-audit --no-fund
+
+      - name: Type-check production gateway
+        working-directory: plugin-server
+        run: npm run typecheck
+
+      - name: Dry-build Cloudflare gateway
+        working-directory: plugin-server
+        run: npm run build
 
       - name: Validate plugin manifest JSON
         run: node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('plugin/home/plugin.json','utf8'));if(!p.name||!p.version||!p.description)process.exit(1);console.log(p.name,p.version)"
