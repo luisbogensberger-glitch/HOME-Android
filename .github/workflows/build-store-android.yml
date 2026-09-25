@@ -1,0 +1,205 @@
+name: Build HOME Store Android AAB
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-store:
+    runs-on: ubuntu-latest
+    env:
+      HOME_API_URL: ${{ vars.HOME_STORE_API_URL }}
+      HOME_SUPABASE_URL: ${{ vars.HOME_SUPABASE_URL }}
+      HOME_SUPABASE_ANON_KEY: ${{ secrets.HOME_SUPABASE_ANON_KEY }}
+      ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+      ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+      ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+      ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate store configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$HOME_API_URL" || { echo 'Missing repository variable HOME_STORE_API_URL'; exit 1; }
+          test -n "$HOME_SUPABASE_URL" || { echo 'Missing repository variable HOME_SUPABASE_URL'; exit 1; }
+          test -n "$HOME_SUPABASE_ANON_KEY" || { echo 'Missing secret HOME_SUPABASE_ANON_KEY'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEYSTORE_B64" || { echo 'Missing Android upload keystore secret'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEYSTORE_PASSWORD" || exit 1
+          test -n "$ANDROID_UPLOAD_KEY_ALIAS" || exit 1
+          test -n "$ANDROID_UPLOAD_KEY_PASSWORD" || exit 1
+
+      - name: Recreate Android source
+        shell: bash
+        run: |
+          cat payload/part*.txt > source.b64
+          base64 -d source.b64 > source.zip
+          mkdir -p src
+          unzip -q source.zip -d src
+
+      - name: Apply current HOME task UI
+        shell: bash
+        run: |
+          cat todo-patch/part* > todo-details.patch
+          cd src
+          patch -p1 < ../todo-details.patch
+
+      - name: Add HOME native sync overlay
+        shell: bash
+        run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
+
+      - name: Replace private sync with Store account sync
+        shell: bash
+        run: |
+          cp store-overlay/app/src/main/java/com/luis/home/WorkerSync.java src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java
+          cp store-overlay/app/src/main/java/com/luis/home/StoreAccountBridge.java src/luis-home-app/app/src/main/java/com/luis/home/StoreAccountBridge.java
+          cp store-overlay/app/src/main/assets/store-account.js src/luis-home-app/app/src/main/assets/store-account.js
+          rm -f src/luis-home-app/app/src/main/java/com/luis/home/WhatsAppAccessibilityService.java
+          rm -f src/luis-home-app/app/src/main/java/com/luis/home/WhatsAppNotificationListener.java
+
+      - name: Bundle adaptive UI locally for store review
+        shell: bash
+        run: |
+          cp home-runtime/runtime.css src/luis-home-app/app/src/main/assets/runtime.css
+          cp home-runtime/runtime.js src/luis-home-app/app/src/main/assets/runtime.js
+          cp home-runtime/behavior-v3.css src/luis-home-app/app/src/main/assets/behavior-v3.css
+          cp home-runtime/behavior-v3.js src/luis-home-app/app/src/main/assets/behavior-v3.js
+          cp tube-feed.json src/luis-home-app/app/src/main/assets/tube-feed.json
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/luis-home-app/app/src/main/assets/index.html')
+          s=p.read_text(encoding='utf-8')
+          css_tags=[
+              '<link rel="stylesheet" href="home-ui-v2.css" />',
+              '<link rel="stylesheet" href="adaptive-runtime.css" />',
+              '<link rel="stylesheet" href="todo-premium.css" />',
+              '<link rel="stylesheet" href="runtime.css" />',
+              '<link rel="stylesheet" href="behavior-v3.css" />',
+          ]
+          js_tags=[
+              '<script src="home-ui-v2.js"></script>',
+              '<script src="adaptive-runtime.js"></script>',
+              '<script src="todo-premium.js"></script>',
+              '<script src="runtime.js"></script>',
+              '<script src="behavior-v3.js"></script>',
+              '<script src="dynamic-shell-v5.js"></script>',
+              '<script src="tube-remote.js"></script>',
+              '<script src="store-account.js"></script>',
+          ]
+          # Store build deliberately never injects remote-extension-loader.js.
+          s=s.replace('<script src="remote-extension-loader.js"></script>','')
+          for tag in css_tags:
+              if tag not in s: s=s.replace('</head>',tag+'\n</head>',1)
+          for tag in js_tags:
+              if tag not in s: s=s.replace('</body>',tag+'\n</body>',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          # Store feed is bundled data, not remotely executed code.
+          sed -i "s#https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/tube-feed.json#tube-feed.json#g" src/luis-home-app/app/src/main/assets/tube-remote.js
+
+      - name: Patch native shell for Store account bridge
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('private WorkerSync worker;','private WorkerSync worker;\n    private StoreAccountBridge storeAccount;')
+          s=s.replace('worker = new WorkerSync(this);','worker = new WorkerSync(this);\n        storeAccount = new StoreAccountBridge(this, worker);')
+          needle='webView.addJavascriptInterface(new NativeBridge(), "Native");'
+          add=needle+'\n        storeAccount.attach(webView);\n        webView.addJavascriptInterface(storeAccount, "HomeAccount");'
+          if '"HomeAccount"' not in s: s=s.replace(needle,add,1)
+          pattern=re.compile(r'        @JavascriptInterface\n        public void configureNotion\(\) \{.*?\n        \}\n\n        @JavascriptInterface\n        public void disconnectNotion',re.S)
+          repl='        @JavascriptInterface\n        public void configureNotion() {\n            storeAccount.open();\n        }\n\n        @JavascriptInterface\n        public void disconnectNotion'
+          s,n=pattern.subn(repl,s,count=1)
+          if n!=1: raise SystemExit('Could not patch configureNotion for Store account flow')
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Remove private notification/accessibility capabilities
+        shell: bash
+        run: |
+          MANIFEST=src/luis-home-app/app/src/main/AndroidManifest.xml
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/luis-home-app/app/src/main/AndroidManifest.xml')
+          s=p.read_text(encoding='utf-8')
+          s=re.sub(r'\s*<service[^>]*android:name="\.WhatsAppAccessibilityService".*?</service>','',s,flags=re.S)
+          s=re.sub(r'\s*<service[^>]*android:name="\.WhatsAppNotificationListener".*?</service>','',s,flags=re.S)
+          p.write_text(s,encoding='utf-8')
+          PY
+          # Keep the WebView sandboxed: do not enable universal file-origin network access.
+          grep -q 'setAllowUniversalAccessFromFileURLs(false)' src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
+
+      - name: Configure API 36 and public Store endpoints
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os,re
+          p=Path('src/luis-home-app/app/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s=re.sub(r'compileSdk(?:Version)?\s+\d+','compileSdk 36',s,count=1)
+          s=re.sub(r'targetSdk(?:Version)?\s+\d+','targetSdk 36',s,count=1)
+          def esc(v): return v.replace('\\','\\\\').replace('"','\\"')
+          fields=(
+              f'        buildConfigField "String", "HOME_API_URL", "\\"{esc(os.environ["HOME_API_URL"])}\\""\n'
+              f'        buildConfigField "String", "HOME_SUPABASE_URL", "\\"{esc(os.environ["HOME_SUPABASE_URL"])}\\""\n'
+              f'        buildConfigField "String", "HOME_SUPABASE_ANON_KEY", "\\"{esc(os.environ["HOME_SUPABASE_ANON_KEY"])}\\""\n'
+          )
+          if 'HOME_API_URL' not in s:
+              m=re.search(r'defaultConfig\s*\{',s)
+              if not m: raise SystemExit('defaultConfig not found')
+              pos=m.end()
+              s=s[:pos]+'\n'+fields+s[pos:]
+          if 'buildFeatures' not in s:
+              m=re.search(r'android\s*\{',s)
+              if not m: raise SystemExit('android block not found')
+              pos=m.end()
+              s=s[:pos]+'\n    buildFeatures { buildConfig true }\n'+s[pos:]
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 16 SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore upload keystore
+        shell: bash
+        run: echo "$ANDROID_UPLOAD_KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/home-upload.jks"
+
+      - name: Build signed release AAB
+        working-directory: src/luis-home-app
+        shell: bash
+        run: |
+          gradle :app:bundleRelease --stacktrace \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/home-upload.jks" \
+            -Pandroid.injected.signing.store.password="$ANDROID_UPLOAD_KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$ANDROID_UPLOAD_KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$ANDROID_UPLOAD_KEY_PASSWORD"
+
+      - name: Upload Play Store bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: HOME-store-release-aab
+          path: src/luis-home-app/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
