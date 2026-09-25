@@ -93,16 +93,17 @@ jobs:
           receiver='        <receiver android:name=".HomeNotificationReceiver" android:exported="false" />\n'
           if '.HomeNotificationReceiver' not in m:
               m=m.replace('</application>',receiver+'    </application>',1)
-          whatsapp_service='''        <service
-            android:name=".WhatsAppNotificationListener"
-            android:label="HOME WhatsApp intelligence"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
-'''
+          whatsapp_service=(
+              '        <service\n'
+              '            android:name=".WhatsAppNotificationListener"\n'
+              '            android:label="HOME WhatsApp intelligence"\n'
+              '            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"\n'
+              '            android:exported="true">\n'
+              '            <intent-filter>\n'
+              '                <action android:name="android.service.notification.NotificationListenerService" />\n'
+              '            </intent-filter>\n'
+              '        </service>\n'
+          )
           if '.WhatsAppNotificationListener' not in m:
               m=m.replace('</application>',whatsapp_service+'    </application>',1)
           manifest.write_text(m,encoding='utf-8')
