@@ -1,25 +1,6 @@
 {
-  "commands": [
-    {
-      "id": "cmd-gmail-ucl-induction-bookings-20260925",
-      "v": 2,
-      "alg": "X25519-HKDF-SHA256+A256GCM",
-      "ephemeralPublicKey": "rvON0iWxsW-2ZVVLcMbiKn69VPUtsMGX1ndmxGqF-ig",
-      "salt": "jEEkHhXGj39wMwm8ZgZlmA",
-      "nonce": "65eznX915O-eS4RM",
-      "ciphertext": "hUDmkNlWDy9HjLi8OKAV_DBUouhfA5ZpdQDyJQDRfZYsWpRDbJaeMaeJZSNrlNH0jfyrbKd0CayEUCbkFElmiRo4c0fAmH8k1yCUJzuD39QR35OeKCfK7xPRpPA0CSch1OS1z9kgZG2dUfUBqSPetoWHoL-472H2dodkCypGRorLOgfXaGlQEO1qvOMXJzPvhDEWGh_LmYIqb57g8CWJ8-fTgDeY8Vw-n16T9cyiDOjX6yE33W2C89jzEVDQTa_vQX2mW5GB0pcZXIQx_aTFLxNdHGOa2SLpshnUGVEbdqwjPh_g5NS1C7ttJHxs99bmEg_RswoZJqEINGtnOdHr0PTMOBZvOa_gCp98enImn3_5jpHaHeZOChFO1Ez0Yse5WRk4w7mO5h2Et2FVMx2d1Y5IwV3qsI1hbtcBkGuhA0QOdGiiAjmR2kKnXD9YKEIdbdpPGsvd__r_EZOmoVpOStIKdEvDJ-zu-Ojde3B9JpvOJi1VSn-1ZPyG2neHXj96mMlhOEY3S6lGo9GVfiIkrVHeRbiYKtnpWYHzX-xRAFC3SPToAQa9B4Y7YfOWVa2_Fduon9tam_YqWWg70NiMWognZu3ID1TzByUu8iTgskCS4XGrrvq-dkDg9VddIYsIsA7JGQkQGjlNuA8tABWlIN3df6Y4hLW_p2SjwaIiGed_IJKXrEh6-ZI6-EHZnGtyW_7a7E5Ej3gZ_PErpGONNppWtqnQ6FKje1UcMPcJsiuPLU7F-x3Xov2tNQfZbTrXpE2y3xOAAbbL8hs_blIOmgNTpF6DWezduTlT8TBoG115jGlRm8_5EP1cCbidGbdfe1cmgDAzlscqbQmGNT3-zTva_eQBYdqMPVpOUgz2uRYq9BdPv3-zdU9yQRsq7sZuirI2a75xv8382QxnH67Cc6HWlhNtX3uDYJCYTTEFHiv2xp2J8dH6v4TP5kPV8t28QuylXo5d0vWxLaB_em0QYIGcx425s7Ugj1ddU-zrYR6TUFxZsnGBG_FZ2eCGNpnDZE4_S1z6xnsUAK9ralm0ou5HTAnOvDHZme5_0roNfVM"
-    },
-    {
-      "id": "cmd-gmail-ucl-active-bystander-20260925",
-      "v": 2,
-      "alg": "X25519-HKDF-SHA256+A256GCM",
-      "ephemeralPublicKey": "rQm7PwLXKcIuOFDIYoDkP_J4r9wlr7mfImO-HXf5eGA",
-      "salt": "-5LhDPuPnArGGD-AIRfLOA",
-      "nonce": "M0V4HE7KKNCThqag",
-      "ciphertext": "oVOc-XALkB0vDYry99DD1B44Ozs0NC4lwC5pPIB8174rmonNM3N0StcgYnZqQhIWaFZtI6Q8nmwDTMbV6tCVAZmVyHY7mrn_nrKfvN1mv2ynzzYYe3cZSbU2Se4yA0SZvMYO-ALs2SICxB1RJbdPfYXV30XYAOFVMEM7jKhLZHY_2bH8Ti4x-GXiWhIDf_o3YKDNwCuD5ifsCZWgf7-HOaH9Hze6YBBU4Cusc0IMuBwsIE9EwTpse_aFluYU9FQCSRheuSwZkBThF5Ja_rKEqjctOqEaWS-_M214AYZbVDpCqm4I9frBaqRH2bGLvFRIun0zEFdzL3E5WKg-m5oxXsrl9xPPYs_gmsyZJZZrd0KoG7zbiHp2O80hdTYFKuQwbTfpFwro83Q-58XtYT62kW1D5mLPT258DTkhY5kCtxdroaW5WmjDg0pFfZy-2HTjumdlhIssWKt0L4HOrKUiUYUSzxwIGDNPpob7qk3O-anrIiVzM1qKcV64jFayNoweE4a8EEJ-xXMBUhRvP2op4IPpUOB6ctrYITsscs3JCAgS_GqsdZ-MQojUKUaIe8sr7iXvA0w5FcbcmOML8O2xCgndNo2PSqgrITpW41RhDlMjH3JOHfUcdrYgsONjOBdz5W6cVovlxLWzM6RwwPLcLb_b5LJrbqOnTUwBj0imMZXtwXQTsM0vOXPGlHo"
-    }
-  ],
-  "lastProcessedAtMs": 1790338981568,
-  "lastProcessedCount": 1,
+  "commands": [],
+  "lastProcessedAtMs": 1790358633640,
+  "lastProcessedCount": 2,
   "version": 2
 }
