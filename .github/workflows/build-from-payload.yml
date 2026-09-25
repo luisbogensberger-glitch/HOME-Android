@@ -40,7 +40,7 @@ jobs:
           patch -p1 < ../todo-details.patch
       - name: Add HOME Worker sync
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
-      - name: Bake behavior engine baseline and HOME Brain
+      - name: Bake behavior engine baseline, HOME Brain and Recovery Code
         shell: bash
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
@@ -49,6 +49,7 @@ jobs:
           cp home-runtime/behavior-v3-base.js "$ASSETS/behavior-v3-base.js"
           cp home-runtime/behaviour-map-v4.js "$ASSETS/behaviour-map-v4.js"
           cp home-runtime/feedback-pulse-v1.js "$ASSETS/feedback-pulse-v1.js"
+          cp home-runtime/recovery-code-v1.js "$ASSETS/recovery-code-v1.js"
       - name: Add premium HOME dashboard and adaptive runtime
         shell: bash
         run: |
