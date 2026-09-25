@@ -105,16 +105,21 @@ final class WorkerSync {
     }
 
     private JSONObject requestObject(String method, String path, JSONObject body) throws Exception {
-        String raw = request(method, path, body);
+        String raw = request(method, path, body, 15000);
+        return raw.isEmpty() ? new JSONObject() : new JSONObject(raw);
+    }
+
+    private JSONObject requestObject(String method, String path, JSONObject body, int readTimeoutMs) throws Exception {
+        String raw = request(method, path, body, readTimeoutMs);
         return raw.isEmpty() ? new JSONObject() : new JSONObject(raw);
     }
 
     private JSONArray requestArray(String method, String path, JSONObject body) throws Exception {
-        String raw = request(method, path, body);
+        String raw = request(method, path, body, 15000);
         return raw.isEmpty() ? new JSONArray() : new JSONArray(raw);
     }
 
-    private String request(String method, String path, JSONObject body) throws Exception {
+    private String request(String method, String path, JSONObject body, int readTimeoutMs) throws Exception {
         String token = readToken();
         if (token == null) throw new IllegalStateException("Connect HOME Sync in the app first.");
 
@@ -122,10 +127,11 @@ final class WorkerSync {
         try {
             connection.setRequestMethod(method);
             connection.setConnectTimeout(10000);
-            connection.setReadTimeout(15000);
+            connection.setReadTimeout(Math.max(5000, readTimeoutMs));
             connection.setRequestProperty("Authorization", "Bearer " + token);
             connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
             connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Cache-Control", "no-cache");
 
             if (body != null) {
                 connection.setDoOutput(true);
@@ -197,6 +203,11 @@ final class WorkerSync {
 
     JSONObject saveActivity(JSONObject activity) throws Exception {
         return requestObject("POST", "/api/activity", new JSONObject(activity.toString()));
+    }
+
+    JSONObject reviewSentence(JSONObject payload) throws Exception {
+        if (payload == null) throw new IllegalArgumentException("Sentence review payload required.");
+        return requestObject("POST", "/api/review-sentence", new JSONObject(payload.toString()), 35000);
     }
 
     private String encodePath(String value) throws Exception {
