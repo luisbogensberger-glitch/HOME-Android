@@ -38,3 +38,57 @@
   setTimeout(render,2200);
   window.HOMEFeedbackPulse={render,choose,version:1};
 })();
+
+/* HOME Brain entry v1 — no standalone Day Score; the yellow score/XP chip is the only launcher. */
+(function(){
+  'use strict';
+  if(window.__HOME_BRAIN_ENTRY_V1__)return;window.__HOME_BRAIN_ENTRY_V1__=true;
+  const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
+
+  function relaxKillSwitch(){
+    const kill=document.getElementById('homeBehaviourEmergencyDisable');
+    if(kill)kill.textContent=`
+      #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4,
+      #homeBehaviourOverlayV2,#homeBehaviourOverlayV3,
+      .hbQuestHint{display:none!important;pointer-events:none!important;visibility:hidden!important}
+      body{overflow:auto!important}
+    `;
+  }
+
+  function openBrain(){try{window.HOMEBehaviourIntelligence?.open?.()}catch(e){}}
+
+  function bind(){
+    relaxKillSwitch();
+    document.getElementById('homeDayScoreV4')?.setAttribute('aria-hidden','true');
+    const score=document.querySelector('#homeMomentum .homeMomentumXp');
+    if(score&&!score.dataset.homeBrainEntry){
+      score.dataset.homeBrainEntry='1';
+      score.setAttribute('role','button');
+      score.setAttribute('tabindex','0');
+      score.setAttribute('aria-label','Open HOME Brain');
+      score.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openBrain()},true);
+      score.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBrain()}},true);
+    }
+    const overlay=document.getElementById('homeBehaviourOverlayV4');
+    if(overlay){
+      const eyebrow=overlay.querySelector('.hb4Top small');
+      const title=overlay.querySelector('.hb4Top h1');
+      if(eyebrow)eyebrow.textContent='HOME BRAIN';
+      if(title)title.textContent='Your living model';
+    }
+  }
+
+  function loadBrain(){
+    relaxKillSwitch();
+    if(window.HOMEBehaviourIntelligence){bind();return}
+    if(document.getElementById('homeBrainMapV4Script'))return;
+    const s=document.createElement('script');
+    s.id='homeBrainMapV4Script';
+    s.src=BASE+'behaviour-map-v4.js?v='+Date.now();
+    s.async=true;
+    s.onload=()=>{bind();setTimeout(bind,300);setTimeout(bind,1200)};
+    document.head.appendChild(s);
+  }
+
+  loadBrain();setTimeout(loadBrain,700);setTimeout(loadBrain,2200);
+})();
