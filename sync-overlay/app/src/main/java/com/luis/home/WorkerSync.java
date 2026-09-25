@@ -210,6 +210,11 @@ final class WorkerSync {
         return requestObject("POST", "/api/review-sentence", new JSONObject(payload.toString()), 35000);
     }
 
+    JSONObject reviewWhatsAppMessage(JSONObject payload) throws Exception {
+        if (payload == null) throw new IllegalArgumentException("WhatsApp message payload required.");
+        return requestObject("POST", "/api/whatsapp-message", new JSONObject(payload.toString()), 35000);
+    }
+
     private String encodePath(String value) throws Exception {
         return java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20");
     }
