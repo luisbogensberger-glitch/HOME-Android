@@ -21,8 +21,7 @@
     if(Number(s.dismissUntil||0)>now)return false;
     if(Number(s.lastAnsweredAt||0)&&now-Number(s.lastAnsweredAt)<4*DAY)return false;
     if(Number(s.lastShownAt||0)&&now-Number(s.lastShownAt)<2*DAY)return false;
-    const r=rows();
-    return r.length>=12;
+    return rows().length>=12;
   }
   function style(){if(document.getElementById('homeFeedbackPulseStyle'))return;const s=document.createElement('style');s.id='homeFeedbackPulseStyle';s.textContent=`
 #homeFeedbackPulse{border:1px solid rgba(255,255,255,.10);border-radius:24px;padding:17px;background:linear-gradient(145deg,rgba(23,27,34,.94),rgba(13,16,21,.94));box-shadow:0 14px 36px rgba(0,0,0,.18);color:#fff}.hfpTop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.hfpKicker{font-size:9px;font-weight:900;letter-spacing:.16em;color:#9eb2ff}.hfpQuestion{font-size:16px;font-weight:800;line-height:1.25;margin-top:5px}.hfpLater{border:0;background:transparent;color:rgba(255,255,255,.45);font-size:11px;padding:3px 0}.hfpOptions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}.hfpOptions button{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);color:#f5f7fb;border-radius:14px;padding:11px 10px;text-align:left;font-size:11px;line-height:1.25}.hfpThanks{font-size:12px;color:rgba(255,255,255,.66);padding:5px 0 1px}
@@ -39,13 +38,21 @@
   window.HOMEFeedbackPulse={render,choose,version:1};
 })();
 
-/* HOME Brain entry v1 — no standalone Day Score; the yellow score/XP chip is the only launcher. */
+/* HOME Brain entry v2 — compatible with APKs that still contain the old CSS kill-switch. */
 (function(){
   'use strict';
-  if(window.__HOME_BRAIN_ENTRY_V1__)return;window.__HOME_BRAIN_ENTRY_V1__=true;
+  if(window.__HOME_BRAIN_ENTRY_V2__)return;window.__HOME_BRAIN_ENTRY_V2__=true;
   const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
 
-  function relaxKillSwitch(){
+  function installOverride(){
+    let s=document.getElementById('homeBrainEntryV2Style');
+    if(!s){s=document.createElement('style');s.id='homeBrainEntryV2Style';document.head.appendChild(s)}
+    s.textContent=`
+      #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4{display:none!important;visibility:hidden!important;pointer-events:none!important}
+      #homeBehaviourOverlayV4{visibility:visible!important;pointer-events:auto!important;opacity:1!important}
+      #homeBehaviourOverlayV4.show{display:block!important;visibility:visible!important;pointer-events:auto!important}
+      #homeMomentum .homeMomentumXp,[data-home-brain-entry="1"]{cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
+    `;
     const kill=document.getElementById('homeBehaviourEmergencyDisable');
     if(kill)kill.textContent=`
       #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4,
@@ -55,40 +62,52 @@
     `;
   }
 
-  function openBrain(){try{window.HOMEBehaviourIntelligence?.open?.()}catch(e){}}
+  function openBrain(){
+    installOverride();
+    try{window.HOMEBehaviourIntelligence?.open?.()}catch(e){}
+    setTimeout(()=>{
+      installOverride();
+      const o=document.getElementById('homeBehaviourOverlayV4');
+      if(o){o.classList.add('show');o.style.setProperty('visibility','visible','important');o.style.setProperty('pointer-events','auto','important')}
+    },30);
+  }
+
+  function candidates(){
+    const out=[];
+    const exact=document.querySelector('#homeMomentum .homeMomentumXp');if(exact)out.push(exact);
+    document.querySelectorAll('#homeMomentum *').forEach(el=>{
+      const t=(el.textContent||'').trim();
+      if(/\b(score|xp)\b/i.test(t)&&t.length<45)out.push(el);
+    });
+    return [...new Set(out)];
+  }
 
   function bind(){
-    relaxKillSwitch();
-    document.getElementById('homeDayScoreV4')?.setAttribute('aria-hidden','true');
-    const score=document.querySelector('#homeMomentum .homeMomentumXp');
-    if(score&&!score.dataset.homeBrainEntry){
-      score.dataset.homeBrainEntry='1';
-      score.setAttribute('role','button');
-      score.setAttribute('tabindex','0');
-      score.setAttribute('aria-label','Open HOME Brain');
-      score.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openBrain()},true);
-      score.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBrain()}},true);
-    }
-    const overlay=document.getElementById('homeBehaviourOverlayV4');
-    if(overlay){
-      const eyebrow=overlay.querySelector('.hb4Top small');
-      const title=overlay.querySelector('.hb4Top h1');
-      if(eyebrow)eyebrow.textContent='HOME BRAIN';
-      if(title)title.textContent='Your living model';
-    }
+    installOverride();
+    candidates().forEach(el=>{
+      if(el.dataset.homeBrainBound)return;
+      el.dataset.homeBrainBound='1';el.dataset.homeBrainEntry='1';
+      el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-label','Open HOME Brain');
+      el.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openBrain()},true);
+      el.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();openBrain()},true);
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBrain()}},true);
+    });
+    const o=document.getElementById('homeBehaviourOverlayV4');
+    if(o){const a=o.querySelector('.hb4Top small'),b=o.querySelector('.hb4Top h1');if(a)a.textContent='HOME BRAIN';if(b)b.textContent='Your living model'}
   }
 
-  function loadBrain(){
-    relaxKillSwitch();
+  async function loadBrain(){
+    installOverride();
     if(window.HOMEBehaviourIntelligence){bind();return}
-    if(document.getElementById('homeBrainMapV4Script'))return;
-    const s=document.createElement('script');
-    s.id='homeBrainMapV4Script';
-    s.src=BASE+'behaviour-map-v4.js?v='+Date.now();
-    s.async=true;
-    s.onload=()=>{bind();setTimeout(bind,300);setTimeout(bind,1200)};
-    document.head.appendChild(s);
+    try{
+      const r=await fetch(BASE+'behaviour-map-v4.js?v='+Date.now(),{cache:'no-store'});
+      if(!r.ok)return;
+      const js=await r.text();
+      new Function(js+'\n//# sourceURL=home-brain-v4-live.js')();
+      bind();setTimeout(bind,150);setTimeout(bind,700);
+    }catch(e){}
   }
 
-  loadBrain();setTimeout(loadBrain,700);setTimeout(loadBrain,2200);
+  loadBrain();setTimeout(loadBrain,500);setTimeout(loadBrain,1600);
+  setInterval(bind,2500);
 })();
