@@ -11,8 +11,6 @@
   function repairBrainSafety(){
     try{
       document.body && (document.body.style.overflow='');
-
-      /* Old standalone launchers stay gone. Stable v4 overlay stays intact. */
       ['homeDayScoreV2','homeDayScoreV3','homeDayScoreV4','homeBehaviourOverlayV2','homeBehaviourOverlayV3']
         .forEach(id=>document.getElementById(id)?.remove());
 
@@ -24,13 +22,8 @@
       });
       document.querySelectorAll('.hbQuestHint').forEach(el=>el.remove());
 
-      /* Rewrite the baked emergency style every time. Never hide v4. */
       let kill=document.getElementById('homeBehaviourEmergencyDisable');
-      if(!kill){
-        kill=document.createElement('style');
-        kill.id='homeBehaviourEmergencyDisable';
-        document.head.appendChild(kill);
-      }
+      if(!kill){kill=document.createElement('style');kill.id='homeBehaviourEmergencyDisable';document.head.appendChild(kill)}
       kill.textContent=`
         #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4,
         #homeBehaviourOverlayV2,#homeBehaviourOverlayV3,
@@ -38,7 +31,6 @@
         body{overflow:auto!important}
       `;
 
-      /* Final explicit override against old baked CSS. */
       let allow=document.getElementById('homeBrainAllowV4');
       if(!allow){allow=document.createElement('style');allow.id='homeBrainAllowV4';document.head.appendChild(allow)}
       allow.textContent=`
@@ -52,9 +44,14 @@
   repairBrainSafety();
 
   async function get(name){
-    const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});
-    if(!r.ok)throw new Error('HTTP '+r.status+' '+name);
-    return r.text();
+    try{
+      const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});
+      if(r.ok)return r.text();
+    }catch(e){}
+    /* New APKs bake critical behaviour files locally, so Brain also works if GitHub is temporarily unavailable. */
+    const local=await fetch(name+'?v='+Date.now(),{cache:'no-store'});
+    if(!local.ok)throw new Error('Could not load '+name);
+    return local.text();
   }
   function run(js,name){new Function(js+'\n//# sourceURL='+name)()}
   async function safeLoad(file,label){
@@ -72,12 +69,11 @@
     await safeLoad('post-install-resilience-v1.js','home-post-install-resilience-v1.js');
     const feedback=await safeLoad('feedback-pulse-v1.js','home-feedback-pulse-v1.js');
 
-    /* feedback-pulse contains the score-chip -> Brain binding. Re-assert v4 visibility
-       after all async modules have finished in case an older baked script ran meanwhile. */
     repairBrainSafety();
-    setTimeout(repairBrainSafety,150);
-    setTimeout(repairBrainSafety,800);
-    setTimeout(repairBrainSafety,2200);
+    try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}
+    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}},150);
+    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}},800);
+    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}},2200);
 
     try{
       window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{
