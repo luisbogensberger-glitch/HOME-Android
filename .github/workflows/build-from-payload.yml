@@ -63,6 +63,7 @@ jobs:
               '<script src="adaptive-runtime.js"></script>',
               '<script src="todo-premium.js"></script>',
               '<script src="behavior-v3.js"></script>',
+              '<script src="dynamic-shell-v5.js"></script>',
           ]
           for tag in css_tags:
               if tag not in s:
