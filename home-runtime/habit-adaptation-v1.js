@@ -6,16 +6,11 @@
   const VERSION=1;
   const ACTIVITY_KEY='homeAdaptiveActivityV1';
   const STATE_KEY='homeHabitAdaptationV1';
+  const PRIVATE_PRIOR_KEY='homePrivateBehaviourPriorV1';
   const DAY=86400000;
   const HOUR=3600000;
   const VARIANTS=['tiny','choice','meaning','novelty'];
-  const PRIOR={
-    source:'16Personalities',
-    type:'ENFP-T',
-    weight:.15,
-    note:'Weak starting prior only. Observed behaviour overrides this.',
-    variantBias:{tiny:.18,choice:.26,meaning:.25,novelty:.31}
-  };
+  const DEFAULT_PRIOR={weight:0,variantBias:{tiny:.25,choice:.25,meaning:.25,novelty:.25}};
   const DOMAIN={
     gym:{success:['gym_complete','gym_micro_complete'],engage:['gym_open','gym_start','gym_plan_select'],selector:'#homeScreen .homeCard.gym'},
     todos:{success:['todo_complete'],engage:['todo_open'],selector:'#homeScreen .homeCard.todos'},
@@ -29,11 +24,16 @@
   const dayKey=t=>{const d=new Date(t||now());return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
   const rows=(days=30)=>{const since=now()-days*DAY,v=load(ACTIVITY_KEY,[]);return Array.isArray(v)?v.filter(x=>Number(x.at)>=since):[]};
   const log=(type,data)=>{try{window.homeAdaptiveLog&&window.homeAdaptiveLog(type,data||{})}catch(e){}};
+  const clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0));
 
+  function behaviourPrior(){
+    const p=load(PRIVATE_PRIOR_KEY,null);if(!p||typeof p!=='object')return DEFAULT_PRIOR;
+    const b=p.variantBias||{};return{weight:clamp(p.weight,0,.25),variantBias:Object.fromEntries(VARIANTS.map(v=>[v,clamp(b[v]??.25,.05,.7)]))};
+  }
   function blankStats(){const out={};VARIANTS.forEach(v=>out[v]={wins:0,losses:0});return out}
-  function initialState(){return{version:VERSION,firstSeen:now(),personaPrior:PRIOR,domains:{gym:{stats:blankStats()},todos:{stats:blankStats()},tube:{stats:blankStats()}},updatedAt:now()}}
+  function initialState(){return{version:VERSION,firstSeen:now(),domains:{gym:{stats:blankStats()},todos:{stats:blankStats()},tube:{stats:blankStats()}},updatedAt:now()}}
   function state(){
-    const s=load(STATE_KEY,initialState());s.version=VERSION;s.personaPrior=PRIOR;s.domains=s.domains||{};
+    const s=load(STATE_KEY,initialState());s.version=VERSION;s.domains=s.domains||{};
     Object.keys(DOMAIN).forEach(k=>{s.domains[k]=s.domains[k]||{};s.domains[k].stats=s.domains[k].stats||blankStats();VARIANTS.forEach(v=>s.domains[k].stats[v]=s.domains[k].stats[v]||{wins:0,losses:0})});
     return s;
   }
@@ -42,7 +42,7 @@
   function eventsFor(domain,types,days=30){const set=new Set(types);return rows(days).filter(r=>set.has(r.type))}
   function latestAt(list){return list.reduce((m,r)=>Math.max(m,Number(r.at)||0),0)}
   function domainSignals(domain){
-    const cfg=DOMAIN[domain],s=state(),d=s.domains[domain],success=eventsFor(domain,cfg.success),engage=eventsFor(domain,cfg.engage);
+    const cfg=DOMAIN[domain],s=state(),success=eventsFor(domain,cfg.success),engage=eventsFor(domain,cfg.engage);
     const lastSuccess=latestAt(success),lastEngage=latestAt(engage),baseline=Math.min(Number(s.firstSeen)||now(),latestAt(rows(30))||now());
     const inactiveFrom=lastSuccess||baseline;
     const inactiveDays=Math.max(0,(now()-inactiveFrom)/DAY);
@@ -71,11 +71,11 @@
   }
 
   function chooseVariant(domain,level){
-    const s=state();settleExpired(s);const d=s.domains[domain],today=dayKey();
+    const s=state();settleExpired(s);const d=s.domains[domain],today=dayKey(),priorCfg=behaviourPrior();
     if(d.activeExperiment&&!d.activeExperiment.settled&&dayKey(d.activeExperiment.shownAt)===today){commit(s);return d.activeExperiment.variant}
     const total=VARIANTS.reduce((n,v)=>n+d.stats[v].wins+d.stats[v].losses,0)+1;
     const ranked=VARIANTS.map(v=>{
-      const st=d.stats[v],prior=PRIOR.variantBias[v]||.25,n=st.wins+st.losses;
+      const st=d.stats[v],neutral=.25,privateBias=priorCfg.variantBias[v]??neutral,prior=neutral+(privateBias-neutral)*priorCfg.weight*4,n=st.wins+st.losses;
       const observed=(st.wins+prior*2)/(n+2),explore=.34*Math.sqrt(Math.log(total+2)/(n+1));
       let score=observed+explore;
       if(level>=2&&v==='tiny')score+=.12;
@@ -200,5 +200,5 @@
   }
 
   applyAll();setTimeout(applyAll,700);setTimeout(applyAll,2200);setInterval(applyAll,15000);
-  log('habit_adaptation_ready',{version:VERSION,personaPrior:PRIOR.type,priorWeight:PRIOR.weight});
+  log('habit_adaptation_ready',{version:VERSION,privatePriorAvailable:!!load(PRIVATE_PRIOR_KEY,null)});
 })();
