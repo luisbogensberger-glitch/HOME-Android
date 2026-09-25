@@ -2,6 +2,14 @@ name: Validate HOME Store iOS
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'ios/HOMEStore/**'
+      - 'sync-overlay/app/src/main/assets/**'
+      - 'home-runtime/**'
+      - 'tube-feed.json'
+      - '.github/workflows/validate-store-ios.yml'
 
 permissions:
   contents: read
