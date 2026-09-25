@@ -15,4 +15,10 @@ html[data-behaviour-todo-density="compact"] #todosScreen #todoList[data-behaviou
 /* Focus mode is intentionally gentle: secondary items remain available, but recede. */
 html[data-behaviour-todo-density="focus"] #todosScreen #todoList[data-layout="focus"] .adaptiveSecondary{opacity:.48;filter:saturate(.72);transform:scale(.987)}
 
+/* HOME calendar card — more relevant, understated planning visual. */
+#homeScreen .homeCard.calendar{
+  background-image:url('https://images.unsplash.com/photo-1507831273071-5db7707d651b?auto=format&fit=crop&w=1400&q=84');
+  background-position:center 52%;
+}
+
 @media(max-width:390px){#homeMomentum{padding:11px 12px}.homeMomentumMain{font-size:11.5px}.homeMomentumXp{font-size:9px}}
