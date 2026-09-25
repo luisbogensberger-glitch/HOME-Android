@@ -59,6 +59,27 @@ jobs:
           p.write_text(s,encoding='utf-8')
           PY
 
+      - name: Generate Windows icon
+        shell: bash
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+          out=Path('desktop/src-tauri/icons')
+          out.mkdir(parents=True,exist_ok=True)
+          im=Image.new('RGBA',(256,256),(12,14,18,255))
+          d=ImageDraw.Draw(im)
+          bars=[(74,112),(106,140),(138,140),(170,112)]
+          for x,h in bars:
+            d.rounded_rectangle((x-6,128-h//2,x+6,128+h//2),radius=6,fill=(247,248,251,255))
+          im.save(out/'icon.png')
+          im.save(out/'icon.ico',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
+          im.resize((32,32),Image.Resampling.LANCZOS).save(out/'32x32.png')
+          im.resize((128,128),Image.Resampling.LANCZOS).save(out/'128x128.png')
+          im.save(out/'128x128@2x.png')
+          PY
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
