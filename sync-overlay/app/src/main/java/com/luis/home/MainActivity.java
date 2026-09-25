@@ -40,6 +40,7 @@ public class MainActivity extends Activity {
     private WorkerSync worker;
     private final ExecutorService syncQueue = Executors.newSingleThreadExecutor();
     private volatile boolean syncReady = false;
+    private volatile long todoSyncGeneration = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -175,6 +176,17 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void scheduleTodoStateSync() {
+        final long generation = ++todoSyncGeneration;
+        if (webView == null || !worker.isConfigured()) return;
+        webView.postDelayed(() -> {
+            if (generation != todoSyncGeneration || !worker.isConfigured()) return;
+            syncQueue.execute(() -> {
+                try { pushLocalTodoState(); } catch (Exception ignored) { }
+            });
+        }, 1200L);
+    }
+
     private String structuredNote(JSONObject task) {
         JSONObject details = task.optJSONObject("details");
         if (details == null) return task.optString("note", "");
@@ -221,7 +233,7 @@ public class MainActivity extends Activity {
         JSONObject out = new JSONObject(task.toString());
         String id = out.optString("id", UUID.randomUUID().toString());
         out.put("id", id);
-        out.put("notionId", id); // compatibility with the existing WebView UI bridge
+        out.put("notionId", id);
         out.put("note", structuredNote(task));
         out.put("taskPageUrl", "");
         out.put("source", "home-sync");
@@ -306,10 +318,9 @@ public class MainActivity extends Activity {
             String clean = value == null ? "" : value;
             prefs.edit().putString(key, clean).apply();
             if ("tubeState".equals(key)) syncNewTubeAttempts(clean);
+            if ("todoState".equals(key)) scheduleTodoStateSync();
         }
 
-        // These method names stay for compatibility with the current HTML UI.
-        // They now connect exclusively to HOME Sync, not Notion.
         @JavascriptInterface
         public boolean hasNotionConnection() {
             return worker.isConfigured();
@@ -336,6 +347,7 @@ public class MainActivity extends Activity {
                                 syncReady = false;
                                 dialog.dismiss();
                                 callback("onNotionConnected", new JSONObject());
+                                scheduleTodoStateSync();
                             } catch (Exception ex) {
                                 input.setError("Could not save token. Check it and try again.");
                             }
@@ -355,12 +367,8 @@ public class MainActivity extends Activity {
         public void requestNotionSync() {
             syncQueue.execute(() -> {
                 try {
+                    pushLocalTodoState();
                     JSONObject snapshot = worker.snapshot();
-                    JSONArray tasks = snapshot.optJSONArray("tasks");
-                    if (tasks == null || tasks.length() == 0) {
-                        pushLocalTodoState();
-                        snapshot = worker.snapshot();
-                    }
                     callback("onNotionSnapshot", snapshotForUi(snapshot));
                     syncReady = true;
                 } catch (Exception ex) {
