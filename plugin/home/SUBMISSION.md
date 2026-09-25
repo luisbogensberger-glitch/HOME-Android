@@ -6,6 +6,18 @@ HOME v1 is a skills + authenticated remote MCP plugin. ChatGPT/Codex provides th
 
 This is intentionally narrower than the standalone HOME mobile app. The plugin focuses on task capture, daily planning, and deliberate learning. Device-level features such as notification scraping, Android Accessibility Service, widgets, and background phone automation are not part of the public plugin.
 
+## Production endpoints
+
+- **Website:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/
+- **MCP:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/mcp
+- **OAuth protected-resource metadata:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/.well-known/oauth-protected-resource
+- **Support:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/support
+- **Privacy:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/privacy
+- **Terms:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/terms
+- **OpenAI domain challenge:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/.well-known/openai-apps-challenge
+
+The OpenAI challenge route intentionally returns 404 until the submission portal provides the exact verification token.
+
 ## Listing draft
 
 - **Name:** HOME – Personal OS
@@ -13,8 +25,6 @@ This is intentionally narrower than the standalone HOME mobile app. The plugin f
 - **Category:** Productivity
 - **Long description:** HOME keeps a private task and learning layer behind ChatGPT. Capture actionable to-dos, review what is open, build a realistic daily plan, mark work complete, and save short learning cards and recall attempts. Each account is isolated with Supabase Auth and Row Level Security.
 - **Default prompt:** Plan my day from my HOME tasks and tell me the single best next action.
-
-Before public submission replace the remaining URL placeholders in the OpenAI submission portal with production HTTPS URLs for the website, support page, privacy policy, and terms.
 
 ## Starter prompts
 
@@ -46,20 +56,27 @@ Exactly three negative cases for the submission portal:
 
 - Read tools: `readOnlyHint=true`, `openWorldHint=false`, `destructiveHint=false`.
 - Create/update/complete tools: non-read-only, non-open-world, non-destructive.
-- Delete tools, when added, must set `destructiveHint=true` and must be used only for explicit deletion requests.
+- Delete tools, when exposed, must set `destructiveHint=true` and must be used only for explicit deletion requests.
 
 ## Authentication
 
-The production server uses Supabase Auth as an OAuth 2.1 authorization server with PKCE and dynamic client registration. The MCP Edge Function is configured with `verify_jwt=false` because the function itself must answer OAuth discovery requests before authentication; `withOAuthProtectedResource` and `withSupabase({ auth: 'user' })` perform MCP OAuth discovery and token verification.
+The production server uses Supabase Auth as an OAuth 2.1 authorization server with PKCE and dynamic client registration. Vercel is the stable public MCP host and publishes OAuth Protected Resource Metadata that points clients to the Supabase authorization server. Supabase Row Level Security isolates each signed-in user's data.
 
-Production requirements:
+Verified production state:
 
-1. Supabase project uses ES256 or RS256 JWT signing.
-2. OAuth 2.1 server enabled.
-3. Dynamic client registration enabled.
-4. Site URL points to the production HOME auth/consent frontend.
-5. Authorization path is `/oauth/consent`.
-6. A fully featured demo account exists for OpenAI review and does not require inaccessible 2FA.
+1. OAuth 2.1 server enabled.
+2. Dynamic client registration enabled.
+3. Authorization path is `/oauth/consent`.
+4. Production HOME consent UI is HTTPS-hosted.
+5. OAuth discovery publishes authorization, token, JWKS, and dynamic-registration endpoints and PKCE support.
+6. Vercel production deployment is public rather than protected by Vercel Authentication.
+
+Before public review:
+
+1. Confirm the Supabase JWT signing key is asymmetric (ES256 or RS256).
+2. Create a fully featured demo reviewer account with sample HOME data and no inaccessible 2FA.
+3. Insert the exact OpenAI domain-verification token at `/.well-known/openai-apps-challenge`.
+4. Complete publisher identity verification and final legal/support identity fields; do not invent them.
 
 ## Data handling
 
