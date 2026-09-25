@@ -22,14 +22,34 @@ html[data-behaviour-todo-density="focus"] #todosScreen #todoList[data-layout="fo
   background-size:cover !important;
 }
 
-/* Stability kill-switch: behaviour intelligence UI is disabled until normal HOME navigation is confirmed stable. */
+/* Keep every standalone Day Score launcher gone. Old experimental overlays stay disabled,
+   but the stable v4 Brain overlay is allowed to open from the existing score/XP surface. */
 #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4,
-#homeBehaviourOverlayV2,#homeBehaviourOverlayV3,#homeBehaviourOverlayV4,
+#homeBehaviourOverlayV2,#homeBehaviourOverlayV3,
 .hbQuestHint{
   display:none !important;
   visibility:hidden !important;
   pointer-events:none !important;
 }
+
+/* The existing score/XP surface is the single entry point into the Brain. */
+#homeMomentum .homeMomentumXp{
+  cursor:pointer;
+  pointer-events:auto;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  min-height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:5px 9px;
+  margin:-5px -7px -5px 0;
+  border-radius:999px;
+  color:#f3d66d;
+  background:rgba(244,201,67,.13);
+  border:1px solid rgba(244,210,95,.20);
+}
+#homeMomentum .homeMomentumXp:active{transform:scale(.97)}
 body{overflow:auto !important;}
 
 @media(max-width:390px){#homeMomentum{padding:11px 12px}.homeMomentumMain{font-size:11.5px}.homeMomentumXp{font-size:9px}}
