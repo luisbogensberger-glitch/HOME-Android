@@ -73,7 +73,7 @@ jobs:
                   s=s.replace('</body>', tag+'\n</body>', 1)
           p.write_text(s, encoding='utf-8')
           PY
-      - name: Enable adaptive native bridge and notifications
+      - name: Enable adaptive native bridge and WhatsApp services
         shell: bash
         run: |
           python3 - <<'PY'
@@ -107,6 +107,22 @@ jobs:
           )
           if '.WhatsAppNotificationListener' not in m:
               m=m.replace('</application>',whatsapp_service+'    </application>',1)
+          accessibility_service=(
+              '        <service\n'
+              '            android:name=".WhatsAppAccessibilityService"\n'
+              '            android:label="HOME WhatsApp reader"\n'
+              '            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"\n'
+              '            android:exported="true">\n'
+              '            <intent-filter>\n'
+              '                <action android:name="android.accessibilityservice.AccessibilityService" />\n'
+              '            </intent-filter>\n'
+              '            <meta-data\n'
+              '                android:name="android.accessibilityservice"\n'
+              '                android:resource="@xml/home_whatsapp_accessibility" />\n'
+              '        </service>\n'
+          )
+          if '.WhatsAppAccessibilityService' not in m:
+              m=m.replace('</application>',accessibility_service+'    </application>',1)
           manifest.write_text(m,encoding='utf-8')
           PY
       - name: Enable remote UI and Tube feed access
