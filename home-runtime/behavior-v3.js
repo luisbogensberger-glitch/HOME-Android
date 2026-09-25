@@ -1,4 +1,4 @@
-/* HOME live behaviour bootstrap — preserves behaviour, semantic learning, resilient attempt capture, goal-aware habit adaptation, AI-controlled interface policy, and migration safety. */
+/* HOME live behaviour bootstrap — preserves behaviour, semantic learning, resilient attempt capture, goal-aware habit adaptation, AI-controlled interface policy, migration safety, and stale-task recovery. */
 (function(){
   'use strict';
   const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
@@ -6,13 +6,14 @@
   function run(js,name){new Function(js+'\n//# sourceURL='+name)()}
   (async()=>{
     try{
-      const [behaviour,learning,resilience,interfacePolicy,habitAdaptation,migrationBackup]=await Promise.all([
+      const [behaviour,learning,resilience,interfacePolicy,habitAdaptation,migrationBackup,todoPressure]=await Promise.all([
         get('behavior-v3-base.js'),
         get('learning-engine-v10.js'),
         get('learning-resilience-v11.js'),
         get('interface-policy-v10.js'),
         get('habit-adaptation-v1.js'),
-        get('migration-backup-v1.js')
+        get('migration-backup-v1.js'),
+        get('todo-pressure-v1.js')
       ]);
       run(behaviour,'home-behaviour-v3-base.js');
       run(learning,'home-learning-engine-v10.js');
@@ -20,7 +21,8 @@
       run(interfacePolicy,'home-interface-policy-v10.js');
       run(habitAdaptation,'home-habit-adaptation-v1.js');
       run(migrationBackup,'home-migration-backup-v1.js');
-      try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,migrationBackup:1})}catch(e){}
+      run(todoPressure,'home-todo-pressure-v1.js');
+      try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,migrationBackup:1,todoPressure:1})}catch(e){}
     }catch(e){
       try{console.warn('HOME live bootstrap failed',e)}catch(_){}
     }
