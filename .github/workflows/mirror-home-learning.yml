@@ -1,0 +1,27 @@
+name: Mirror HOME learning to Supabase
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/mirror-home-learning.yml'
+      - 'scripts/mirror_home_learning.py'
+      - 'LEARNING_MIRROR_TRIGGER.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mirror private written learning attempts
+        env:
+          HOME_TOKEN: ${{ secrets.HOME_TOKEN }}
+          HOME_API: https://luis-home-sync.luisbogensberger.workers.dev
+          SUPABASE_INGEST: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-ingest
+        run: python3 scripts/mirror_home_learning.py
