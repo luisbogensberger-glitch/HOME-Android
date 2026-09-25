@@ -1,4 +1,4 @@
-// HOME Sync Cloudflare Worker — current /api contract + semantic learning + private WhatsApp inbox.
+// HOME Sync Cloudflare Worker — semantic learning + private live inbox intelligence.
 // Required bindings/secrets: DB (D1), HOME_TOKEN (secret), OPENAI_API_KEY (secret).
 // OpenAI requests are stateless (store:false). Never place either secret in this file.
 
@@ -92,6 +92,23 @@ async function callStructuredModel(env, name, instructions, context, schema, max
   catch (_) { throw new HttpError(502, 'AI returned invalid JSON'); }
 }
 
+const ACTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    actionable: { type: 'boolean' },
+    confidence: { type: 'integer', minimum: 0, maximum: 100 },
+    actionType: { type: 'string', enum: ['none','reply','task','reminder','followup','calendar'] },
+    urgency: { type: 'string', enum: ['low','normal','high'] },
+    taskTitle: { type: 'string' },
+    taskNote: { type: 'string' },
+    dueText: { type: 'string' },
+    summary: { type: 'string' },
+    reason: { type: 'string' },
+  },
+  required: ['actionable','confidence','actionType','urgency','taskTitle','taskNote','dueText','summary','reason'],
+  additionalProperties: false,
+};
+
 async function openAIReview(env, input) {
   const sentence = safeText(input.sentence, 2400);
   if (sentence.length < 3) throw new HttpError(400, 'Sentence is required');
@@ -169,13 +186,17 @@ async function openAIWhatsApp(env, input) {
     chat: safeText(input.chat, 180),
     sender: safeText(input.sender, 180),
     message,
+    priorityChat: input.priorityChat === true,
+    selfChatTest: input.selfChatTest === true,
   };
 
   const instructions = [
     'You are HOME WhatsApp Inbox Intelligence for one private user.',
-    'Classify whether this incoming WhatsApp message requires a concrete action by the user.',
+    'Classify whether this incoming or visible WhatsApp message requires a concrete action by the user.',
+    'Priority chats may contain useful deadlines, meetups, administrative information or requests even when the wording is informal.',
     'Do not create tasks for greetings, jokes, reactions, general conversation, FYI-only updates, or vague possibilities.',
     'Create an action only for a concrete request, promised follow-up, explicit deadline, appointment/booking change, payment/admin action, document/file request, or a reply that is clearly expected.',
+    'A self-chat message written as an instruction to HOME should be treated as actionable when its intent is clear.',
     'Be conservative: actionable should be true only when confidence is high.',
     'If timing is relative (tomorrow, Friday, later today), preserve it in dueText rather than inventing a timestamp.',
     'Task titles must be short and start with a verb. Never include unnecessary private message content in the title.',
@@ -183,24 +204,40 @@ async function openAIWhatsApp(env, input) {
     'summary should be a short private summary of the message.',
   ].join(' ');
 
-  const schema = {
-    type: 'object',
-    properties: {
-      actionable: { type: 'boolean' },
-      confidence: { type: 'integer', minimum: 0, maximum: 100 },
-      actionType: { type: 'string', enum: ['none','reply','task','reminder','followup','calendar'] },
-      urgency: { type: 'string', enum: ['low','normal','high'] },
-      taskTitle: { type: 'string' },
-      taskNote: { type: 'string' },
-      dueText: { type: 'string' },
-      summary: { type: 'string' },
-      reason: { type: 'string' },
-    },
-    required: ['actionable','confidence','actionType','urgency','taskTitle','taskNote','dueText','summary','reason'],
-    additionalProperties: false,
+  return await callStructuredModel(env, 'home_whatsapp_message', instructions, context, ACTION_SCHEMA, 450);
+}
+
+async function openAIGmailNotification(env, input) {
+  const sender = safeText(input.sender, 240);
+  const subject = safeText(input.subject, 500);
+  const snippet = safeText(input.snippet, 2400);
+  if (!sender && !subject && !snippet) throw new HttpError(400, 'Gmail notification content is required');
+
+  const context = {
+    receivedAt: Number(input.at) > 0 ? new Date(Number(input.at)).toISOString() : stamp(),
+    timezone: safeText(input.timezone, 80) || 'Europe/London',
+    sender,
+    subject,
+    snippet,
+    account: safeText(input.account, 240),
+    source: 'Android Gmail notification; the snippet can be incomplete',
   };
 
-  return await callStructuredModel(env, 'home_whatsapp_message', instructions, context, schema, 450);
+  const instructions = [
+    'You are HOME Live Gmail Inbox Intelligence for one private user.',
+    'This payload comes from an Android Gmail notification, so it may contain only sender, subject and a partial snippet rather than the full email.',
+    'Create a HOME task only when the visible content clearly implies a concrete action, deadline, reply, application step, booking/admin/payment/security action, document request, or explicit instruction to the user.',
+    'If the user emails himself an instruction such as “check the new UCL attendance email”, treat that explicit instruction as actionable.',
+    'Do not create tasks for newsletters, promotions, receipts with no action, routine FYI mail, generic university announcements, or ordinary informational mail unless a clear action is visible.',
+    'Security warnings can be high urgency when the visible text says the user should review, secure or verify the account; do not create a task if it clearly says no action is required.',
+    'Because the notification can be truncated, lower confidence rather than inventing missing details.',
+    'If timing is relative, preserve it in dueText rather than inventing a timestamp.',
+    'Task titles must be short, specific, and start with a verb.',
+    'taskNote may contain only the minimum useful context, including sender/subject when useful.',
+    'summary should be a short private summary of what is visible.',
+  ].join(' ');
+
+  return await callStructuredModel(env, 'home_gmail_notification', instructions, context, ACTION_SCHEMA, 450);
 }
 
 export default {
@@ -211,7 +248,14 @@ export default {
       const method = request.method.toUpperCase();
 
       if (path === '/' && method === 'GET') return reply(200, { service: 'HOME Sync', ok: true });
-      if (path === '/health' && method === 'GET') return reply(200, { ok: true, reviewerConfigured: Boolean(env.OPENAI_API_KEY), whatsappConfigured: Boolean(env.OPENAI_API_KEY) });
+      if (path === '/health' && method === 'GET') {
+        return reply(200, {
+          ok: true,
+          reviewerConfigured: Boolean(env.OPENAI_API_KEY),
+          whatsappConfigured: Boolean(env.OPENAI_API_KEY),
+          gmailLiveConfigured: Boolean(env.OPENAI_API_KEY),
+        });
+      }
 
       if (!env.DB || !env.HOME_TOKEN || String(env.HOME_TOKEN).length < 16) throw new HttpError(503, 'HOME service not configured');
       if (!constantTimeBearer(request, env.HOME_TOKEN)) throw new HttpError(401, 'Unauthorized');
@@ -249,6 +293,25 @@ export default {
         await db.prepare('INSERT INTO attempts (id,card_id,body,created_at) VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET card_id=excluded.card_id,body=excluded.body,created_at=excluded.created_at')
           .bind(item.id, item.cardId, JSON.stringify(item), item.createdAt).run();
         return item;
+      };
+      const actionTask = async (prefix, source, sourceId, createdAt, analysis, defaultMinutes = 10) => {
+        if (!(analysis.actionable === true && Number(analysis.confidence) >= 80 && analysis.actionType !== 'none' && safeText(analysis.taskTitle, 160))) return null;
+        const taskId = `${prefix}${sourceId}`.slice(0, 160);
+        const due = safeText(analysis.dueText, 120);
+        const noteParts = [safeText(analysis.taskNote, 700)];
+        if (due) noteParts.push(`Timing: ${due}`);
+        return await upsert('tasks', {
+          id: taskId,
+          title: safeText(analysis.taskTitle, 160),
+          area: 'Personal',
+          minutes: analysis.actionType === 'reply' ? 5 : defaultMinutes,
+          note: noteParts.filter(Boolean).join(' · '),
+          done: false,
+          source,
+          sourceKey: sourceId,
+          urgency: safeText(analysis.urgency, 20),
+          createdAt,
+        });
       };
 
       if (path === '/api/snapshot' && method === 'GET') {
@@ -304,10 +367,20 @@ export default {
           await mergeAttempt({
             id: result.attemptId,
             cardId: result.cardId,
-            title: safeText(input.title, 220), topic: safeText(input.topic, 120), prompt: safeText(input.prompt, 1000), question: safeText(input.question, 1000),
-            sentence: safeText(input.sentence, 2400), selected: Number.isInteger(input.selected) ? input.selected : null, correct: Number.isInteger(input.correct) ? input.correct : null,
-            learningMethod: safeText(input.method, 60), contentDepth: safeText(input.contentDepth, 60), reviewRequestId: result.requestId,
-            semanticReview: result.review, semanticReviewedAt: result.reviewedAt, semanticModel: result.model, at: Number(input.at) || Date.now(),
+            title: safeText(input.title, 220),
+            topic: safeText(input.topic, 120),
+            prompt: safeText(input.prompt, 1000),
+            question: safeText(input.question, 1000),
+            sentence: safeText(input.sentence, 2400),
+            selected: Number.isInteger(input.selected) ? input.selected : null,
+            correct: Number.isInteger(input.correct) ? input.correct : null,
+            learningMethod: safeText(input.method, 60),
+            contentDepth: safeText(input.contentDepth, 60),
+            reviewRequestId: result.requestId,
+            semanticReview: result.review,
+            semanticReviewedAt: result.reviewedAt,
+            semanticModel: result.model,
+            at: Number(input.at) || Date.now(),
           });
         }
         return reply(200, result);
@@ -325,32 +398,38 @@ export default {
           id,
           kind: 'whatsapp_message_private',
           createdAt,
-          source: 'whatsapp-notification',
+          source: safeText(input.source, 80) || 'whatsapp',
           chat: safeText(input.chat, 180),
           sender: safeText(input.sender, 180),
           message,
+          priorityChat: input.priorityChat === true,
+          selfChatTest: input.selfChatTest === true,
           analysis,
         });
 
-        let task = null;
-        if (analysis.actionable === true && Number(analysis.confidence) >= 80 && analysis.actionType !== 'none' && safeText(analysis.taskTitle, 160)) {
-          const taskId = `wa-task-${id}`.slice(0, 160);
-          const due = safeText(analysis.dueText, 120);
-          const noteParts = [safeText(analysis.taskNote, 700)];
-          if (due) noteParts.push(`Timing: ${due}`);
-          task = await upsert('tasks', {
-            id: taskId,
-            title: safeText(analysis.taskTitle, 160),
-            area: 'Personal',
-            minutes: analysis.actionType === 'reply' ? 5 : 10,
-            note: noteParts.filter(Boolean).join(' · '),
-            done: false,
-            source: 'whatsapp-ai',
-            sourceKey: id,
-            urgency: safeText(analysis.urgency, 20),
-            createdAt,
-          });
-        }
+        const task = await actionTask('wa-task-', 'whatsapp-ai', id, createdAt, analysis, 10);
+        return reply(200, { ok: true, id, analysis, taskCreated: Boolean(task), task });
+      }
+
+      if (path === '/api/gmail-notification' && method === 'POST') {
+        const input = await readJson(request);
+        const id = safeText(input.id, 160) || `gm-${uuid()}`;
+        const analysis = await openAIGmailNotification(env, input);
+        const createdAt = Number(input.at) > 0 ? new Date(Number(input.at)).toISOString() : stamp();
+
+        await savePrivateActivity({
+          id,
+          kind: 'gmail_notification_private',
+          createdAt,
+          source: 'gmail-notification',
+          sender: safeText(input.sender, 240),
+          subject: safeText(input.subject, 500),
+          snippet: safeText(input.snippet, 2400),
+          account: safeText(input.account, 240),
+          analysis,
+        });
+
+        const task = await actionTask('gm-task-', 'gmail-live-ai', id, createdAt, analysis, 10);
         return reply(200, { ok: true, id, analysis, taskCreated: Boolean(task), task });
       }
 
