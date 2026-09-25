@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "updatedAt": "2026-09-25T01:35:00+01:00",
+  "updatedAt": "2026-09-25T04:29:23.848050Z",
   "theme": {
     "radius": 22,
     "density": "comfortable",
@@ -43,7 +43,13 @@
     "sentenceTargetWords": 14,
     "completionAction": "replace_card",
     "swipeDirection": "vertical",
-    "allowedLayouts": ["stack", "swipe", "story", "grid", "focus"],
+    "allowedLayouts": [
+      "stack",
+      "swipe",
+      "story",
+      "grid",
+      "focus"
+    ],
     "remoteStructure": true,
     "remoteReader": true,
     "remoteQuiz": true,
@@ -72,5 +78,6 @@
     "allowDensityChanges": true,
     "minEventsBeforeChange": 12,
     "cooldownHours": 20
-  }
+  },
+  "generatedBy": "private-home-behavior-engine"
 }
