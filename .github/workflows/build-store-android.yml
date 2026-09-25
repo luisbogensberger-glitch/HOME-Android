@@ -2,6 +2,16 @@ name: Build HOME Store Android AAB
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ store-ready-v1 ]
+    paths:
+      - 'store-overlay/**'
+      - 'sync-overlay/app/src/main/**'
+      - 'home-runtime/**'
+      - 'tube-feed.json'
+      - 'payload/**'
+      - 'todo-patch/**'
+      - '.github/workflows/build-store-android.yml'
 
 permissions:
   contents: read
@@ -10,9 +20,9 @@ jobs:
   build-store:
     runs-on: ubuntu-latest
     env:
-      HOME_API_URL: ${{ vars.HOME_STORE_API_URL }}
-      HOME_SUPABASE_URL: ${{ vars.HOME_SUPABASE_URL }}
-      HOME_SUPABASE_ANON_KEY: ${{ secrets.HOME_SUPABASE_ANON_KEY }}
+      HOME_API_URL: ${{ vars.HOME_STORE_API_URL || 'https://example.invalid' }}
+      HOME_SUPABASE_URL: ${{ vars.HOME_SUPABASE_URL || 'https://example.supabase.co' }}
+      HOME_SUPABASE_ANON_KEY: ${{ secrets.HOME_SUPABASE_ANON_KEY || 'validation-anon-key-not-used-at-build-time-0000000000' }}
       ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
       ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
       ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
@@ -21,13 +31,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate store configuration
+      - name: Validate release configuration
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$HOME_API_URL" || { echo 'Missing repository variable HOME_STORE_API_URL'; exit 1; }
-          test -n "$HOME_SUPABASE_URL" || { echo 'Missing repository variable HOME_SUPABASE_URL'; exit 1; }
-          test -n "$HOME_SUPABASE_ANON_KEY" || { echo 'Missing secret HOME_SUPABASE_ANON_KEY'; exit 1; }
+          test "$HOME_API_URL" != 'https://example.invalid' || { echo 'Missing repository variable HOME_STORE_API_URL'; exit 1; }
+          test "$HOME_SUPABASE_URL" != 'https://example.supabase.co' || { echo 'Missing repository variable HOME_SUPABASE_URL'; exit 1; }
+          test "$HOME_SUPABASE_ANON_KEY" != 'validation-anon-key-not-used-at-build-time-0000000000' || { echo 'Missing secret HOME_SUPABASE_ANON_KEY'; exit 1; }
           test -n "$ANDROID_UPLOAD_KEYSTORE_B64" || { echo 'Missing Android upload keystore secret'; exit 1; }
           test -n "$ANDROID_UPLOAD_KEYSTORE_PASSWORD" || exit 1
           test -n "$ANDROID_UPLOAD_KEY_ALIAS" || exit 1
@@ -90,7 +101,6 @@ jobs:
               '<script src="tube-remote.js"></script>',
               '<script src="store-account.js"></script>',
           ]
-          # Store build deliberately never injects remote-extension-loader.js.
           s=s.replace('<script src="remote-extension-loader.js"></script>','')
           for tag in css_tags:
               if tag not in s: s=s.replace('</head>',tag+'\n</head>',1)
@@ -98,7 +108,6 @@ jobs:
               if tag not in s: s=s.replace('</body>',tag+'\n</body>',1)
           p.write_text(s,encoding='utf-8')
           PY
-          # Store feed is bundled data, not remotely executed code.
           sed -i "s#https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/tube-feed.json#tube-feed.json#g" src/luis-home-app/app/src/main/assets/tube-remote.js
 
       - name: Patch native shell for Store account bridge
@@ -124,7 +133,6 @@ jobs:
       - name: Remove private notification/accessibility capabilities
         shell: bash
         run: |
-          MANIFEST=src/luis-home-app/app/src/main/AndroidManifest.xml
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -134,7 +142,6 @@ jobs:
           s=re.sub(r'\s*<service[^>]*android:name="\.WhatsAppNotificationListener".*?</service>','',s,flags=re.S)
           p.write_text(s,encoding='utf-8')
           PY
-          # Keep the WebView sandboxed: do not enable universal file-origin network access.
           grep -q 'setAllowUniversalAccessFromFileURLs(false)' src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
 
       - name: Configure API 36 and public Store endpoints
@@ -156,13 +163,11 @@ jobs:
           if 'HOME_API_URL' not in s:
               m=re.search(r'defaultConfig\s*\{',s)
               if not m: raise SystemExit('defaultConfig not found')
-              pos=m.end()
-              s=s[:pos]+'\n'+fields+s[pos:]
+              pos=m.end(); s=s[:pos]+'\n'+fields+s[pos:]
           if 'buildFeatures' not in s:
               m=re.search(r'android\s*\{',s)
               if not m: raise SystemExit('android block not found')
-              pos=m.end()
-              s=s[:pos]+'\n    buildFeatures { buildConfig true }\n'+s[pos:]
+              pos=m.end(); s=s[:pos]+'\n    buildFeatures { buildConfig true }\n'+s[pos:]
           p.write_text(s,encoding='utf-8')
           PY
 
@@ -183,11 +188,18 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Validate Android Store source compiles
+        if: github.event_name == 'push'
+        working-directory: src/luis-home-app
+        run: gradle :app:assembleDebug --stacktrace
+
       - name: Restore upload keystore
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: echo "$ANDROID_UPLOAD_KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/home-upload.jks"
 
       - name: Build signed release AAB
+        if: github.event_name == 'workflow_dispatch'
         working-directory: src/luis-home-app
         shell: bash
         run: |
@@ -198,6 +210,7 @@ jobs:
             -Pandroid.injected.signing.key.password="$ANDROID_UPLOAD_KEY_PASSWORD"
 
       - name: Upload Play Store bundle
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: HOME-store-release-aab
