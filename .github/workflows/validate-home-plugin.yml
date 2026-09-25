@@ -1,0 +1,55 @@
+name: Validate HOME Plugin
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ home-plugin-v1 ]
+    paths:
+      - 'plugin/home/**'
+      - 'supabase/**'
+      - '.github/workflows/validate-home-plugin.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check HOME MCP server
+        run: deno check supabase/functions/home-mcp/index.ts
+
+      - name: Validate plugin manifest JSON
+        run: node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('plugin/home/plugin.json','utf8'));if(!p.name||!p.version||!p.description)process.exit(1);console.log(p.name,p.version)"
+
+      - name: Validate skill front matter
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in plugin/home/skills/*/SKILL.md; do
+            head -n 1 "$f" | grep -qx -- '---'
+            grep -q '^name:' "$f"
+            grep -q '^description:' "$f"
+          done
+
+      - name: Check submission test counts
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text=Path('plugin/home/SUBMISSION.md').read_text()
+          pos=text.split('## Required positive review tests',1)[1].split('## Required negative review tests',1)[0]
+          neg=text.split('## Required negative review tests',1)[1].split('## Tool safety annotations',1)[0]
+          if sum(1 for line in pos.splitlines() if line[:2] in {'1.','2.','3.','4.','5.'}) != 5:
+              raise SystemExit('Expected exactly five positive test cases')
+          if sum(1 for line in neg.splitlines() if line[:2] in {'1.','2.','3.'}) != 3:
+              raise SystemExit('Expected exactly three negative test cases')
+          print('Submission test counts OK')
+          PY
