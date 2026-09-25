@@ -2,6 +2,11 @@ name = "home-personal-os-auth"
 main = "src/index.ts"
 compatibility_date = "2026-09-25"
 
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
 [vars]
 SUPABASE_URL = "https://example.supabase.co"
 SUPABASE_PUBLISHABLE_KEY = "replace-with-production-publishable-key"
