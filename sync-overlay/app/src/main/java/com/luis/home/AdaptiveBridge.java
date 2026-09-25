@@ -11,8 +11,10 @@ import android.os.Build;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 /** Native capabilities used by the server-driven adaptive WebView UI. */
@@ -67,6 +69,44 @@ final class AdaptiveBridge {
                 worker.saveActivity(activity);
             } catch (Exception ignored) { }
         });
+    }
+
+    /** Persist the complete HOME To-Do state, including the user's notes/details, to HOME Sync. */
+    @JavascriptInterface
+    public void saveTodoState(String rawJson) {
+        if (!worker.isConfigured() || rawJson == null || rawJson.trim().isEmpty()) return;
+        if (rawJson.length() > 120000) return;
+        final String payload = rawJson;
+        queue.execute(() -> {
+            try {
+                JSONObject state = new JSONObject(payload);
+                saveTaskArray(state.optJSONArray("active"), false);
+                saveTaskArray(state.optJSONArray("archive"), true);
+            } catch (Exception ignored) { }
+        });
+    }
+
+    private void saveTaskArray(JSONArray items, boolean done) {
+        if (items == null) return;
+        int limit = Math.min(items.length(), 250);
+        for (int i = 0; i < limit; i++) {
+            try {
+                JSONObject input = items.optJSONObject(i);
+                if (input == null) continue;
+                JSONObject task = new JSONObject(input.toString());
+                String id = task.optString("id", "").trim();
+                if (id.isEmpty()) task.put("id", UUID.randomUUID().toString());
+                task.remove("notionId");
+                task.put("done", done);
+                task.put("source", "android");
+                if (done) {
+                    if (!task.has("completedAt")) task.put("completedAt", System.currentTimeMillis());
+                } else {
+                    task.remove("completedAt");
+                }
+                worker.upsertTask(task);
+            } catch (Exception ignored) { }
+        }
     }
 
     /**
