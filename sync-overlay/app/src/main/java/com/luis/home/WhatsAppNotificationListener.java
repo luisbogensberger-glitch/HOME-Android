@@ -14,26 +14,29 @@ import java.security.MessageDigest;
 import java.util.Locale;
 
 /**
- * Explicit user-enabled WhatsApp ingestion for HOME.
+ * Explicit user-enabled live inbox ingestion for HOME.
  *
- * Android does not expose the WhatsApp database. This listener receives new messages that
- * WhatsApp publishes as notifications. Unlike the first HOME prototype, it no longer throws
- * away the sender/message body after a local keyword check: new message notifications are
- * queued privately on-device and forwarded over the authenticated HOME Sync channel for AI
- * classification. Nothing from this class is written to public GitHub.
+ * The service is registered as the HOME notification listener. It handles:
+ * - WhatsApp / WhatsApp Business: sender/chat/message text from new notifications.
+ * - Gmail: sender + subject/snippet from new mail notifications.
+ *
+ * Notification access does not expose the underlying WhatsApp/Gmail databases. This is a
+ * near-real-time signal layer; the hourly Gmail connector remains the full-text reconciliation
+ * layer. Raw notification content is sent only to the authenticated private HOME Worker.
  */
 public class WhatsAppNotificationListener extends NotificationListenerService {
     private static final String WHATSAPP = "com.whatsapp";
     private static final String WHATSAPP_BUSINESS = "com.whatsapp.w4b";
-    private static final String LISTENER_PREFS = "home_whatsapp_capture";
+    private static final String GMAIL = "com.google.android.gm";
+    private static final String PREFS = "home_live_inbox_capture";
     private static final long DUPLICATE_WINDOW_MS = 45_000L;
-    private static final int MAX_LOCAL_MESSAGES = 120;
+    private static final int MAX_LOCAL_MESSAGES = 180;
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         if (sbn == null) return;
         String pkg = sbn.getPackageName();
-        if (!WHATSAPP.equals(pkg) && !WHATSAPP_BUSINESS.equals(pkg)) return;
+        if (!WHATSAPP.equals(pkg) && !WHATSAPP_BUSINESS.equals(pkg) && !GMAIL.equals(pkg)) return;
 
         Notification n = sbn.getNotification();
         if (n == null || n.extras == null) return;
@@ -41,9 +44,14 @@ public class WhatsAppNotificationListener extends NotificationListenerService {
         if ((n.flags & Notification.FLAG_ONGOING_EVENT) != 0) return;
         if (Notification.CATEGORY_CALL.equals(n.category)) return;
 
+        if (GMAIL.equals(pkg)) handleGmail(sbn, n);
+        else handleWhatsApp(sbn, n, pkg);
+    }
+
+    private void handleWhatsApp(StatusBarNotification sbn, Notification n, String pkg) {
         Bundle extras = n.extras;
         String message = extractMessage(extras);
-        if (message.isEmpty() || isSystemNoise(message)) return;
+        if (message.isEmpty() || isWhatsAppSystemNoise(message)) return;
 
         String chat = clean(text(extras, Notification.EXTRA_CONVERSATION_TITLE), 180);
         String title = clean(text(extras, Notification.EXTRA_TITLE), 180);
@@ -55,9 +63,9 @@ public class WhatsAppNotificationListener extends NotificationListenerService {
         if (isDuplicate(signature, at)) return;
 
         String id = "wa-" + shortHash(signature + "|" + at);
-        JSONObject item = new JSONObject();
         try {
-            item.put("id", id)
+            JSONObject item = new JSONObject()
+                    .put("id", id)
                     .put("source", "whatsapp-notification")
                     .put("package", pkg)
                     .put("chat", chat)
@@ -65,10 +73,41 @@ public class WhatsAppNotificationListener extends NotificationListenerService {
                     .put("message", message)
                     .put("at", at)
                     .put("timezone", "Europe/London");
-        } catch (Exception ignored) { return; }
+            rememberLocally(item);
+            forwardWhatsApp(item, message, at);
+        } catch (Exception ignored) { }
+    }
 
-        rememberLocally(item);
-        forwardPrivately(item, message, at);
+    private void handleGmail(StatusBarNotification sbn, Notification n) {
+        Bundle extras = n.extras;
+        String sender = clean(text(extras, Notification.EXTRA_TITLE), 240);
+        String subject = clean(text(extras, Notification.EXTRA_TEXT), 500);
+        String big = clean(text(extras, Notification.EXTRA_BIG_TEXT), 2400);
+        String account = clean(text(extras, Notification.EXTRA_SUB_TEXT), 240);
+        String snippet = big.isEmpty() ? subject : big;
+
+        if (sender.isEmpty() && subject.isEmpty() && snippet.isEmpty()) return;
+        if (isGmailSystemNoise(sender, subject, snippet)) return;
+
+        long at = sbn.getPostTime() > 0 ? sbn.getPostTime() : System.currentTimeMillis();
+        String signature = GMAIL + "|" + sender + "|" + subject + "|" + snippet;
+        if (isDuplicate(signature, at)) return;
+
+        String id = "gm-" + shortHash(signature + "|" + at);
+        try {
+            JSONObject item = new JSONObject()
+                    .put("id", id)
+                    .put("source", "gmail-notification")
+                    .put("package", GMAIL)
+                    .put("sender", sender)
+                    .put("subject", subject)
+                    .put("snippet", snippet)
+                    .put("account", account)
+                    .put("at", at)
+                    .put("timezone", "Europe/London");
+            rememberLocally(item);
+            forwardGmail(item, subject + " " + snippet, at);
+        } catch (Exception ignored) { }
     }
 
     private String text(Bundle extras, String key) {
@@ -87,8 +126,8 @@ public class WhatsAppNotificationListener extends NotificationListenerService {
         }
         CharSequence big = extras.getCharSequence(Notification.EXTRA_BIG_TEXT);
         if (big != null && !big.toString().trim().isEmpty()) return clean(big.toString(), 2400);
-        CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
-        return text == null ? "" : clean(text.toString(), 2400);
+        CharSequence value = extras.getCharSequence(Notification.EXTRA_TEXT);
+        return value == null ? "" : clean(value.toString(), 2400);
     }
 
     private String deriveSender(String title, String chat, String message) {
@@ -106,7 +145,7 @@ public class WhatsAppNotificationListener extends NotificationListenerService {
         return out.length() > max ? out.substring(0, max) : out;
     }
 
-    private boolean isSystemNoise(String message) {
+    private boolean isWhatsAppSystemNoise(String message) {
         String s = message.toLowerCase(Locale.ROOT);
         return s.matches("^[0-9]+ new messages?$")
                 || s.contains("checking for new messages")
@@ -117,31 +156,42 @@ public class WhatsAppNotificationListener extends NotificationListenerService {
                 || s.equals("neue nachricht");
     }
 
+    private boolean isGmailSystemNoise(String sender, String subject, String snippet) {
+        String s = (sender + " " + subject + " " + snippet).toLowerCase(Locale.ROOT);
+        return s.contains("syncing mail")
+                || s.contains("mail wird synchronisiert")
+                || s.matches(".*\\b[0-9]+ new messages?\\b.*")
+                || s.matches(".*\\b[0-9]+ neue nachrichten\\b.*")
+                || s.trim().equals("gmail");
+    }
+
     private boolean looksActionable(String message) {
         String s = " " + message.toLowerCase(Locale.ROOT) + " ";
         String[] phrases = new String[]{
                 " kannst du ", " könntest du ", " könnt ihr ", " bitte schick", " bitte send",
                 " bitte bring", " bitte ruf", " bitte antwort", " ruf mich ", " schick mir ",
                 " sende mir ", " denk dran ", " vergiss nicht ", " bitte prüf", " bitte check",
-                " can you ", " could you ", " would you ", " please send", " please bring",
-                " please call", " please check", " please reply", " send me ", " call me ",
-                " remember to ", " don't forget ", " dont forget ", " need you to "
+                " check the ", " prüfe ", " can you ", " could you ", " would you ",
+                " please send", " please bring", " please call", " please check", " please reply",
+                " send me ", " call me ", " remember to ", " don't forget ", " dont forget ",
+                " need you to ", " action required", " required action", " deadline", " due "
         };
         for (String phrase : phrases) if (s.contains(phrase)) return true;
         return false;
     }
 
     private boolean isDuplicate(String signature, long at) {
-        SharedPreferences p = getSharedPreferences(LISTENER_PREFS, MODE_PRIVATE);
-        String previous = p.getString("last_signature", "");
-        long previousAt = p.getLong("last_at", 0L);
+        SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
+        String key = "last_signature_" + shortHash(signature.split("\\|")[0]);
+        String previous = p.getString(key, "");
+        long previousAt = p.getLong(key + "_at", 0L);
         if (signature.equals(previous) && Math.abs(at - previousAt) <= DUPLICATE_WINDOW_MS) return true;
-        p.edit().putString("last_signature", signature).putLong("last_at", at).apply();
+        p.edit().putString(key, signature).putLong(key + "_at", at).apply();
         return false;
     }
 
     private void rememberLocally(JSONObject item) {
-        SharedPreferences p = getSharedPreferences(LISTENER_PREFS, MODE_PRIVATE);
+        SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
         try {
             JSONArray old = new JSONArray(p.getString("inbox", "[]"));
             JSONArray next = new JSONArray();
@@ -152,22 +202,37 @@ public class WhatsAppNotificationListener extends NotificationListenerService {
         } catch (Exception ignored) { }
     }
 
-    private void forwardPrivately(JSONObject item, String message, long at) {
+    private void forwardWhatsApp(JSONObject item, String message, long at) {
         new Thread(() -> {
             try {
                 WorkerSync worker = new WorkerSync(getApplicationContext());
                 if (!worker.isConfigured()) {
-                    if (looksActionable(message)) addLocalFallbackTask("wa-review-" + shortHash(item.toString()), at);
+                    if (looksActionable(message)) addLocalFallbackTask("wa-review-" + shortHash(item.toString()), "Review WhatsApp request", at);
                     return;
                 }
                 worker.reviewWhatsAppMessage(item);
             } catch (Exception ignored) {
-                if (looksActionable(message)) addLocalFallbackTask("wa-review-" + shortHash(item.toString()), at);
+                if (looksActionable(message)) addLocalFallbackTask("wa-review-" + shortHash(item.toString()), "Review WhatsApp request", at);
             }
         }, "home-whatsapp-sync").start();
     }
 
-    private void addLocalFallbackTask(String id, long at) {
+    private void forwardGmail(JSONObject item, String text, long at) {
+        new Thread(() -> {
+            try {
+                WorkerSync worker = new WorkerSync(getApplicationContext());
+                if (!worker.isConfigured()) {
+                    if (looksActionable(text)) addLocalFallbackTask("gm-review-" + shortHash(item.toString()), "Review email action", at);
+                    return;
+                }
+                worker.reviewGmailNotification(item);
+            } catch (Exception ignored) {
+                if (looksActionable(text)) addLocalFallbackTask("gm-review-" + shortHash(item.toString()), "Review email action", at);
+            }
+        }, "home-gmail-sync").start();
+    }
+
+    private void addLocalFallbackTask(String id, String title, long at) {
         SharedPreferences statePrefs = getSharedPreferences("home_state", MODE_PRIVATE);
         try {
             String raw = statePrefs.getString("todoState", "");
@@ -180,12 +245,12 @@ public class WhatsAppNotificationListener extends NotificationListenerService {
             }
             JSONObject task = new JSONObject()
                     .put("id", id)
-                    .put("title", "Review WhatsApp request")
+                    .put("title", title)
                     .put("area", "Personal")
                     .put("minutes", 5)
-                    .put("note", "HOME detected a likely WhatsApp request, but AI classification was temporarily unavailable. Open WhatsApp to review it.")
+                    .put("note", "HOME detected a likely action, but AI classification was temporarily unavailable. Open the source app to review it.")
                     .put("done", false)
-                    .put("source", "whatsapp-local-fallback")
+                    .put("source", "live-inbox-local-fallback")
                     .put("createdAt", at);
             active.put(task);
             state.put("active", active);
