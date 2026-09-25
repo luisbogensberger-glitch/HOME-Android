@@ -203,7 +203,13 @@ final class WorkerSync {
     }
 
     JSONObject saveAttempt(JSONObject attempt) throws Exception {
-        return requestObject("POST", "/api/attempts", new JSONObject(attempt.toString()));
+        JSONObject saved = requestObject("POST", "/api/attempts", new JSONObject(attempt.toString()));
+        try {
+            mirrorLearningAttempt(attempt);
+        } catch (Exception ignored) {
+            // Cloudflare remains the source of truth if the private mirror is temporarily unavailable.
+        }
+        return saved;
     }
 
     JSONObject mirrorLearningAttempt(JSONObject attempt) throws Exception {
