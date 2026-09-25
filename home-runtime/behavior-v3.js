@@ -67,20 +67,21 @@
     await safeLoad('todo-pressure-v1.js','home-todo-pressure-v1.js');
     await safeLoad('post-install-resilience-v1.js','home-post-install-resilience-v1.js');
 
-    /* Load the stable Brain engine first. The score-chip binding then has a real target API immediately. */
     const brain=await safeLoad('behaviour-map-v4.js','home-behaviour-map-v4.js');
     const feedback=await safeLoad('feedback-pulse-v1.js','home-feedback-pulse-v1.js');
+    const recovery=await safeLoad('recovery-code-v1.js','home-recovery-code-v1.js');
 
     repairBrainSafety();
     try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}
-    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}},150);
-    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}},800);
-    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}},2200);
+    try{window.HOMERecovery?.ensureUi?.()}catch(e){}
+    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}try{window.HOMERecovery?.ensureUi?.()}catch(e){}},150);
+    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}try{window.HOMERecovery?.ensureUi?.()}catch(e){}},800);
+    setTimeout(()=>{repairBrainSafety();try{window.HOMEBrainEntryV3?.repair?.()}catch(e){}try{window.HOMERecovery?.ensureUi?.()}catch(e){}},2200);
 
     try{
       window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{
         version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,
-        postInstall:1,feedbackPulse:feedback?1:0,behaviourMap:brain?4:0,recovery:'brain-v4-safe'
+        postInstall:1,feedbackPulse:feedback?1:0,behaviourMap:brain?4:0,recoveryCode:recovery?1:0,recovery:'brain-v4-safe'
       });
     }catch(e){}
   })();
