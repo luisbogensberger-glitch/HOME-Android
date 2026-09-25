@@ -1,0 +1,7 @@
+{
+  "algorithm": "X25519-HKDF-SHA256+A256GCM",
+  "fingerprint": "0a56c5153efd5b2cf9a34fc0fe045d6c8898b89d74f5224dd5236f26b4385dba",
+  "note": "Public encryption key only. The private key is deterministically derived inside GitHub Actions from the existing HOME_TOKEN secret and is never stored in GitHub.",
+  "publicKey": "ljw4zx-QtbPraX4ArTVy42bqIyJr3BhooeQhtTIREAU",
+  "version": 2
+}
