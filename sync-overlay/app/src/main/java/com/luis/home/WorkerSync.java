@@ -26,6 +26,7 @@ import javax.crypto.spec.GCMParameterSpec;
 /** Secure client for Luis HOME Cloudflare Worker backend. */
 final class WorkerSync {
     static final String API = "https://luis-home-sync.luisbogensberger.workers.dev";
+    private static final String LEARNING_INGEST = "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-ingest";
     private static final String KEY_ALIAS = "home_worker_token_v1";
     private final Context context;
 
@@ -120,10 +121,14 @@ final class WorkerSync {
     }
 
     private String request(String method, String path, JSONObject body, int readTimeoutMs) throws Exception {
+        return requestAbsolute(method, API + path, body, readTimeoutMs);
+    }
+
+    private String requestAbsolute(String method, String url, JSONObject body, int readTimeoutMs) throws Exception {
         String token = readToken();
         if (token == null) throw new IllegalStateException("Connect HOME Sync in the app first.");
 
-        HttpURLConnection connection = (HttpURLConnection) new URL(API + path).openConnection();
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         try {
             connection.setRequestMethod(method);
             connection.setConnectTimeout(10000);
@@ -199,6 +204,14 @@ final class WorkerSync {
 
     JSONObject saveAttempt(JSONObject attempt) throws Exception {
         return requestObject("POST", "/api/attempts", new JSONObject(attempt.toString()));
+    }
+
+    JSONObject mirrorLearningAttempt(JSONObject attempt) throws Exception {
+        if (attempt == null) throw new IllegalArgumentException("Learning attempt required.");
+        JSONArray attempts = new JSONArray().put(new JSONObject(attempt.toString()));
+        JSONObject body = new JSONObject().put("attempts", attempts);
+        String raw = requestAbsolute("POST", LEARNING_INGEST, body, 20000);
+        return raw.isEmpty() ? new JSONObject() : new JSONObject(raw);
     }
 
     JSONObject saveActivity(JSONObject activity) throws Exception {
