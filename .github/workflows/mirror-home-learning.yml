@@ -20,18 +20,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Request short-lived GitHub OIDC token
-        id: oidc
+
+      - name: Request short-lived learning OIDC token
+        id: learning_oidc
         shell: bash
         run: |
           RESPONSE="$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=home-learning-ingest")"
           TOKEN="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"$RESPONSE")"
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-      - name: Mirror private written learning attempts
+
+      - name: Request short-lived task OIDC token
+        id: task_oidc
+        shell: bash
+        run: |
+          RESPONSE="$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=home-task-ingest")"
+          TOKEN="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"$RESPONSE")"
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Mirror private HOME learning, behaviour and task context
         env:
           HOME_TOKEN: ${{ secrets.HOME_TOKEN }}
-          GITHUB_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+          GITHUB_OIDC_TOKEN: ${{ steps.learning_oidc.outputs.token }}
+          GITHUB_TASK_OIDC_TOKEN: ${{ steps.task_oidc.outputs.token }}
           HOME_API: https://luis-home-sync.luisbogensberger.workers.dev
           SUPABASE_INGEST: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-ingest
+          SUPABASE_TASK_INGEST: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-task-ingest
         run: python3 scripts/mirror_home_learning.py
