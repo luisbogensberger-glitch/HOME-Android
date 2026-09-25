@@ -1,4 +1,4 @@
-/* HOME live behaviour bootstrap — preserves v3/v6 behaviour and layers v9 semantic learning. */
+/* HOME live behaviour bootstrap — preserves behaviour, semantic learning, and AI-controlled interface policy. */
 (function(){
   'use strict';
   const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
@@ -6,12 +6,17 @@
   function run(js,name){new Function(js+'\n//# sourceURL='+name)()}
   (async()=>{
     try{
-      const [behaviour,learning]=await Promise.all([get('behavior-v3-base.js'),get('learning-engine-v9.js')]);
+      const [behaviour,learning,interfacePolicy]=await Promise.all([
+        get('behavior-v3-base.js'),
+        get('learning-engine-v9.js'),
+        get('interface-policy-v10.js')
+      ]);
       run(behaviour,'home-behaviour-v3-base.js');
       run(learning,'home-learning-engine-v9.js');
-      try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:9})}catch(e){}
+      run(interfacePolicy,'home-interface-policy-v10.js');
+      try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:9,interfacePolicy:10})}catch(e){}
     }catch(e){
-      try{console.warn('HOME learning bootstrap failed',e)}catch(_){}
+      try{console.warn('HOME live bootstrap failed',e)}catch(_){}
     }
   })();
 })();
