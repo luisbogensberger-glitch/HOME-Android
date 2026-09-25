@@ -103,7 +103,7 @@ final class WorkerSync {
 
     void clearToken() { signOut(); }
 
-    private JSONObject credentials(String email, String password) {
+    private JSONObject credentials(String email, String password) throws Exception {
         String e = email == null ? "" : email.trim().toLowerCase();
         String p = password == null ? "" : password;
         if (!e.contains("@") || e.length() > 320) throw new IllegalArgumentException("Enter a valid email address.");
