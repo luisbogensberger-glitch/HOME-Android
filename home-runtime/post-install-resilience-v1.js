@@ -8,19 +8,20 @@
   const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
   const log=(type,data)=>{try{window.homeAdaptiveLog&&window.homeAdaptiveLog(type,data||{})}catch(e){}};
 
-  function removeMigrationUi(){
-    document.getElementById('homeMigrationTools')?.remove();
+  function removeMigrationUi(){document.getElementById('homeMigrationTools')?.remove()}
+  function clearStaleSyncError(){
+    try{
+      const st=document.getElementById('syncStatus');
+      if(st&&/task not found in home sync/i.test(String(st.textContent||''))) setSyncStatus('HOME Sync ready · stale task will self-repair');
+    }catch(e){}
   }
 
   function getRepair(){const x=load(REPAIR_KEY,null);return x&&typeof x==='object'?x:null}
   function setRepair(x){if(x)save(REPAIR_KEY,x);else localStorage.removeItem(REPAIR_KEY)}
-
   function connected(){try{return typeof notionConnected==='function'&&notionConnected()}catch(e){return false}}
   function stateReady(){try{return todoState&&Array.isArray(todoState.active)&&Array.isArray(todoState.archive)}catch(e){return false}}
   function persist(){try{saveStore('todoState',todoState);renderTodos()}catch(e){}}
-  function findByAnyId(id){
-    try{return [...todoState.active,...todoState.archive].find(t=>String(t.id)===String(id)||String(t.notionId||'')===String(id))||null}catch(e){return null}
-  }
+  function findByAnyId(id){try{return [...todoState.active,...todoState.archive].find(t=>String(t.id)===String(id)||String(t.notionId||'')===String(id))||null}catch(e){return null}}
 
   function moveLocal(id,done){
     if(!stateReady())return null;
@@ -61,9 +62,10 @@
         try{Native.createNotionTask(String(local.title||repair.title||'Task'))}catch(e){}
         log('todo_sync_repair_start',{done:!!repair.done});return;
       }
-      setRepair(null);
-      try{setSyncStatus('Saved locally · HOME Sync will retry later')}catch(e){}
-      return;
+      setRepair(null);try{setSyncStatus('Saved locally · HOME Sync will retry later')}catch(e){};return;
+    }
+    if(/task not found/i.test(msg)){
+      try{setSyncStatus('HOME Sync ready · stale task will self-repair')}catch(e){};return;
     }
     if(typeof baseError==='function')return baseError.apply(this,arguments);
   };
@@ -77,8 +79,7 @@
         repair.phase='recomplete';repair.newId=String(t.notionId||t.id||'');setRepair(repair);
         try{Native.setNotionTaskDone(repair.newId,true)}catch(e){}
       }else{
-        setRepair(null);try{setSyncStatus('Task sync repaired')}catch(e){}
-        setTimeout(()=>{try{refreshNotion()}catch(e){}},350);
+        setRepair(null);try{setSyncStatus('Task sync repaired')}catch(e){};setTimeout(()=>{try{refreshNotion()}catch(e){}},350);
       }
       log('todo_sync_repair_created',{done:!!repair.done});return;
     }
@@ -90,8 +91,7 @@
     if(repair){
       const rid=String(result?.id||'');
       if(rid===String(repair.remoteId||'')||rid===String(repair.newId||'')){
-        setRepair(null);try{setSyncStatus('Synced')}catch(e){}
-        setTimeout(()=>{try{refreshNotion()}catch(e){}},350);
+        setRepair(null);try{setSyncStatus('Synced')}catch(e){};setTimeout(()=>{try{refreshNotion()}catch(e){}},350);
         log('todo_sync_repair_done',{done:!!result?.done});return;
       }
     }
@@ -100,7 +100,7 @@
 
   function patchFunctions(){
     try{window.completeTodo=completePatched;window.restoreTodo=restorePatched}catch(e){}
-    removeMigrationUi();
+    removeMigrationUi();clearStaleSyncError();
     document.documentElement.dataset.homePostInstallResilience=String(VERSION);
   }
 
