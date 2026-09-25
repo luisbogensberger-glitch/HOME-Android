@@ -8,6 +8,7 @@ on:
       - 'plugin/home/**'
       - 'supabase/**'
       - 'plugin-server/**'
+      - 'plugin-auth/**'
       - '.github/workflows/validate-home-plugin.yml'
 
 permissions:
@@ -42,6 +43,18 @@ jobs:
 
       - name: Dry-build Cloudflare gateway
         working-directory: plugin-server
+        run: npm run build
+
+      - name: Install OAuth consent dependencies
+        working-directory: plugin-auth
+        run: npm install --no-audit --no-fund
+
+      - name: Type-check OAuth consent worker
+        working-directory: plugin-auth
+        run: npm run typecheck
+
+      - name: Build OAuth consent app
+        working-directory: plugin-auth
         run: npm run build
 
       - name: Validate plugin manifest JSON
