@@ -48,6 +48,28 @@ final class AdaptiveBridge {
     }
 
     /**
+     * Explicit private HOME-context channel. This is intentionally separate from generic
+     * telemetry because the payload may include content the user typed inside HOME, such as
+     * To-Do notes, task details or other app-internal state. It is sent only to the authenticated
+     * private HOME Worker and is never written to the public repository.
+     */
+    @JavascriptInterface
+    public void logPrivateActivity(String rawJson) {
+        if (!worker.isConfigured() || rawJson == null || rawJson.trim().isEmpty()) return;
+        if (rawJson.length() > 60000) return;
+        final String payload = rawJson;
+        queue.execute(() -> {
+            try {
+                JSONObject activity = new JSONObject(payload);
+                if (!activity.has("at")) activity.put("at", System.currentTimeMillis());
+                if (!activity.has("kind")) activity.put("kind", "private_home_context");
+                if (!activity.has("source")) activity.put("source", "android");
+                worker.saveActivity(activity);
+            } catch (Exception ignored) { }
+        });
+    }
+
+    /**
      * Explicit private learning channel. Unlike generic telemetry, this method is allowed
      * to send the raw one-sentence answer because the user asked HOME to have the model
      * judge the actual text. It travels only to the authenticated HOME Worker.
