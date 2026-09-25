@@ -1,0 +1,7 @@
+name = "home-personal-os-auth"
+main = "src/index.ts"
+compatibility_date = "2026-09-25"
+
+[vars]
+SUPABASE_URL = "https://example.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "replace-with-production-publishable-key"
