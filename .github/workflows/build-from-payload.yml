@@ -81,7 +81,7 @@ jobs:
           java=Path('src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java')
           s=java.read_text(encoding='utf-8')
           needle='webView.addJavascriptInterface(new NativeBridge(), "Native");'
-          add=needle+'\n        webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue), "AdaptiveNative");'
+          add=needle+'\n        webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");'
           if '"AdaptiveNative"' not in s:
               s=s.replace(needle,add,1)
           java.write_text(s,encoding='utf-8')
