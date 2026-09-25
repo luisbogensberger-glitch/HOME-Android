@@ -51,6 +51,9 @@ final class AdaptiveBridge {
      * Explicit private learning channel. Unlike generic telemetry, this method is allowed
      * to send the raw one-sentence answer because the user asked HOME to have the model
      * judge the actual text. It travels only to the authenticated HOME Worker.
+     *
+     * The raw attempt is persisted BEFORE semantic review. This means learning history is
+     * not lost when the AI provider is unavailable, billing is exhausted, or review fails.
      */
     @JavascriptInterface
     public void reviewSentence(String rawJson) {
@@ -70,6 +73,33 @@ final class AdaptiveBridge {
                 if (sentence.isEmpty() || sentence.length() > 2400) {
                     throw new IllegalArgumentException("Enter a short answer before requesting review.");
                 }
+
+                String attemptId = input.optString("attemptId", "").trim();
+                if (attemptId.isEmpty()) attemptId = "attempt-" + System.currentTimeMillis();
+
+                // Save only the private learning fields needed for longitudinal adaptation.
+                // This is intentionally separate from generic telemetry.
+                try {
+                    JSONObject attempt = new JSONObject()
+                            .put("id", attemptId)
+                            .put("attemptId", attemptId)
+                            .put("cardId", input.optString("cardId", ""))
+                            .put("title", input.optString("title", ""))
+                            .put("topic", input.optString("topic", ""))
+                            .put("prompt", input.optString("prompt", ""))
+                            .put("question", input.optString("question", ""))
+                            .put("sentence", sentence)
+                            .put("learningMethod", input.optString("method", ""))
+                            .put("contentDepth", input.optString("contentDepth", ""))
+                            .put("reviewStatus", "pending")
+                            .put("at", input.optLong("at", System.currentTimeMillis()));
+                    if (input.has("selected")) attempt.put("selected", input.opt("selected"));
+                    if (input.has("correct")) attempt.put("correct", input.opt("correct"));
+                    worker.saveAttempt(attempt);
+                } catch (Exception ignored) {
+                    // Review may still succeed even if the persistence write had a transient failure.
+                }
+
                 JSONObject result = worker.reviewSentence(input);
                 deliver("onHomeSentenceReview", result);
             } catch (Exception ex) {
