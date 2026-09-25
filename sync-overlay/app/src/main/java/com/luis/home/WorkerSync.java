@@ -215,6 +215,11 @@ final class WorkerSync {
         return requestObject("POST", "/api/whatsapp-message", new JSONObject(payload.toString()), 35000);
     }
 
+    JSONObject reviewGmailNotification(JSONObject payload) throws Exception {
+        if (payload == null) throw new IllegalArgumentException("Gmail notification payload required.");
+        return requestObject("POST", "/api/gmail-notification", new JSONObject(payload.toString()), 35000);
+    }
+
     private String encodePath(String value) throws Exception {
         return java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20");
     }
