@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "home": {
+      "type": "streamable-http",
+      "url": "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-mcp"
+    }
+  }
+}
