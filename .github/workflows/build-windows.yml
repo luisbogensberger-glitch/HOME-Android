@@ -94,25 +94,32 @@ jobs:
         working-directory: desktop
         run: npm run build
 
-      - name: Publish stable download in repository
+      - name: Stage installer for publishing
         shell: pwsh
         run: |
           $installer = Get-ChildItem -Path desktop/src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
           if (-not $installer) { throw 'HOME Windows installer not found' }
-          New-Item -ItemType Directory -Force -Path downloads | Out-Null
-          Copy-Item $installer.FullName downloads/HOME-Windows-Setup.exe -Force
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add downloads/HOME-Windows-Setup.exe
-          git diff --cached --quiet
-          if ($LASTEXITCODE -ne 0) {
-            git commit -m "Publish HOME Windows installer [skip ci]"
-            git push
-          }
+          Copy-Item $installer.FullName "$env:RUNNER_TEMP\HOME-Windows-Setup.exe" -Force
 
       - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: HOME-Windows-Setup
-          path: downloads/HOME-Windows-Setup.exe
+          path: ${{ runner.temp }}/HOME-Windows-Setup.exe
           if-no-files-found: error
+
+      - name: Publish stable download in repository
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B main origin/main
+          New-Item -ItemType Directory -Force -Path downloads | Out-Null
+          Copy-Item "$env:RUNNER_TEMP\HOME-Windows-Setup.exe" downloads/HOME-Windows-Setup.exe -Force
+          git add downloads/HOME-Windows-Setup.exe
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "Publish HOME Windows installer [skip ci]"
+            git push origin main
+          }
