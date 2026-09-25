@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 import urllib.error
 import urllib.request
 
@@ -28,7 +27,7 @@ def request_json(url, *, method="GET", body=None, bearer=""):
             "Authorization": f"Bearer {bearer}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "HOME-Learning-Mirror/1.1",
+            "User-Agent": "HOME-Private-Mirror/1.2",
         },
     )
     try:
@@ -45,10 +44,13 @@ if status != 200 or not isinstance(snapshot, dict):
     raise RuntimeError("HOME snapshot response was invalid")
 
 attempts = snapshot.get("attempts") or []
+activity = snapshot.get("activity") or []
 if not isinstance(attempts, list):
     raise RuntimeError("HOME attempts payload was invalid")
+if not isinstance(activity, list):
+    raise RuntimeError("HOME activity payload was invalid")
 
-eligible = []
+eligible_attempts = []
 for attempt in attempts:
     if not isinstance(attempt, dict):
         continue
@@ -58,24 +60,62 @@ for attempt in attempts:
     item = dict(attempt)
     item.setdefault("reflection", reflection)
     item.setdefault("source", "home-sync-mirror")
-    eligible.append(item)
+    eligible_attempts.append(item)
 
-if not eligible:
-    print("HOME learning mirror: 0 written attempts to mirror")
-    sys.exit(0)
+# Explicit allowlist: never mirror raw Gmail/WhatsApp/private inbox activity here.
+allowed_exact = {
+    "behavior_summary", "screen_dwell", "screen_open", "ui_usage_summary",
+    "insights_open", "insights_node_open", "todo_open", "todo_complete", "todo_add",
+    "tube_card_open", "tube_complete", "gym_open", "gym_start", "gym_complete",
+    "gym_plan_select", "behavior_ui_decision", "adaptive_profile_updated",
+    "habit_intervention", "todo_pressure_show", "todo_pressure_dismiss", "notification_plan",
+}
+
+eligible_activity = []
+for row in activity:
+    if not isinstance(row, dict):
+        continue
+    kind = str(row.get("kind") or row.get("type") or "").strip()
+    if not kind:
+        continue
+    if kind not in allowed_exact and not kind.startswith("behaviour_") and not kind.startswith("behavior_"):
+        continue
+    item = dict(row)
+    # Preserve only behavioural fields used for aggregation. Raw message-like fields are never forwarded.
+    item = {
+        "id": item.get("id"),
+        "kind": kind,
+        "type": kind,
+        "at": item.get("at"),
+        "createdAt": item.get("createdAt"),
+        "screen": item.get("screen"),
+        "data": item.get("data") if isinstance(item.get("data"), dict) else {},
+        "source": "home-sync-behaviour-mirror",
+    }
+    eligible_activity.append(item)
 
 mirrored = 0
-for start in range(0, len(eligible), 200):
-    batch = eligible[start : start + 200]
+activity_mirrored = 0
+max_batches = max(
+    (len(eligible_attempts) + 199) // 200,
+    (len(eligible_activity) + 499) // 500,
+    1,
+)
+for batch_index in range(max_batches):
+    attempt_batch = eligible_attempts[batch_index * 200 : (batch_index + 1) * 200]
+    activity_batch = eligible_activity[batch_index * 500 : (batch_index + 1) * 500]
+    if not attempt_batch and not activity_batch:
+        continue
     ingest_status, result = request_json(
         SUPABASE_INGEST,
         method="POST",
-        body={"attempts": batch},
+        body={"attempts": attempt_batch, "activity": activity_batch},
         bearer=GITHUB_OIDC_TOKEN,
     )
     if ingest_status != 200 or not isinstance(result, dict) or result.get("ok") is not True:
-        raise RuntimeError("Supabase learning ingest returned an invalid response")
+        raise RuntimeError("Supabase private ingest returned an invalid response")
     mirrored += int(result.get("upserted") or 0)
+    activity_mirrored += int(result.get("activityUpserted") or 0)
 
-# Never print raw attempts: GitHub Actions logs are not a private learning store.
-print(f"HOME learning mirror: {mirrored} written attempt(s) upserted")
+# Never print raw attempts or activity payloads: GitHub Actions logs are not a private data store.
+print(f"HOME private mirror: {mirrored} written attempt(s), {activity_mirrored} behaviour event(s) upserted")
