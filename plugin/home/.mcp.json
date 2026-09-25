@@ -2,7 +2,7 @@
   "mcpServers": {
     "home": {
       "type": "streamable-http",
-      "url": "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-mcp"
+      "url": "https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/mcp"
     }
   }
 }
