@@ -5,6 +5,9 @@ on:
     branches: [ main ]
     paths:
       - 'home-bridge/queue.json'
+      - 'home-bridge/push_commands.py'
+      - 'home-bridge/encrypt_command.py'
+      - '.github/workflows/home-bridge.yml'
   workflow_dispatch:
 
 permissions:
@@ -22,16 +25,24 @@ jobs:
       HOME_API: https://luis-home-sync.luisbogensberger.workers.dev
     steps:
       - uses: actions/checkout@v4
-      - name: Push queued commands to HOME Sync
+        with:
+          fetch-depth: 0
+
+      - name: Install secure bridge dependencies
+        run: python3 -m pip install --disable-pip-version-check cryptography curl_cffi
+
+      - name: Decrypt and push queued commands to HOME Sync
         run: python3 home-bridge/push_commands.py
-      - name: Acknowledge processed commands
+
+      - name: Publish bridge public key and acknowledge processed commands
         shell: bash
         run: |
-          if git diff --quiet -- home-bridge/queue.json; then
+          if git diff --quiet -- home-bridge/queue.json home-bridge/public_key.json; then
             exit 0
           fi
           git config user.name "HOME Bridge"
           git config user.email "home-bridge@users.noreply.github.com"
-          git add home-bridge/queue.json
-          git commit -m "Acknowledge HOME bridge commands [skip ci]"
-          git push
+          git add home-bridge/queue.json home-bridge/public_key.json
+          git commit -m "Acknowledge encrypted HOME bridge commands [skip ci]"
+          git pull --rebase origin main
+          git push origin main
