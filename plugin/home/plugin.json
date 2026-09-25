@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "home-personal-os",
+  "version": "0.1.0",
+  "description": "An adaptive personal operating system for capturing tasks, planning days, and learning deliberately inside ChatGPT and Codex.",
+  "license": "UNLICENSED",
+  "keywords": ["productivity", "tasks", "learning", "planning", "personal-os"]
+}
