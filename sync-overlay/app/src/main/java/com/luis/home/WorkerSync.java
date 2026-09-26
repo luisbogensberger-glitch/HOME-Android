@@ -27,6 +27,7 @@ import javax.crypto.spec.GCMParameterSpec;
 final class WorkerSync {
     static final String API = "https://luis-home-sync.luisbogensberger.workers.dev";
     private static final String LEARNING_INGEST = "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-ingest";
+    private static final String LEARNING_LATEST = "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-latest";
     private static final String KEY_ALIAS = "home_worker_token_v1";
     private final Context context;
 
@@ -236,6 +237,12 @@ final class WorkerSync {
             // HOME Sync remains durable; scheduled mirroring can retry the Supabase copy.
         }
         return saved;
+    }
+
+    JSONObject latestLearning(int limit) throws Exception {
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        String raw = requestAbsolute("GET", LEARNING_LATEST + "?limit=" + safeLimit, null, 20000);
+        return raw.isEmpty() ? new JSONObject() : new JSONObject(raw);
     }
 
     JSONObject reviewSentence(JSONObject payload) throws Exception {
