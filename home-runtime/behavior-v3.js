@@ -1,9 +1,9 @@
-/* HOME live behaviour bootstrap — stable core only. Behaviour Intelligence UI is temporarily disabled after tap-blocking regressions. */
+/* HOME live behaviour bootstrap — stable core + isolated safe tools. */
 (function(){
   'use strict';
   const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
 
-  /* Emergency recovery: never let an experimental behaviour overlay/launcher block HOME. */
+  /* Keep every legacy Behaviour Intelligence overlay disabled. Safe Tools use separate IDs and only become interactive when opened deliberately. */
   try{
     document.body && (document.body.style.overflow='');
     ['homeDayScoreV2','homeDayScoreV3','homeDayScoreV4','homeBehaviourOverlayV2','homeBehaviourOverlayV3','homeBehaviourOverlayV4'].forEach(id=>document.getElementById(id)?.remove());
@@ -15,17 +15,13 @@
     });
     document.querySelectorAll('.hbQuestHint').forEach(el=>el.remove());
     let kill=document.getElementById('homeBehaviourEmergencyDisable');
-    if(!kill){
-      kill=document.createElement('style');
-      kill.id='homeBehaviourEmergencyDisable';
-      kill.textContent=`
-        #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4,
-        #homeBehaviourOverlayV2,#homeBehaviourOverlayV3,#homeBehaviourOverlayV4,
-        .hbQuestHint{display:none!important;pointer-events:none!important;visibility:hidden!important}
-        body{overflow:auto!important}
-      `;
-      document.head.appendChild(kill);
-    }
+    if(!kill){kill=document.createElement('style');kill.id='homeBehaviourEmergencyDisable';document.head.appendChild(kill)}
+    kill.textContent=`
+      #homeDayScoreV2,#homeDayScoreV3,#homeDayScoreV4,
+      #homeBehaviourOverlayV2,#homeBehaviourOverlayV3,#homeBehaviourOverlayV4,
+      .hbQuestHint{display:none!important;pointer-events:none!important;visibility:hidden!important}
+      body{overflow:auto!important}
+    `;
   }catch(e){}
 
   async function get(name){const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status+' '+name);return r.text()}
@@ -40,6 +36,13 @@
     await safeLoad('habit-adaptation-v1.js','home-habit-adaptation-v1.js');
     await safeLoad('todo-pressure-v1.js','home-todo-pressure-v1.js');
     await safeLoad('post-install-resilience-v1.js','home-post-install-resilience-v1.js');
-    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,postInstall:1,behaviourMap:0,recovery:'behaviour-ui-disabled'})}catch(e){}
+
+    /* Safe replacement: no legacy Brain overlay, no page rerender, no always-on pointer layer. */
+    const safeTools=await safeLoad('safe-tools-v1.js','home-safe-tools-v1.js');
+    try{window.HOMESafeTools?.repair?.()}catch(e){}
+    setTimeout(()=>{try{window.HOMESafeTools?.repair?.()}catch(e){}},500);
+    setTimeout(()=>{try{window.HOMESafeTools?.repair?.()}catch(e){}},1800);
+
+    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('learning_engine_loaded',{version:10,resilience:11,interfacePolicy:10,habitAdaptation:1,todoPressure:1,postInstall:1,behaviourMap:0,safeTools:safeTools?1:0,recovery:'legacy-overlays-disabled'})}catch(e){}
   })();
 })();
