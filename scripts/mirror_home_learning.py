@@ -34,7 +34,7 @@ def request_json(url, *, method="GET", body=None, bearer=""):
             "Authorization": f"Bearer {bearer}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "V-Brain-Private-Mirror/1.5",
+            "User-Agent": "V-Brain-Private-Mirror/1.6",
         },
     )
     try:
@@ -84,8 +84,12 @@ allowed_exact = {
     "session_heartbeat", "session_background", "session_foreground", "home_impression",
     "dynamic_module_open", "interface_manifest", "private_text_field",
     "private_context_synced", "tube_text_sync", "vbrain_runtime_ready", "todo_link_open",
+    "ui_press_v13", "field_activity_v13", "screen_enter_v13", "screen_exit_v13",
+    "session_heartbeat_v13", "session_background_v13", "session_foreground_v13",
+    "session_start_v13", "inbox_access_status_v13", "permission_open_v13",
+    "notification_shown_v13", "whatsapp_message_private", "gmail_notification_private",
 }
-private_kinds = {"private_text_field"}
+private_kinds = {"private_text_field", "whatsapp_message_private", "gmail_notification_private"}
 
 eligible_activity = []
 for row in activity:
