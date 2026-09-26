@@ -1,0 +1,1 @@
+The iOS validation/release workflow populates Resources/Web with the reviewed HOME HTML/CSS/JS assets before generating the Xcode project. Remote executable JavaScript is intentionally excluded from Store builds.

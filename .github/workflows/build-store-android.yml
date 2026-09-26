@@ -1,0 +1,280 @@
+name: Build Veqrya Store Android AAB
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ store-ready-v1 ]
+    paths:
+      - 'store-overlay/**'
+      - 'sync-overlay/app/src/main/**'
+      - 'home-runtime/**'
+      - 'tube-feed.json'
+      - 'payload/**'
+      - 'todo-patch/**'
+      - '.github/workflows/build-store-android.yml'
+
+permissions:
+  contents: read
+
+env:
+  VEQRYA_MOBILE_API: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api
+  VEQRYA_SUPABASE_URL: https://skgmgxthymnzubbobqxu.supabase.co
+
+jobs:
+  build-store:
+    runs-on: ubuntu-latest
+    env:
+      HOME_API_URL: ${{ vars.HOME_STORE_API_URL || 'https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api' }}
+      HOME_SUPABASE_URL: ${{ vars.HOME_SUPABASE_URL || 'https://skgmgxthymnzubbobqxu.supabase.co' }}
+      HOME_SUPABASE_ANON_KEY: ${{ secrets.HOME_SUPABASE_ANON_KEY || 'validation-anon-key-not-used-at-build-time-0000000000' }}
+      ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+      ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+      ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+      ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Veqrya production mobile API
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 "$VEQRYA_MOBILE_API/health" | tee /tmp/veqrya-health.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/veqrya-health.json'))
+          assert data.get('ok') is True, data
+          assert data.get('service') == 'veqrya-mobile-api', data
+          assert data.get('ai_billing') == 'none', data
+          PY
+
+      - name: Validate release configuration
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$HOME_API_URL" = "$VEQRYA_MOBILE_API" || echo "Using explicit HOME_STORE_API_URL override: $HOME_API_URL"
+          test "$HOME_SUPABASE_URL" = "$VEQRYA_SUPABASE_URL" || echo "Using explicit HOME_SUPABASE_URL override: $HOME_SUPABASE_URL"
+          test "$HOME_SUPABASE_ANON_KEY" != 'validation-anon-key-not-used-at-build-time-0000000000' || { echo 'Missing secret HOME_SUPABASE_ANON_KEY'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEYSTORE_B64" || { echo 'Missing ANDROID_UPLOAD_KEYSTORE_B64'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEYSTORE_PASSWORD" || { echo 'Missing ANDROID_UPLOAD_KEYSTORE_PASSWORD'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEY_ALIAS" || { echo 'Missing ANDROID_UPLOAD_KEY_ALIAS'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEY_PASSWORD" || { echo 'Missing ANDROID_UPLOAD_KEY_PASSWORD'; exit 1; }
+
+      - name: Recreate Android source
+        shell: bash
+        run: |
+          cat payload/part*.txt > source.b64
+          base64 -d source.b64 > source.zip
+          mkdir -p src
+          unzip -q source.zip -d src
+
+      - name: Apply current task UI
+        shell: bash
+        run: |
+          cat todo-patch/part* > todo-details.patch
+          cd src
+          patch -p1 < ../todo-details.patch
+
+      - name: Add native sync overlay
+        shell: bash
+        run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
+
+      - name: Replace private sync with Store account sync
+        shell: bash
+        run: |
+          cp store-overlay/app/src/main/java/com/luis/home/WorkerSync.java src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java
+          cp store-overlay/app/src/main/java/com/luis/home/StoreAccountBridge.java src/luis-home-app/app/src/main/java/com/luis/home/StoreAccountBridge.java
+          cp store-overlay/app/src/main/assets/store-account.js src/luis-home-app/app/src/main/assets/store-account.js
+          rm -f src/luis-home-app/app/src/main/java/com/luis/home/WhatsAppAccessibilityService.java
+          rm -f src/luis-home-app/app/src/main/java/com/luis/home/WhatsAppNotificationListener.java
+
+      - name: Bundle adaptive UI locally for store review
+        shell: bash
+        run: |
+          cp home-runtime/runtime.css src/luis-home-app/app/src/main/assets/runtime.css
+          cp home-runtime/runtime.js src/luis-home-app/app/src/main/assets/runtime.js
+          cp home-runtime/behavior-v3.css src/luis-home-app/app/src/main/assets/behavior-v3.css
+          cp home-runtime/behavior-v3.js src/luis-home-app/app/src/main/assets/behavior-v3.js
+          cp tube-feed.json src/luis-home-app/app/src/main/assets/tube-feed.json
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/luis-home-app/app/src/main/assets/index.html')
+          s=p.read_text(encoding='utf-8')
+          css_tags=[
+              '<link rel="stylesheet" href="home-ui-v2.css" />',
+              '<link rel="stylesheet" href="adaptive-runtime.css" />',
+              '<link rel="stylesheet" href="todo-premium.css" />',
+              '<link rel="stylesheet" href="runtime.css" />',
+              '<link rel="stylesheet" href="behavior-v3.css" />',
+          ]
+          js_tags=[
+              '<script src="home-ui-v2.js"></script>',
+              '<script src="adaptive-runtime.js"></script>',
+              '<script src="todo-premium.js"></script>',
+              '<script src="runtime.js"></script>',
+              '<script src="behavior-v3.js"></script>',
+              '<script src="dynamic-shell-v5.js"></script>',
+              '<script src="tube-remote.js"></script>',
+              '<script src="store-account.js"></script>',
+          ]
+          s=s.replace('<script src="remote-extension-loader.js"></script>','')
+          for tag in css_tags:
+              if tag not in s: s=s.replace('</head>',tag+'\n</head>',1)
+          for tag in js_tags:
+              if tag not in s: s=s.replace('</body>',tag+'\n</body>',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          sed -i "s#https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/tube-feed.json#tube-feed.json#g" src/luis-home-app/app/src/main/assets/tube-remote.js
+
+      - name: Apply Veqrya branding and minimal V icon
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('src/luis-home-app/app/src/main')
+          index=root/'assets/index.html'
+          s=index.read_text(encoding='utf-8')
+          s=s.replace('<title>HOME</title>','<title>Veqrya</title>')
+          s=s.replace('<h1 class="homeTitle">HOME</h1>','<h1 class="homeTitle">V</h1>')
+          index.write_text(s,encoding='utf-8')
+          for p in root.rglob('strings.xml'):
+              x=p.read_text(encoding='utf-8')
+              x=re.sub(r'<string\s+name="app_name">.*?</string>','<string name="app_name">Veqrya</string>',x,flags=re.S)
+              p.write_text(x,encoding='utf-8')
+          PY
+          RES=src/luis-home-app/app/src/main/res
+          mkdir -p "$RES/drawable" "$RES/values" "$RES/mipmap-anydpi" "$RES/mipmap-anydpi-v26"
+          cat > "$RES/values/veqrya_colors.xml" <<'EOF'
+          <resources><color name="veqrya_icon_bg">#000000</color></resources>
+          EOF
+          cat > "$RES/drawable/veqrya_icon_foreground.xml" <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+            <path android:pathData="M27,25 L54,82 L81,25" android:fillColor="@android:color/transparent" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="square" android:strokeLineJoin="miter"/>
+          </vector>
+          EOF
+          cat > "$RES/mipmap-anydpi/ic_launcher.xml" <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+            <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z" android:fillColor="#000000"/>
+            <path android:pathData="M27,25 L54,82 L81,25" android:fillColor="@android:color/transparent" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="square" android:strokeLineJoin="miter"/>
+          </vector>
+          EOF
+          cp "$RES/mipmap-anydpi/ic_launcher.xml" "$RES/mipmap-anydpi/ic_launcher_round.xml"
+          cat > "$RES/mipmap-anydpi-v26/ic_launcher.xml" <<'EOF'
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@color/veqrya_icon_bg"/>
+            <foreground android:drawable="@drawable/veqrya_icon_foreground"/>
+          </adaptive-icon>
+          EOF
+          cp "$RES/mipmap-anydpi-v26/ic_launcher.xml" "$RES/mipmap-anydpi-v26/ic_launcher_round.xml"
+
+      - name: Patch native shell for Store account bridge
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('private WorkerSync worker;','private WorkerSync worker;\n    private StoreAccountBridge storeAccount;')
+          s=s.replace('worker = new WorkerSync(this);','worker = new WorkerSync(this);\n        storeAccount = new StoreAccountBridge(this, worker);')
+          needle='webView.addJavascriptInterface(new NativeBridge(), "Native");'
+          add=needle+'\n        storeAccount.attach(webView);\n        webView.addJavascriptInterface(storeAccount, "HomeAccount");'
+          if '"HomeAccount"' not in s: s=s.replace(needle,add,1)
+          pattern=re.compile(r'        @JavascriptInterface\n        public void configureNotion\(\) \{.*?\n        \}\n\n        @JavascriptInterface\n        public void disconnectNotion',re.S)
+          repl='        @JavascriptInterface\n        public void configureNotion() {\n            storeAccount.open();\n        }\n\n        @JavascriptInterface\n        public void disconnectNotion'
+          s,n=pattern.subn(repl,s,count=1)
+          if n!=1: raise SystemExit('Could not patch configureNotion for Store account flow')
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Remove private notification/accessibility capabilities
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/luis-home-app/app/src/main/AndroidManifest.xml')
+          s=p.read_text(encoding='utf-8')
+          s=re.sub(r'\s*<service[^>]*android:name="\.WhatsAppAccessibilityService".*?</service>','',s,flags=re.S)
+          s=re.sub(r'\s*<service[^>]*android:name="\.WhatsAppNotificationListener".*?</service>','',s,flags=re.S)
+          p.write_text(s,encoding='utf-8')
+          PY
+          grep -q 'setAllowUniversalAccessFromFileURLs(false)' src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
+
+      - name: Configure API 36 and public Store endpoints
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os,re
+          p=Path('src/luis-home-app/app/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s=re.sub(r'compileSdk(?:Version)?\s+\d+','compileSdk 36',s,count=1)
+          s=re.sub(r'targetSdk(?:Version)?\s+\d+','targetSdk 36',s,count=1)
+          s=re.sub(r'applicationId\s+["\'][^"\']+["\']','applicationId "com.veqrya.app"',s,count=1)
+          def esc(v): return v.replace('\\','\\\\').replace('"','\\"')
+          fields=(
+              f'        buildConfigField "String", "HOME_API_URL", "\\"{esc(os.environ["HOME_API_URL"])}\\""\n'
+              f'        buildConfigField "String", "HOME_SUPABASE_URL", "\\"{esc(os.environ["HOME_SUPABASE_URL"])}\\""\n'
+              f'        buildConfigField "String", "HOME_SUPABASE_ANON_KEY", "\\"{esc(os.environ["HOME_SUPABASE_ANON_KEY"])}\\""\n'
+          )
+          if 'HOME_API_URL' not in s:
+              m=re.search(r'defaultConfig\s*\{',s)
+              if not m: raise SystemExit('defaultConfig not found')
+              pos=m.end(); s=s[:pos]+'\n'+fields+s[pos:]
+          if 'buildFeatures' not in s:
+              m=re.search(r'android\s*\{',s)
+              if not m: raise SystemExit('android block not found')
+              pos=m.end(); s=s[:pos]+'\n    buildFeatures { buildConfig true }\n'+s[pos:]
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android 16 SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Validate Android Store source compiles
+        if: github.event_name == 'push'
+        working-directory: src/luis-home-app
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Restore upload keystore
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: echo "$ANDROID_UPLOAD_KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/veqrya-upload.jks"
+
+      - name: Build signed release AAB
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: src/luis-home-app
+        shell: bash
+        run: |
+          gradle :app:bundleRelease --stacktrace \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/veqrya-upload.jks" \
+            -Pandroid.injected.signing.store.password="$ANDROID_UPLOAD_KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$ANDROID_UPLOAD_KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$ANDROID_UPLOAD_KEY_PASSWORD"
+
+      - name: Upload Play Store bundle
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Veqrya-store-release-aab
+          path: src/luis-home-app/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
