@@ -8,18 +8,18 @@ This public integration is intentionally narrower than the standalone Veqrya mob
 
 ## Production endpoints
 
-- **Website:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/
-- **MCP:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/mcp
-- **OAuth protected-resource metadata:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/.well-known/oauth-protected-resource
+- **Website:** https://home-personal-os-plugin.vercel.app/
+- **MCP:** https://home-personal-os-plugin.vercel.app/mcp
+- **OAuth protected-resource metadata:** https://home-personal-os-plugin.vercel.app/.well-known/oauth-protected-resource
 - **OAuth authorization server:** https://skgmgxthymnzubbobqxu.supabase.co/auth/v1
 - **OAuth consent UI:** https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-auth/oauth/consent
 - **OIDC UserInfo:** https://skgmgxthymnzubbobqxu.supabase.co/auth/v1/oauth/userinfo
-- **Support:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/support
-- **Privacy:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/privacy
-- **Terms:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/terms
-- **OpenAI domain challenge:** https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/.well-known/openai-apps-challenge
+- **Support:** https://home-personal-os-plugin.vercel.app/support
+- **Privacy:** https://home-personal-os-plugin.vercel.app/privacy
+- **Terms:** https://home-personal-os-plugin.vercel.app/terms
+- **OpenAI domain challenge:** https://home-personal-os-plugin.vercel.app/.well-known/openai-apps-challenge
 
-The OpenAI challenge route intentionally returns 404 until the submission portal provides the exact verification token. The existing Vercel MCP origin remains stable during the Veqrya rebrand so an eventual published integration does not depend on an avoidable origin change.
+The OpenAI challenge route intentionally returns 404 until the submission portal provides the exact verification token.
 
 ## Listing draft
 
@@ -63,20 +63,21 @@ Exactly three negative cases for the submission portal:
 
 ## Authentication
 
-The production server uses Supabase Auth as an OAuth 2.1 authorization server with PKCE and dynamic client registration. Vercel is the stable public MCP host and publishes OAuth Protected Resource Metadata that points clients to the Supabase authorization server. Supabase Row Level Security isolates each signed-in user's data.
+The production server uses Supabase Auth as an OAuth 2.1 authorization server with PKCE and dynamic client registration. Vercel is the public MCP host and publishes OAuth Protected Resource Metadata that points clients to the Supabase authorization server. Supabase Row Level Security isolates each signed-in user's data.
 
 Verified production state:
 
 1. OAuth 2.1 server enabled.
 2. Dynamic client registration enabled.
 3. Authorization path is `/oauth/consent`.
-4. Production Veqrya consent UI is HTTPS-hosted and implements login, `getAuthorizationDetails`, approve, deny, and secure redirects for the supplied `authorization_id`.
+4. Production Veqrya consent UI is HTTPS-hosted and implements login, authorization details, approve, deny, and secure redirects for the supplied `authorization_id`.
 5. OAuth/OIDC discovery publishes authorization, token, UserInfo, JWKS, dynamic-registration, response-type, grant-type, and PKCE metadata.
 6. Supabase JWT signing is asymmetric **ES256**, with an `EC` / `P-256` signing key in public JWKS.
 7. Vercel production deployment is public rather than protected by Vercel Authentication.
 8. Unauthenticated `/mcp` requests return **401 Unauthorized**.
-9. Protected Resource Metadata is published on the same Vercel origin and identifies the Vercel `/mcp` resource plus the Supabase OAuth authorization server.
+9. Protected Resource Metadata is published on the same Vercel origin and identifies `https://home-personal-os-plugin.vercel.app/mcp` plus the Supabase OAuth authorization server.
 10. OAuth `openid email profile` scopes and the UserInfo endpoint support the identity information needed by compatible clients without exposing a reusable service credential.
+11. Production-contract CI validates the homepage, protected-resource metadata, MCP 401 challenge, OAuth/OIDC discovery, consent UI and OpenAI challenge state.
 
 Before public review:
 
