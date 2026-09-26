@@ -22,11 +22,28 @@ on:
 permissions:
   contents: read
 
+env:
+  VEQRYA_MOBILE_API: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api
+  VEQRYA_SUPABASE_URL: https://skgmgxthymnzubbobqxu.supabase.co
+
 jobs:
   validate-ios:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify Veqrya production mobile API
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 "$VEQRYA_MOBILE_API/health" | tee /tmp/veqrya-health.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/veqrya-health.json'))
+          assert data.get('ok') is True, data
+          assert data.get('service') == 'veqrya-mobile-api', data
+          assert data.get('ai_billing') == 'none', data
+          PY
 
       - name: Stage reviewed Veqrya web resources
         shell: bash
@@ -128,8 +145,8 @@ jobs:
       - name: Build iOS simulator target
         working-directory: ios/HOMEStore
         env:
-          HOME_API_URL: https://example.invalid
-          HOME_SUPABASE_URL: https://example.supabase.co
+          HOME_API_URL: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api
+          HOME_SUPABASE_URL: https://skgmgxthymnzubbobqxu.supabase.co
           HOME_SUPABASE_ANON_KEY: validation-anon-key-not-used-at-build-time-0000000000
           HOME_APPLE_TEAM_ID: ""
         run: |
