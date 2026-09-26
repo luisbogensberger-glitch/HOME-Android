@@ -53,14 +53,12 @@ jobs:
           p=Path('src/luis-home-app/app/src/main/assets/index.html')
           s=p.read_text(encoding='utf-8')
 
-          # These layers previously created overlapping full-screen surfaces, duplicate
-          # launchers, MutationObservers, or executed cached remote JavaScript.
           banned=[
             'behavior-v3.js','behavior-v3.css','recovery-code-v1.js','living-brain-v6.js',
             'state-resilience-v2.js','v-backup-ui-v1.js','dynamic-shell-v5.js',
             'remote-extension-loader.js','post-install-resilience-v1.js','behaviour-map-v4.js',
             'feedback-pulse-v1.js','safe-tools-v1.js','vbrain-stability-v1.js',
-            'vbrain-safe-shell-v2.js'
+            'vbrain-safe-shell-v2.js','vbrain-live-v9.js'
           ]
           for name in banned:
             s=re.sub(r'<script[^>]+src=["\'][^"\']*'+re.escape(name)+r'[^"\']*["\'][^>]*>\s*</script>\s*','',s,flags=re.I)
@@ -79,7 +77,6 @@ jobs:
             '<script src="runtime.js"></script>',
             '<script src="tube-remote.js"></script>',
             '<script src="vbrain-safe-shell-v3.js"></script>',
-            '<script src="vbrain-live-v9.js"></script>',
           ]
           for tag in css_tags:
             if tag not in s: s=s.replace('</head>',tag+'\n</head>',1)
@@ -145,14 +142,12 @@ jobs:
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
           INDEX="$ASSETS/index.html"
-          # The diagnostic remains callable manually, but the final APK does not show
-          # a false warning for cards that are simply below the current viewport.
           sed -i 's/setTimeout(diagnose,400);setTimeout(diagnose,1200)//' "$ASSETS/vbrain-safe-shell-v3.js"
           grep -q 'vbrain-safe-shell-v3.js' "$INDEX"
-          grep -q 'vbrain-live-v9.js' "$INDEX"
           grep -q 'runtime.js' "$INDEX"
           grep -q 'tube-remote.js' "$INDEX"
           ! grep -q 'remote-extension-loader.js' "$INDEX"
+          ! grep -q 'vbrain-live-v9.js' "$INDEX"
           ! grep -q 'behavior-v3.js' "$INDEX"
           ! grep -q 'living-brain-v6.js' "$INDEX"
           ! grep -q 'state-resilience-v2.js' "$INDEX"
@@ -162,14 +157,13 @@ jobs:
           node --check "$ASSETS/runtime.js"
           node --check "$ASSETS/tube-remote.js"
           node --check "$ASSETS/vbrain-safe-shell-v3.js"
-          node --check "$ASSETS/vbrain-live-v9.js"
           python3 - <<'PY'
           from pathlib import Path
           s=Path('src/luis-home-app/app/src/main/assets/index.html').read_text()
-          required=['home-ui-v2.js','adaptive-runtime.js','runtime.js','tube-remote.js','vbrain-safe-shell-v3.js','vbrain-live-v9.js']
+          required=['home-ui-v2.js','adaptive-runtime.js','runtime.js','tube-remote.js','vbrain-safe-shell-v3.js']
           positions=[s.index(x) for x in required]
           assert positions==sorted(positions), positions
-          unsafe=['remote-extension-loader.js','behavior-v3.js','recovery-code-v1.js','living-brain-v6.js','state-resilience-v2.js','vbrain-stability-v1.js']
+          unsafe=['remote-extension-loader.js','vbrain-live-v9.js','behavior-v3.js','recovery-code-v1.js','living-brain-v6.js','state-resilience-v2.js','vbrain-stability-v1.js']
           assert not any(x in s for x in unsafe)
           print('Interaction architecture validated')
           PY
