@@ -144,6 +144,9 @@ jobs:
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
           INDEX="$ASSETS/index.html"
+          # The diagnostic remains callable manually, but the final APK does not show
+          # a false warning for cards that are simply below the current viewport.
+          sed -i 's/setTimeout(diagnose,400);setTimeout(diagnose,1200)//' "$ASSETS/vbrain-safe-shell-v3.js"
           grep -q 'vbrain-safe-shell-v3.js' "$INDEX"
           grep -q 'runtime.js' "$INDEX"
           grep -q 'tube-remote.js' "$INDEX"
