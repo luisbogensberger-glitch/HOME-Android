@@ -34,7 +34,7 @@ def request_json(url, *, method="GET", body=None, bearer=""):
             "Authorization": f"Bearer {bearer}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "V-Brain-Private-Mirror/1.4",
+            "User-Agent": "V-Brain-Private-Mirror/1.5",
         },
     )
     try:
@@ -72,8 +72,6 @@ for attempt in attempts:
     item.setdefault("source", "vbrain-sync-mirror")
     eligible_attempts.append(item)
 
-# Generic behaviour remains content-minimised. Explicit V-Brain private context is allowed
-# through only for app-internal text fields that the user asked the adaptive model to read.
 allowed_exact = {
     "behavior_summary", "screen_dwell", "screen_open", "ui_usage_summary",
     "insights_open", "insights_node_open", "todo_open", "todo_complete", "todo_add",
@@ -85,6 +83,7 @@ allowed_exact = {
     "learning_engine_loaded", "ui_press", "screen_enter_detail", "screen_exit_detail",
     "session_heartbeat", "session_background", "session_foreground", "home_impression",
     "dynamic_module_open", "interface_manifest", "private_text_field",
+    "private_context_synced", "tube_text_sync", "vbrain_runtime_ready", "todo_link_open",
 }
 private_kinds = {"private_text_field"}
 
@@ -115,9 +114,6 @@ for row in activity:
         }
     eligible_activity.append(item)
 
-# Tasks intentionally include V-Brain-internal notes/details because the user explicitly wants
-# those private fields available to the adaptive model. They are sent only to the private
-# Supabase task ingest endpoint; never to GitHub files or logs.
 eligible_tasks = []
 for task in tasks:
     if not isinstance(task, dict):
@@ -165,7 +161,6 @@ for start in range(0, len(eligible_tasks), 300):
         raise RuntimeError("Supabase private task ingest returned an invalid response")
     task_mirrored += int(task_result.get("upserted") or 0)
 
-# Never print raw attempts, notes or activity payloads: GitHub Actions logs are not a private data store.
 print(
     f"V-Brain private mirror: {mirrored} written attempt(s), "
     f"{activity_mirrored} behaviour/context event(s), {task_mirrored} task snapshot(s) upserted"
