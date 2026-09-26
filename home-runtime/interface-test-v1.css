@@ -1,0 +1,10 @@
+/* TEMP HOME live-interface test — requested by Luis. Revert by removing from manifest. */
+:root{--live-test-accent:#d8ff3e;--live-test-bg:#080a0d;--live-test-panel:rgba(216,255,62,.08)}
+html,body{background:radial-gradient(circle at 85% 8%,rgba(216,255,62,.17),transparent 30%),linear-gradient(145deg,#07090c,#10151b 60%,#050607)!important}
+body:before{content:"LIVE · HOME";position:fixed;z-index:99999;right:16px;top:max(14px,env(safe-area-inset-top));padding:7px 11px;border:1px solid rgba(216,255,62,.5);border-radius:999px;background:rgba(8,10,13,.72);backdrop-filter:blur(14px);color:var(--live-test-accent);font:700 10px/1.1 system-ui;letter-spacing:.16em;pointer-events:none}
+button,.card,[class*="card"],[class*="tile"],[class*="panel"]{border-radius:24px!important}
+button{transition:transform .18s ease,filter .18s ease!important}
+button:active{transform:scale(.96)!important}
+h1,h2,h3,[class*="title"]{letter-spacing:-.035em!important}
+nav,[class*="nav"],[class*="bottom"]{backdrop-filter:blur(22px)!important}
+[data-home-sync="pending"] body:before{content:"LIVE · SYNCING"}
