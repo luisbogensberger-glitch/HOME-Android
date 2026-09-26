@@ -205,6 +205,17 @@ final class AdaptiveBridge {
     }
 
     @JavascriptInterface
+    public String homeSyncStatus() {
+        try {
+            return new JSONObject()
+                    .put("configured", worker.isConfigured())
+                    .put("pending", worker.pendingOutboxCount())
+                    .put("at", System.currentTimeMillis())
+                    .toString();
+        } catch (Exception ignored) { return "{\"configured\":false}"; }
+    }
+
+    @JavascriptInterface
     public int pendingPrivateSyncCount() { return worker.pendingOutboxCount(); }
 
     @JavascriptInterface
