@@ -12,7 +12,9 @@ struct AccountView: View {
             Color(red: 0.067, green: 0.071, blue: 0.078).ignoresSafeArea()
             VStack(alignment: .leading, spacing: 22) {
                 Spacer()
-                Text("HOME").font(.system(size: 46, weight: .bold, design: .rounded))
+                Text("V").font(.system(size: 54, weight: .light, design: .serif))
+                Text("Veqrya")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                 Text("Your adaptive personal operating system.")
                     .font(.title3.weight(.semibold)).foregroundStyle(.secondary)
 
@@ -35,13 +37,13 @@ struct AccountView: View {
                         else { await session.signIn(email: email, password: password) }
                     }
                 } label: {
-                    HStack { Spacer(); if session.busy { ProgressView() } else { Text(createMode ? "Create HOME account" : "Sign in") }; Spacer() }
+                    HStack { Spacer(); if session.busy { ProgressView() } else { Text(createMode ? "Create Veqrya account" : "Sign in") }; Spacer() }
                         .fontWeight(.bold).padding(14)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(session.busy)
 
-                Button(createMode ? "Already have an account? Sign in" : "New to HOME? Create account") {
+                Button(createMode ? "Already have an account? Sign in" : "New to Veqrya? Create account") {
                     session.errorMessage = nil
                     createMode.toggle()
                 }
