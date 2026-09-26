@@ -1,24 +1,42 @@
-/* Loads arbitrary HOME web-layer overrides from GitHub at runtime.
- * Design, structure, behaviour experiments and gamification can ship without a new APK.
- */
+/* HOME remote extension loader v3 — independent, failure-tolerant layers. */
 (function(){
+  'use strict';
+  if(window.__HOME_REMOTE_LOADER_V3__)return;window.__HOME_REMOTE_LOADER_V3__=true;
   const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
-  const CSS_KEY='homeRemoteCssV2',JS_KEY='homeRemoteJsV2',BCSS_KEY='homeBehaviorCssV3',BJS_KEY='homeBehaviorJsV3';
-  async function text(name){const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}
-  function applyCss(id,css){let s=document.getElementById(id);if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s)}s.textContent=css}
-  function run(js,name){new Function(js+'\n//# sourceURL='+name)()}
+  const PARTS=[
+    {name:'runtime.css',key:'homeRemoteCssV2',kind:'css',id:'homeRemoteExtensionCss'},
+    {name:'runtime.js',key:'homeRemoteJsV2',kind:'js',label:'home-runtime-remote.js'},
+    {name:'behavior-v3.css',key:'homeBehaviorCssV3',kind:'css',id:'homeBehaviourExtensionCss'},
+    {name:'behavior-v3.js',key:'homeBehaviorJsV3',kind:'js',label:'home-behaviour-remote.js'}
+  ];
+  async function fetchText(name){const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status+' '+name);return r.text()}
+  function applyCss(id,css){if(!css)return false;let s=document.getElementById(id);if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s)}s.textContent=css;return true}
+  function run(js,name){if(!js)return false;new Function(js+'\n//# sourceURL='+name)();return true}
+  function apply(part,text,source){try{if(part.kind==='css')return applyCss(part.id,text);return run(text,source==='cache'?part.label.replace('remote','cache'):part.label)}catch(e){try{console.warn('HOME remote layer failed',part.name,e)}catch(_){}return false}}
+  function cached(part){try{return localStorage.getItem(part.key)||''}catch(e){return''}}
+  function save(part,text){try{if(text)localStorage.setItem(part.key,text)}catch(e){}}
+
   async function refresh(){
-    try{
-      const [css,js,bcss,bjs]=await Promise.all([text('runtime.css'),text('runtime.js'),text('behavior-v3.css'),text('behavior-v3.js')]);
-      localStorage.setItem(CSS_KEY,css);localStorage.setItem(JS_KEY,js);localStorage.setItem(BCSS_KEY,bcss);localStorage.setItem(BJS_KEY,bjs);
-      applyCss('homeRemoteExtensionCss',css);applyCss('homeBehaviourExtensionCss',bcss);run(js,'home-runtime-remote.js');run(bjs,'home-behaviour-remote.js');
-      if(window.homeAdaptiveLog)window.homeAdaptiveLog('remote_extension_loaded',{behaviour:3});
-    }catch(e){
-      const css=localStorage.getItem(CSS_KEY),js=localStorage.getItem(JS_KEY),bcss=localStorage.getItem(BCSS_KEY),bjs=localStorage.getItem(BJS_KEY);
-      if(css)applyCss('homeRemoteExtensionCss',css);if(bcss)applyCss('homeBehaviourExtensionCss',bcss);if(js)try{run(js,'home-runtime-cache.js')}catch(_){}if(bjs)try{run(bjs,'home-behaviour-cache.js')}catch(_){}
-    }
+    const results=await Promise.allSettled(PARTS.map(p=>fetchText(p.name)));
+    const state={fresh:[],cache:[],failed:[]};
+    PARTS.forEach((part,i)=>{
+      const result=results[i];
+      if(result.status==='fulfilled'&&result.value){
+        if(apply(part,result.value,'remote')){save(part,result.value);state.fresh.push(part.name)}else state.failed.push(part.name);
+      }else{
+        const old=cached(part);
+        if(old&&apply(part,old,'cache'))state.cache.push(part.name);else state.failed.push(part.name);
+      }
+    });
+    try{window.HOMELivingBrainV6?.repair?.();window.HOMEStateV2?.repair?.()}catch(e){}
+    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('remote_extension_loaded',{version:3,fresh:state.fresh,cache:state.cache,failed:state.failed})}catch(e){}
+    return state;
   }
-  window.HOMERemoteExtension={refresh};
+
+  /* Apply known-good cache immediately; network refresh may replace each layer independently. */
+  PARTS.forEach(p=>{const old=cached(p);if(old)apply(p,old,'cache')});
+  window.HOMERemoteExtension={version:3,refresh};
   refresh();
-  const old=window.onAppResume;window.onAppResume=function(){try{if(old)old()}catch(e){}refresh()};
+  const oldResume=window.onAppResume;
+  window.onAppResume=function(){try{if(oldResume)oldResume()}catch(e){}refresh()};
 })();
