@@ -1,68 +1,38 @@
-/* Legacy HOME rescue v3 — always-visible backup code on the home screen. */
+/* V-Brain Safe Mode v4 — repairs navigation in new V-Brain; preserves backup rescue in legacy HOME. */
 (function(){
   'use strict';
-  if(window.__HOME_LEGACY_BACKUP_CENTER_V3__){try{window.HOMELegacyBackupCenterV3?.repair?.()}catch(e){}return}
-  window.__HOME_LEGACY_BACKUP_CENTER_V3__=true;
-
   const SECRET_RE=/(token|secret|password|passwd|auth|credential|cookie|session|bearer|api[_-]?key)/i;
-  const CODE_CACHE=new Set(['homeRemoteCssV2','homeRemoteJsV2','homeBehaviorCssV3','homeBehaviorJsV3']);
-  const NATIVE_KEYS=['todoState','tubeState','homeVisualOverridesV5','homeGymStateV1','livingBrainGraphV6'];
-  const enc=new TextEncoder();
+  const NATIVE_KEYS=new Set(['todoState','tubeState','homeVisualOverridesV5','homeGymStateV1','livingBrainGraphV6']);
+  const enc=new TextEncoder(),dec=new TextDecoder();
+  const b64u=b=>{let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode(...b.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
+  const unb64=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const x=atob(s),o=new Uint8Array(x.length);for(let i=0;i<x.length;i++)o[i]=x.charCodeAt(i);return o};
+  const checksum=raw=>{let a=0x811c9dc5>>>0,b=0x9e3779b9>>>0;for(let i=0;i<raw.length;i++){a=Math.imul((a^raw[i])>>>0,0x01000193)>>>0;b=Math.imul((b+raw[i]+((i+1)&255))>>>0,0x85ebca6b)>>>0;b^=b>>>13}return a.toString(16).padStart(8,'0')+b.toString(16).padStart(8,'0')};
+  function collect(){const storage={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||SECRET_RE.test(k)||/^homeRemote/.test(k))continue;const v=localStorage.getItem(k);if(v!=null)storage[k]=v}}catch(e){}NATIVE_KEYS.forEach(k=>{try{const v=typeof Native!=='undefined'&&Native.loadState?Native.loadState(k):'';if(v)storage[k]=v}catch(e){}});return{app:'HOME',brand:'V-Brain',version:4,createdAt:Date.now(),storage}}
+  function backup(){const raw=enc.encode(JSON.stringify(collect()));return`HOME2J.${checksum(raw)}.${b64u(raw)}`}
+  function restore(code){const p=String(code||'').trim().split('.');if(p.length!==3||p[0]!=='HOME2J')throw Error('Not a compatible HOME2J backup code.');const raw=unb64(p[2]);if(checksum(raw)!==p[1])throw Error('Backup checksum does not match.');const data=JSON.parse(dec.decode(raw));if(!data?.storage)throw Error('Backup payload is invalid.');let n=0;Object.entries(data.storage).forEach(([k,v])=>{if(!k||SECRET_RE.test(k)||typeof v!=='string')return;localStorage.setItem(k,v);if(NATIVE_KEYS.has(k)&&typeof Native!=='undefined'&&Native.saveState)try{Native.saveState(k,v)}catch(e){}n++});return n}
+  async function copy(text,el){try{await navigator.clipboard.writeText(text);return true}catch(e){}try{el.focus();el.select();return document.execCommand('copy')}catch(e){return false}}
 
-  function bytesToB64u(bytes){let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
-  function checksum(bytes){let a=0x811c9dc5>>>0,b=0x9e3779b9>>>0;for(let i=0;i<bytes.length;i++){a=Math.imul((a^bytes[i])>>>0,0x01000193)>>>0;b=Math.imul((b+bytes[i]+((i+1)&255))>>>0,0x85ebca6b)>>>0;b^=b>>>13}return a.toString(16).padStart(8,'0')+b.toString(16).padStart(8,'0')}
-  function collect(){
-    const storage={};
-    try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||SECRET_RE.test(k)||CODE_CACHE.has(k))continue;const v=localStorage.getItem(k);if(v!==null)storage[k]=v}}catch(e){}
-    NATIVE_KEYS.forEach(k=>{try{if(typeof Native!=='undefined'&&Native.loadState){const v=Native.loadState(k);if(typeof v==='string'&&v.length)storage[k]=v}}catch(e){}});
-    return{app:'HOME',version:2,createdAt:Date.now(),storage};
-  }
-  function makeCode(){
-    try{if(typeof window.HOMEClassicBrain?.backup==='function')return window.HOMEClassicBrain.backup()}catch(e){}
-    const raw=enc.encode(JSON.stringify(collect()));
-    return `HOME2J.${checksum(raw)}.${bytesToB64u(raw)}`;
-  }
-  async function copyText(text,el){
-    try{await navigator.clipboard.writeText(text);return true}catch(e){}
-    try{el.focus();el.select();el.setSelectionRange(0,el.value.length);return document.execCommand('copy')}catch(e){return false}
-  }
+  function isVBrain(){return /V-?BRAIN/i.test(document.querySelector('.homeBrandName')?.textContent||'')||!!document.getElementById('vbrainDataButton')}
+  function style(){if(document.getElementById('vbSafe4Style'))return;const s=document.createElement('style');s.id='vbSafe4Style';s.textContent=`
+    #homeScreen .homeCard{pointer-events:auto!important;touch-action:manipulation!important;position:relative!important;z-index:2!important;opacity:1!important;visibility:visible!important}
+    #homeScreen .homeGrid{pointer-events:auto!important;position:relative!important;z-index:2!important}
+    #homeFlexSheet:not(.show),#homeBehaviourOverlayV4:not(.show),#vbrainDataModal:not(.show){display:none!important;pointer-events:none!important}
+    #vbRestoreInline{margin:10px 0 18px;padding:16px;border:1px solid rgba(255,255,255,.12);border-radius:22px;background:#11141a;color:#fff;position:relative;z-index:3}
+    #vbRestoreInline h3{margin:0 0 5px;font-size:19px}#vbRestoreInline p{margin:0 0 10px;font-size:12px;line-height:1.45;color:rgba(255,255,255,.62)}
+    #vbRestoreInline textarea{width:100%;min-height:92px;box-sizing:border-box;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:#080a0e;color:#fff;padding:10px;font-size:10px}
+    #vbRestoreInline button{width:100%;margin-top:9px;padding:12px;border:0;border-radius:14px;background:#f2f3f7;color:#111318;font-weight:900}
+    #vbRestoreStatus{font-size:11px;min-height:16px;margin-top:8px;color:rgba(255,255,255,.66)}
+    #legacyBackupCenter{pointer-events:auto!important}
+  `;document.head.appendChild(s)}
 
-  function ensureStyle(){
-    if(document.getElementById('legacyBackupCenterStyle'))return;
-    const s=document.createElement('style');
-    s.id='legacyBackupCenterStyle';
-    s.textContent=`
-      #legacyBackupCenter{width:calc(100% - 36px)!important;max-width:620px!important;box-sizing:border-box!important;margin:18px auto 24px!important;padding:18px!important;border-radius:24px!important;border:1px solid rgba(255,255,255,.18)!important;background:#11141a!important;color:#fff!important;position:relative!important;z-index:500!important;box-shadow:0 16px 44px rgba(0,0,0,.34)!important;text-align:center!important}
-      #legacyBackupCenter .lbcEyebrow{font-size:10px!important;letter-spacing:.18em!important;font-weight:900!important;color:#f1d46a!important;margin-bottom:7px!important}
-      #legacyBackupCenter h2{font-size:24px!important;line-height:1.1!important;margin:0 0 7px!important;color:#fff!important}
-      #legacyBackupCenter p{font-size:12px!important;line-height:1.45!important;margin:0 0 12px!important;color:rgba(255,255,255,.63)!important}
-      #legacyBackupCode{width:100%!important;min-height:145px!important;box-sizing:border-box!important;border:1px solid rgba(255,255,255,.15)!important;border-radius:16px!important;background:#080a0e!important;color:#fff!important;padding:12px!important;font-size:10px!important;line-height:1.35!important;word-break:break-all!important;resize:vertical!important}
-      #legacyBackupCopy,#legacyBackupRefresh{width:100%!important;border:0!important;border-radius:15px!important;padding:13px 14px!important;font-weight:900!important;font-size:13px!important;margin-top:9px!important;touch-action:manipulation!important}
-      #legacyBackupCopy{background:#f4f5f8!important;color:#0d0f13!important}
-      #legacyBackupRefresh{background:#232832!important;color:#fff!important}
-      #legacyBackupStatus{min-height:18px!important;margin-top:8px!important;font-size:11px!important;color:rgba(255,255,255,.67)!important}
-    `;
-    document.head.appendChild(s);
-  }
+  function closeStaleLayersOnce(){if(window.__VB_SAFE4_UNLOCKED__)return;window.__VB_SAFE4_UNLOCKED__=true;['homeFlexSheet','homeBehaviourOverlayV4','vbrainDataModal','homeSafeBrainModal','homeSafeBackupModal'].forEach(id=>document.getElementById(id)?.classList.remove('show'));document.body&&(document.body.style.overflow='')}
+  function route(name){try{if(typeof window.showScreen==='function')return window.showScreen(name)}catch(e){}const target=document.getElementById(name+'Screen');if(!target)return;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('show'));target.classList.add('show')}
+  function ensureGym(){const grid=document.querySelector('#homeScreen .homeGrid');if(!grid||grid.querySelector('.homeCard.gym'))return;const b=document.createElement('button');b.type='button';b.className='homeCard gym';b.setAttribute('aria-label','Open training');b.innerHTML='<div class="homeCardHead"><span class="homeCardLabel">Gym</span><span><span class="homeCardMetric">Ready</span><span class="homeCardChevron">›</span></span></div><div class="homeMetricRow"><div class="homeTaskVisual" aria-hidden="true"><span style="font-size:34px">↑</span></div><div class="homeSummary"><h2>Train</h2><p>Strength · movement</p></div></div>';grid.appendChild(b)}
+  function bindCards(){[['calendar','calendar'],['todos','todos'],['tube','tube'],['gym','gym']].forEach(([c,r])=>{const el=document.querySelector('#homeScreen .homeCard.'+c);if(!el)return;el.onclick=e=>{e.preventDefault();e.stopPropagation();route(r)}})}
+  function ensureRestore(){const inner=document.querySelector('#homeScreen .homeInner');if(!inner)return;let x=document.getElementById('vbRestoreInline');if(!x){x=document.createElement('section');x.id='vbRestoreInline';x.innerHTML='<h3>Restore previous V-Brain data</h3><p>Paste the HOME2J backup code from the old HOME app. This restores tasks, Tube progress, training state and brain data.</p><textarea id="vbRestoreCode" placeholder="Paste HOME2J... code here"></textarea><button id="vbRestoreNow" type="button">RESTORE DATA</button><div id="vbRestoreStatus"></div>';const grid=inner.querySelector('.homeGrid');if(grid)inner.insertBefore(x,grid);else inner.appendChild(x)}x.querySelector('#vbRestoreNow').onclick=()=>{const st=x.querySelector('#vbRestoreStatus');try{const n=restore(x.querySelector('#vbRestoreCode').value);st.textContent=`Restored ${n} entries. Reloading…`;setTimeout(()=>location.reload(),600)}catch(e){st.textContent=e.message||'Restore failed.'}}}
+  function newAppRepair(){style();closeStaleLayersOnce();document.getElementById('legacyBackupCenter')?.remove();ensureGym();bindCards();ensureRestore();document.documentElement.dataset.vbrainSafeMode='4'}
 
-  function repair(){
-    ensureStyle();
-    const home=document.getElementById('homeScreen');if(!home)return;
-    let box=document.getElementById('legacyBackupCenter');
-    if(!box){
-      box=document.createElement('section');
-      box.id='legacyBackupCenter';
-      box.innerHTML=`<div class="lbcEyebrow">OLD HOME · DATA RESCUE</div><h2>BACKUP CODE</h2><p>Copy this code before installing or deleting anything. It contains your current HOME state; passwords and tokens are excluded.</p><textarea id="legacyBackupCode" readonly></textarea><button id="legacyBackupCopy" type="button">COPY BACKUP CODE</button><button id="legacyBackupRefresh" type="button">RECREATE CODE</button><div id="legacyBackupStatus">Backup ready.</div>`;
-      const inner=home.querySelector('.homeInner')||home.querySelector('.pad')||home;
-      const grid=inner.querySelector('.homeGrid');
-      if(grid&&grid.parentNode===inner)inner.insertBefore(box,grid);else inner.insertBefore(box,inner.firstChild);
-    }
-    const out=box.querySelector('#legacyBackupCode'),status=box.querySelector('#legacyBackupStatus');
-    if(out&&!out.value){try{out.value=makeCode();status.textContent='Backup ready — copy this code now.'}catch(e){status.textContent='Backup creation failed: '+(e?.message||e)}}
-    const copy=box.querySelector('#legacyBackupCopy');if(copy)copy.onclick=async()=>{if(!out.value){try{out.value=makeCode()}catch(e){}}status.textContent=(await copyText(out.value,out))?'BACKUP CODE COPIED.':'Select the code and copy it manually.'};
-    const refresh=box.querySelector('#legacyBackupRefresh');if(refresh)refresh.onclick=()=>{try{out.value=makeCode();status.textContent='Backup recreated from the current app state.'}catch(e){status.textContent='Backup creation failed: '+(e?.message||e)}};
-  }
-
-  window.HOMELegacyBackupCenterV3={repair,makeCode};
-  repair();setTimeout(repair,200);setTimeout(repair,700);setTimeout(repair,1800);setInterval(repair,4000);
+  function legacyRepair(){style();const home=document.getElementById('homeScreen');if(!home)return;let box=document.getElementById('legacyBackupCenter');if(!box){box=document.createElement('section');box.id='legacyBackupCenter';box.style.cssText='width:calc(100% - 36px);max-width:620px;box-sizing:border-box;margin:18px auto 24px;padding:18px;border-radius:24px;border:1px solid rgba(255,255,255,.18);background:#11141a;color:#fff;position:relative;z-index:500;text-align:center';box.innerHTML='<div style="font-size:10px;letter-spacing:.18em;font-weight:900;color:#f1d46a;margin-bottom:7px">OLD HOME · DATA RESCUE</div><h2 style="margin:0 0 8px">BACKUP CODE</h2><textarea id="legacyBackupCode" readonly style="width:100%;min-height:145px;box-sizing:border-box;background:#080a0e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:12px;font-size:10px"></textarea><button id="legacyBackupCopy" style="width:100%;margin-top:9px;padding:13px;border:0;border-radius:15px;font-weight:900">COPY BACKUP CODE</button><div id="legacyBackupStatus" style="font-size:11px;margin-top:8px"></div>';const inner=home.querySelector('.homeInner')||home;const grid=inner.querySelector('.homeGrid');grid?inner.insertBefore(box,grid):inner.insertBefore(box,inner.firstChild)}const out=box.querySelector('#legacyBackupCode');if(out&&!out.value)out.value=backup();box.querySelector('#legacyBackupCopy').onclick=async()=>{box.querySelector('#legacyBackupStatus').textContent=(await copy(out.value,out))?'BACKUP CODE COPIED.':'Select and copy manually.'}}
+  function repair(){isVBrain()?newAppRepair():legacyRepair()}
+  window.VBrainSafeMode={repair,restore,backup};repair();setTimeout(repair,250);setTimeout(repair,900);setTimeout(repair,1800);setInterval(repair,5000);
 })();
