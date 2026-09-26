@@ -40,16 +40,16 @@ jobs:
           patch -p1 < ../todo-details.patch
       - name: Add HOME Worker sync
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
-      - name: Bake behavior engine baseline and isolated safe tools
+      - name: Bake stable adaptive HOME runtime
         shell: bash
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
           cp home-runtime/behavior-v3.js "$ASSETS/behavior-v3.js"
           cp home-runtime/behavior-v3.css "$ASSETS/behavior-v3.css"
           cp home-runtime/behavior-v3-base.js "$ASSETS/behavior-v3-base.js"
-          cp home-runtime/safe-tools-v1.js "$ASSETS/safe-tools-v1.js"
+          cp home-runtime/living-brain-v6.js "$ASSETS/living-brain-v6.js"
+          cp home-runtime/state-resilience-v2.js "$ASSETS/state-resilience-v2.js"
           cp home-runtime/behaviour-map-v4.js "$ASSETS/behaviour-map-v4.js"
-          cp home-runtime/feedback-pulse-v1.js "$ASSETS/feedback-pulse-v1.js"
           cp home-runtime/recovery-code-v1.js "$ASSETS/recovery-code-v1.js"
       - name: Add premium HOME dashboard and adaptive runtime
         shell: bash
@@ -69,6 +69,8 @@ jobs:
               '<script src="adaptive-runtime.js"></script>',
               '<script src="todo-premium.js"></script>',
               '<script src="behavior-v3.js"></script>',
+              '<script src="living-brain-v6.js"></script>',
+              '<script src="state-resilience-v2.js"></script>',
               '<script src="dynamic-shell-v5.js"></script>',
           ]
           for tag in css_tags:
@@ -169,6 +171,26 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Restore stable HOME debug signer
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: home-android-debug-keystore-v1
+      - name: Ensure stable HOME debug signer
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=HOME,C=GB"
+          fi
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -177,10 +199,10 @@ jobs:
         working-directory: src/luis-home-app
         run: gradle :app:assembleDebug --stacktrace
       - name: Rename APK
-        run: cp src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk HOME-worker-sync.apk
+        run: cp src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk HOME-Living-Brain-v6.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HOME-worker-sync-apk
-          path: HOME-worker-sync.apk
+          name: HOME-living-brain-v6-apk
+          path: HOME-Living-Brain-v6.apk
           if-no-files-found: error
