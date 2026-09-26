@@ -81,6 +81,7 @@ jobs:
             '<script src="vbrain-autonomy-v11.js"></script>',
             '<script src="vbrain-context-v12.js"></script>',
             '<script src="vbrain-sense-v13.js"></script>',
+            '<script src="vbrain-android-back-v14.js"></script>',
           ]
           for tag in css_tags:
             if tag not in s: s=s.replace('</head>',tag+'\n</head>',1)
@@ -184,6 +185,7 @@ jobs:
           grep -q 'vbrain-autonomy-v11.js' "$INDEX"
           grep -q 'vbrain-context-v12.js' "$INDEX"
           grep -q 'vbrain-sense-v13.js' "$INDEX"
+          grep -q 'vbrain-android-back-v14.js' "$INDEX"
           grep -q 'runtime.js' "$INDEX"
           grep -q 'tube-remote.js' "$INDEX"
           grep -q '.WhatsAppNotificationListener' "$MANIFEST"
@@ -203,10 +205,11 @@ jobs:
           node --check "$ASSETS/vbrain-autonomy-v11.js"
           node --check "$ASSETS/vbrain-context-v12.js"
           node --check "$ASSETS/vbrain-sense-v13.js"
+          node --check "$ASSETS/vbrain-android-back-v14.js"
           python3 - <<'PY'
           from pathlib import Path
           s=Path('src/luis-home-app/app/src/main/assets/index.html').read_text()
-          required=['home-ui-v2.js','adaptive-runtime.js','runtime.js','tube-remote.js','vbrain-safe-shell-v3.js','vbrain-patch-v10.js','vbrain-autonomy-v11.js','vbrain-context-v12.js','vbrain-sense-v13.js']
+          required=['home-ui-v2.js','adaptive-runtime.js','runtime.js','tube-remote.js','vbrain-safe-shell-v3.js','vbrain-patch-v10.js','vbrain-autonomy-v11.js','vbrain-context-v12.js','vbrain-sense-v13.js','vbrain-android-back-v14.js']
           positions=[s.index(x) for x in required]
           assert positions==sorted(positions), positions
           unsafe=['remote-extension-loader.js','vbrain-live-v9.js','behavior-v3.js','recovery-code-v1.js','living-brain-v6.js','state-resilience-v2.js','vbrain-stability-v1.js']
