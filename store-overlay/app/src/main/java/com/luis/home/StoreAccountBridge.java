@@ -2,6 +2,8 @@ package com.luis.home;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
+import android.net.Uri;
 import android.text.InputType;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
@@ -15,7 +17,7 @@ import org.json.JSONObject;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Native account UI kept outside the WebView: sign in/up, sign out and full deletion. */
+/** Native Veqrya account UI kept outside the WebView: auth, AI connections and deletion. */
 final class StoreAccountBridge {
     private final Activity activity;
     private final WorkerSync worker;
@@ -40,6 +42,11 @@ final class StoreAccountBridge {
         activity.runOnUiThread(() -> {
             if (worker.isConfigured()) showSignedIn(); else showAuth();
         });
+    }
+
+    @JavascriptInterface
+    public void openAiConnections() {
+        activity.runOnUiThread(this::showAiConnections);
     }
 
     @JavascriptInterface
@@ -77,12 +84,12 @@ final class StoreAccountBridge {
         box.addView(password, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView note = new TextView(activity);
-        note.setText("Your HOME account keeps your tasks and learning data separate from every other user.");
+        note.setText("Your Veqrya account keeps your tasks and learning data separate from every other user.");
         note.setPadding(0, dp(10), 0, 0);
         box.addView(note);
 
         AlertDialog dialog = new AlertDialog.Builder(activity)
-                .setTitle("HOME account")
+                .setTitle("Veqrya account")
                 .setView(box)
                 .setNegativeButton("Cancel", null)
                 .setNeutralButton("Create account", null)
@@ -123,22 +130,49 @@ final class StoreAccountBridge {
 
     private void showSignedIn() {
         String email = worker.sessionEmail();
-        AlertDialog dialog = new AlertDialog.Builder(activity)
-                .setTitle("HOME account")
-                .setMessage(email.isEmpty() ? "Signed in" : "Signed in as " + email)
+        String message = email.isEmpty() ? "Signed in" : "Signed in as " + email;
+        String[] actions = new String[]{"AI connections", "Sign out", "Delete account…"};
+        new AlertDialog.Builder(activity)
+                .setTitle("Veqrya account")
+                .setMessage(message)
+                .setItems(actions, (dialog, which) -> {
+                    if (which == 0) showAiConnections();
+                    else if (which == 1) signOut();
+                    else if (which == 2) confirmDeletion();
+                })
                 .setNegativeButton("Close", null)
-                .setNeutralButton("Sign out", (d, w) -> signOut())
-                .setPositiveButton("Delete account…", null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> { dialog.dismiss(); confirmDeletion(); }));
-        dialog.show();
+                .show();
+    }
+
+    private void showAiConnections() {
+        String message = "ChatGPT\nReady through the Veqrya connector. Sign in with the same Veqrya account in ChatGPT so both surfaces use the same tasks and learning data.\n\n" +
+                "Claude · planned\nGemini · planned\n\n" +
+                "Veqrya does not ask you to paste an AI API key into the app, and Veqrya does not bill model usage on your behalf.";
+        new AlertDialog.Builder(activity)
+                .setTitle("AI connections")
+                .setMessage(message)
+                .setNegativeButton("Close", null)
+                .setPositiveButton("Open ChatGPT", (d, w) -> openChatGPT())
+                .show();
+    }
+
+    private void openChatGPT() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://chatgpt.com/"));
+            activity.startActivity(intent);
+        } catch (Exception error) {
+            new AlertDialog.Builder(activity)
+                    .setTitle("Could not open ChatGPT")
+                    .setMessage("Open ChatGPT and connect the Veqrya connector there.")
+                    .setPositiveButton("OK", null)
+                    .show();
+        }
     }
 
     private void confirmDeletion() {
         new AlertDialog.Builder(activity)
-                .setTitle("Delete HOME account?")
-                .setMessage("This permanently deletes your HOME account, tasks, learning progress and stored HOME activity. This cannot be undone.")
+                .setTitle("Delete Veqrya account?")
+                .setMessage("This permanently deletes your Veqrya account, tasks, learning progress and stored Veqrya activity. This cannot be undone.")
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Delete permanently", (d, w) -> performDeletion())
                 .show();
@@ -151,7 +185,7 @@ final class StoreAccountBridge {
                 activity.runOnUiThread(() -> {
                     emit("onNotionDisconnected", new JSONObject());
                     emitAccountChanged(false);
-                    new AlertDialog.Builder(activity).setTitle("Account deleted").setMessage("Your HOME account and associated HOME data were deleted.").setPositiveButton("OK", null).show();
+                    new AlertDialog.Builder(activity).setTitle("Account deleted").setMessage("Your Veqrya account and associated Veqrya data were deleted.").setPositiveButton("OK", null).show();
                 });
             } catch (Exception error) {
                 activity.runOnUiThread(() -> new AlertDialog.Builder(activity)
