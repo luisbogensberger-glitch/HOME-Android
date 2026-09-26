@@ -6,6 +6,7 @@ on:
     branches: [ home-plugin-v1 ]
     paths:
       - 'plugin/home/**'
+      - 'vercel-plugin/**'
       - 'supabase/functions/home-mcp/**'
       - 'plugin-auth/**'
       - '.github/workflows/validate-veqrya-production.yml'
@@ -17,7 +18,7 @@ env:
   SUPABASE_ORIGIN: https://skgmgxthymnzubbobqxu.supabase.co
   MOBILE_API: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api
   CONSENT_URL: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-auth/oauth/consent
-  PLUGIN_ORIGIN: https://home-personal-os-plugin-luisbogensberger-9259.vercel.app
+  PLUGIN_ORIGIN: https://home-personal-os-plugin.vercel.app
 
 jobs:
   production-contract:
@@ -68,6 +69,14 @@ jobs:
           grep -q 'Authorize Veqrya' /tmp/consent.html
           grep -q 'authorization_id' /tmp/consent.html
 
+      - name: Verify Veqrya public homepage
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 "$PLUGIN_ORIGIN/" > /tmp/site.html
+          grep -q 'Veqrya' /tmp/site.html
+          ! grep -q 'HOME – Personal OS' /tmp/site.html
+
       - name: Verify MCP protected-resource metadata
         shell: bash
         run: |
@@ -76,7 +85,7 @@ jobs:
           python3 - <<'PY'
           import json
           x=json.load(open('/tmp/resource.json'))
-          assert x.get('resource','').endswith('/mcp'), x
+          assert x.get('resource') == 'https://home-personal-os-plugin.vercel.app/mcp', x
           servers=x.get('authorization_servers') or []
           assert any(s.startswith('https://skgmgxthymnzubbobqxu.supabase.co/auth/v1') for s in servers), x
           scopes=set(x.get('scopes_supported') or [])
@@ -89,6 +98,8 @@ jobs:
           set -euo pipefail
           code=$(curl --silent --output /tmp/mcp.txt --write-out '%{http_code}' "$PLUGIN_ORIGIN/mcp")
           test "$code" = '401' || { cat /tmp/mcp.txt; echo "Expected MCP 401, got $code"; exit 1; }
+          headers=$(curl --silent --head "$PLUGIN_ORIGIN/mcp" | tr -d '\r')
+          printf '%s\n' "$headers" | grep -qi 'www-authenticate:.*oauth-protected-resource'
 
       - name: Inspect OpenAI domain challenge state
         shell: bash
@@ -104,13 +115,4 @@ jobs:
             cat /tmp/challenge.txt
             echo "Unexpected challenge status: $code"
             exit 1
-          fi
-
-      - name: Flag remaining public-site rebrand
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --retry 3 "$PLUGIN_ORIGIN/" > /tmp/site.html
-          if grep -q 'HOME' /tmp/site.html; then
-            echo '::warning::The stable Vercel public site is still HOME-branded and must be rebranded to Veqrya before final submission.'
           fi
