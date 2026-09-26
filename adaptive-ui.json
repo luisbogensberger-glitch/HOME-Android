@@ -1,6 +1,6 @@
 {
-  "version": 6,
-  "updatedAt": "2026-09-26T04:28:26.403385Z",
+  "version": 7,
+  "updatedAt": "2026-09-26T13:30:00+01:00",
   "theme": {
     "radius": 22,
     "density": "comfortable",
@@ -42,9 +42,7 @@
     "sentenceMinWords": 5,
     "sentenceTargetWords": 14,
     "completionAction": "replace_card",
-    "allowedLayouts": [
-      "stack"
-    ],
+    "allowedLayouts": ["stack"],
     "remoteStructure": true,
     "remoteReader": true,
     "remoteQuiz": true,
@@ -61,9 +59,42 @@
     "archiveCollapsed": true,
     "focusCount": 3
   },
+  "vbrain": {
+    "motion": {
+      "dragSensitivity": 0.0045,
+      "rotationDamping": 0.18,
+      "zoomDamping": 0.16,
+      "minZoom": 0.72,
+      "maxZoom": 1.9,
+      "idleDrift": 0.00022,
+      "tapMovePx": 10
+    },
+    "brain": {
+      "nodeScale": 1.0,
+      "edgeOpacity": 0.88,
+      "detailMaxHeight": 0.34,
+      "showHint": true
+    },
+    "score": {
+      "title": "Your signal today",
+      "showDomainMini": true
+    },
+    "home": {
+      "orderMode": "adaptive",
+      "cardOrder": ["calendar", "todos", "tube", "gym"]
+    },
+    "context": {
+      "mirrorText": true,
+      "debounceMs": 1500,
+      "maxChars": 5000
+    },
+    "interface": {
+      "publishManifest": true
+    }
+  },
   "notifications": {
     "enabled": false,
-    "managedBy": "behavior-v3"
+    "managedBy": "adaptive-runtime"
   },
   "adaptation": {
     "enabled": true,
@@ -84,5 +115,5 @@
     "cooldownHours": 20,
     "maxMajorExperimentsPerDay": 1
   },
-  "generatedBy": "private-home-behavior-engine"
+  "generatedBy": "private-vbrain-behavior-engine"
 }
