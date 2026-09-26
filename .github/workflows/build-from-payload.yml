@@ -102,7 +102,7 @@ jobs:
               s=s.replace(needle,needle+'\n        webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");',1)
           if '"VBrainNative"' not in s:
               anchor='webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");'
-              s=s.replace(anchor,anchor+'\n        webView.addJavascriptInterface(new VBrainSettingsBridge(this), "VBrainNative");',1)
+              s=s.replace(anchor,anchor+'\n        webView.addJavascriptInterface(new VBrainNativeBridge(this), "VBrainNative");',1)
           java.write_text(s,encoding='utf-8')
 
           manifest=Path('src/luis-home-app/app/src/main/AndroidManifest.xml')
