@@ -1,75 +1,102 @@
-# HOME Store Release v1
+# Veqrya Store Release v1
 
-Status: implementation branch for public distribution. The private/personal HOME build remains unchanged on `main`.
+Status: implementation branch for public Android + iOS distribution. The private/personal build on `main` remains separate.
 
-## Architecture
+## Current architecture
 
-Store HOME uses three separate trust boundaries:
+Veqrya uses one account-isolated data plane across the mobile apps and AI connectors:
 
-1. **Client app** — local UI, local cache and per-user authentication session. Android stores session material encrypted with Android Keystore; iOS uses Keychain.
-2. **HOME Store API** — Cloudflare Worker + a dedicated D1 database. Every row is keyed by the authenticated user ID; no shared `HOME_TOKEN` exists.
-3. **AI provider** — OpenAI is the first supported provider. The API key stays server-side. AI requests use `store:false` and HOME sends only the fields needed for the requested feature.
+1. **Veqrya mobile app** — native Android/iOS shell, bundled reviewed UI assets, local cache and a per-user Supabase Auth session. Android protects session material with Android Keystore; iOS uses Keychain.
+2. **Supabase** — Auth plus the shared `home_*` application tables. Row Level Security restricts every row to `auth.uid() = user_id`.
+3. **Veqrya mobile API** — Supabase Edge Function `veqrya-mobile-api`. It preserves the existing mobile REST contract while reading and writing the same Supabase rows used by the AI connector.
+4. **AI connector** — ChatGPT connects through the Veqrya MCP/plugin path and uses the same Veqrya account. The mobile app does not ask users to paste an OpenAI/Anthropic/Gemini API key and Veqrya does not fund model usage by default.
 
-Authentication is supplied by Supabase Auth. Configure the project with asymmetric JWT signing (RS256/ES256); the Worker verifies the access token against Supabase JWKS.
+Production mobile API base:
 
-A ChatGPT Plus/Pro subscription is not used as HOME's API quota. The public Store build uses HOME's server-side OpenAI API integration. A future provider adapter can add Anthropic or Gemini without changing the HOME account/data model.
+`https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api`
 
-## Deliberate differences from the private build
+Public technical checks:
 
-- No manually pasted `HOME_TOKEN`.
-- No shared database namespace.
-- No Android Accessibility Service for WhatsApp.
-- No WhatsApp/Gmail notification scraping endpoints in the Store worker.
-- No remotely downloaded JavaScript executed with `new Function`.
-- Tube feed data is bundled into the reviewed binary in v1.
+- `/health` — service status
+- `/privacy` — pre-release privacy baseline
+- `/delete-account` — deletion instructions
+
+Authenticated routes include the current mobile compatibility contract:
+
+- `GET /api/snapshot`
+- `GET /v1/snapshot`
+- `GET|POST /api/tasks`
+- `PATCH|DELETE /api/tasks/:id`
+- `POST /api/cards`
+- `POST /api/attempts`
+- `POST /api/activity`
+- `DELETE /api/account`
+
+`POST /api/review-sentence` deliberately does **not** bill an AI model through the publisher. The app keeps its local learning-feedback fallback; AI-assisted reasoning is connected through the user's AI surface instead.
+
+## Shared data model
+
+The mobile app and ChatGPT connector use the same Supabase tables:
+
+- `home_profiles`
+- `home_tasks`
+- `home_learning_cards`
+- `home_learning_attempts`
+- `home_activity`
+
+All exposed tables have RLS enabled and owner-only policies. Store clients receive only a public Supabase client key plus their own user session. The Supabase service-role key is never embedded in Android or iOS.
+
+Account deletion is performed server-side by the Veqrya mobile API. The application rows use foreign keys to `auth.users` with cascading deletion where applicable.
+
+## AI connections
+
+### ChatGPT
+
+ChatGPT is the first connector. The Store apps now expose an **AI connections** entry. The user opens ChatGPT and connects the Veqrya connector with the same Veqrya account; both surfaces then operate on the same RLS-isolated data.
+
+Public availability still depends on completing the OpenAI plugin submission/review. Until approval, the app must not claim that the connector is publicly listed.
+
+### Claude / Gemini
+
+These are intentionally shown only as planned providers. Do not add client-side provider API-key fields as a shortcut. A future provider integration should use an approved OAuth/connector architecture or another design that does not expose reusable provider secrets in the app binary or ordinary app storage.
+
+## Store-build differences from the private build
+
+- Public brand: **Veqrya**.
+- Bundle/package identity prepared as `com.veqrya.app`.
+- No shared `HOME_TOKEN`.
+- No WhatsApp Accessibility Service or notification scraping.
+- No remotely downloaded executable JavaScript in Store artifacts.
+- Tube feed and reviewed adaptive UI code are bundled into the submitted binary.
 - Android WebView universal file-origin access remains disabled.
-- Account deletion is available in-app and the Store worker serves an external deletion-request page.
+- Account deletion is available in-app.
+- AI model usage is not paid through a publisher-owned API key by default.
 
-The private build can keep experimental notification/accessibility integrations and hot-swappable UI because it is not the public Store artifact.
+## Android / Google Play
 
-## Cloudflare deployment
+`.github/workflows/build-store-android.yml` builds the Store source and validates Android API 36. For a signed release AAB configure:
 
-Create a dedicated D1 database for public users; do not reuse the private Luis HOME database. Bind it to the Store worker as `DB`, then apply:
+- `HOME_STORE_API_URL` = the Veqrya mobile API base above
+- `HOME_SUPABASE_URL` = the production Supabase project URL
+- `HOME_SUPABASE_ANON_KEY` = the project's public client key
+- Android upload-keystore secrets referenced by the workflow
 
-`cloudflare/migrations/0002_store_multi_user.sql`
+Only the signed `Veqrya-store-release-aab` artifact belongs in Google Play. Do not publish the private debug APK.
 
-Deploy `cloudflare/home-sync-worker-store-v1.js` with these server-side values:
+## iOS / Apple App Store
 
-- `SUPABASE_URL`
-- `OPENAI_API_KEY` as a secret
-- `SUPABASE_SERVICE_ROLE_KEY` as a secret; required for complete in-app account deletion
-- optional `OPENAI_MODEL`
-- `LEGAL_CONTACT_EMAIL` with a real monitored address
+`ios/HOMEStore` is a SwiftUI + WKWebView client generated with XcodeGen. It uses the same Veqrya account/mobile API, stores the user session in Keychain, supports task sync, EventKit calendar access, AI-connections UI, privacy/deletion links and in-app account deletion.
 
-Before launch, verify `/health`, `/privacy`, and `/delete-account` on the public Store API hostname.
+`.github/workflows/validate-store-ios.yml` builds an unsigned simulator target. A distributable App Store archive still requires the user's Apple Developer team/signing setup and App Store Connect record.
 
-## Android Play Store build
+## Submission gates still requiring real publisher input
 
-The workflow `.github/workflows/build-store-android.yml` creates a signed release AAB and targets Android API 36. Configure repository values/secrets referenced by that workflow, including the Store API URL, Supabase URL/anon key and Android upload keystore values. Then run the workflow manually from the `store-ready-v1` branch.
+Before either public Store submission:
 
-Do not publish the private debug APK. Publish the signed `HOME-store-release-aab` artifact generated by the Store workflow.
+- Replace the privacy baseline with the real controller/developer legal identity, postal address, monitored privacy/support contact, exact data categories, purposes/lawful bases, retention periods, processors/subprocessors and transfer information for the actual launch regions.
+- Complete Google Play Data safety and Apple App Privacy from the **actual release builds**.
+- Verify in-app and external account deletion end-to-end with a disposable test account.
+- Complete the ChatGPT plugin publisher identity, review account, domain challenge and final submission separately.
+- Run Store pre-launch/TestFlight testing, dependency/security checks and crash testing on release artifacts.
 
-## iOS App Store build
-
-`ios/HOMEStore` is a native SwiftUI/WKWebView Store client generated with XcodeGen. It uses the same HOME account and Store API, stores sessions in Keychain, supports task sync, local HOME state, EventKit calendar access, privacy links and in-app account deletion. Reviewed web assets are bundled into the application; the private remote executable-JavaScript loader is excluded.
-
-`.github/workflows/validate-store-ios.yml` creates the Xcode project and compiles a simulator build without signing. A real App Store archive still requires an Apple Developer account, a final bundle identifier, signing/team configuration and App Store Connect metadata.
-
-Android-only notification/accessibility integrations are intentionally not part of the cross-platform Store product.
-
-## Data protection / store submission checklist
-
-Before submission, complete all of the following:
-
-- Replace the privacy-page baseline with the real controller/developer legal identity, postal address, monitored privacy contact, exact data categories, purposes/lawful bases, retention periods, processors/subprocessors and international-transfer information applicable to the actual launch regions.
-- Sign/accept the relevant processor terms with Cloudflare, Supabase and OpenAI and document the data flows.
-- Complete Google Play Data safety and Apple App Privacy from the *actual Store builds*, not the private build.
-- Put the public `/privacy` URL in both stores and the public `/delete-account` URL in Google Play's account-deletion field.
-- Keep the in-app Delete account route working end-to-end and test that the Supabase user and all rows in the Store D1 tables are deleted.
-- If official Google Calendar/Gmail OAuth is added later, request only the minimum scopes and complete Google's required OAuth verification before public launch. Do not re-enable notification scraping as a shortcut.
-- If any sensitive Android permission is added later, add just-in-time disclosure and consent and re-check current Play policy before release.
-- Keep AI-generated actions reviewable by the user; do not silently send messages, make purchases or perform destructive external actions.
-- Establish a documented process for external deletion requests recorded through `/delete-account` and delete/resolve those request records after the process is complete.
-- Run penetration/security tests, dependency scanning, crash tests and store pre-launch reports on the release artifacts.
-
-This branch is designed to reduce legal/store risk, not to provide a legal guarantee. Publication still requires the developer's real legal/contact details, accurate store disclosures and, where appropriate, professional privacy/legal review for the launch markets.
+This branch reduces technical and Store-policy risk; it is not a legal guarantee.
