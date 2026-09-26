@@ -112,27 +112,27 @@ jobs:
               m=m.replace('<application',permission+'\n    <application',1)
 
           services='''
-        <service
-            android:name=".WhatsAppNotificationListener"
-            android:label="V-Brain live inbox"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
-        <service
-            android:name=".WhatsAppAccessibilityService"
-            android:label="V-Brain WhatsApp screen reader"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/home_whatsapp_accessibility" />
-        </service>
+          <service
+              android:name=".WhatsAppNotificationListener"
+              android:label="V-Brain live inbox"
+              android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+              android:exported="true">
+              <intent-filter>
+                  <action android:name="android.service.notification.NotificationListenerService" />
+              </intent-filter>
+          </service>
+          <service
+              android:name=".WhatsAppAccessibilityService"
+              android:label="V-Brain WhatsApp screen reader"
+              android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+              android:exported="true">
+              <intent-filter>
+                  <action android:name="android.accessibilityservice.AccessibilityService" />
+              </intent-filter>
+              <meta-data
+                  android:name="android.accessibilityservice"
+                  android:resource="@xml/home_whatsapp_accessibility" />
+          </service>
 '''
           if '.WhatsAppNotificationListener' not in m:
               m=m.replace('</application>',services+'    </application>',1)
