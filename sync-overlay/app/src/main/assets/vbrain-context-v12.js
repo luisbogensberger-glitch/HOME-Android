@@ -40,7 +40,7 @@
     setTimeout(()=>{
       const done=completedAttempt(card),at=Number(done?.at||capturedAt),attemptId=`attempt-${String(card.id||'card')}-${at}`;
       const payload={requestId:'review-'+attemptId,attemptId,cardId:String(card.id||''),title:String(card.title||''),topic:String(card.topic||''),prompt:String(card.prompt||''),question:String(card.q||''),sentence:sentence.trim(),method:'tube',contentDepth:String(window.HOMEAdaptive?.config?.tube?.readerDepth||'balanced'),at};
-      if(Number.isFinite(selected)){payload.selected=selected;if(Number.isFinite(Number(card.correct)))payload.correct=selected===Number(card.correct)}
+      if(Number.isFinite(selected)){payload.selected=selected;if(Number.isFinite(Number(card.correct))){payload.correct=Number(card.correct);payload.quizCorrect=selected===Number(card.correct)}}
       let review=false,privateOk=false;
       try{if(typeof AdaptiveNative!=='undefined'&&typeof AdaptiveNative.reviewSentence==='function'){AdaptiveNative.reviewSentence(JSON.stringify(payload));review=true}}catch(e){}
       try{if(typeof AdaptiveNative!=='undefined'&&typeof AdaptiveNative.logPrivateActivity==='function'){AdaptiveNative.logPrivateActivity(JSON.stringify({id:'tube-text-'+hash(attemptId+'|'+sentence),kind:'private_text_field',source:'vbrain-tube-v12',at,screen:'tube',field:'tube_sentence',fieldType:'textarea',reason:'submit',cardId:String(card.id||''),title:String(card.title||''),text:sentence.trim()}));privateOk=true}}catch(e){}
