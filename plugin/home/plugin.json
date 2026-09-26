@@ -1,12 +1,12 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "home-personal-os",
-  "version": "0.2.2",
-  "description": "An adaptive personal operating system for capturing tasks, planning days, and learning deliberately inside ChatGPT and Codex.",
+  "name": "veqrya-personal-os",
+  "version": "0.3.0",
+  "description": "Veqrya is a personal execution and learning layer for capturing tasks, planning days, and learning deliberately inside ChatGPT and Codex.",
   "homepage": "https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/",
   "repository": "https://github.com/luisbogensberger-glitch/HOME-Android",
   "license": "UNLICENSED",
-  "keywords": ["productivity", "tasks", "learning", "planning", "personal-os"],
+  "keywords": ["productivity", "tasks", "learning", "planning", "personal-os", "veqrya"],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json"
 }
