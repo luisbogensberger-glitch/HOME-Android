@@ -59,6 +59,8 @@ jobs:
           cp home-runtime/state-resilience-v2.js "$ASSETS/state-resilience-v2.js"
           cp home-runtime/behaviour-map-v4.js "$ASSETS/behaviour-map-v4.js"
           cp home-runtime/recovery-code-v1.js "$ASSETS/recovery-code-v1.js"
+          cp home-runtime/v-backup-ui-v1.js "$ASSETS/v-backup-ui-v1.js"
+          cp home-runtime/v-brand-v1.js "$ASSETS/v-brand-v1.js"
       - name: Add premium dashboard and adaptive runtime
         shell: bash
         run: |
@@ -77,9 +79,12 @@ jobs:
               '<script src="adaptive-runtime.js"></script>',
               '<script src="todo-premium.js"></script>',
               '<script src="behavior-v3.js"></script>',
+              '<script src="recovery-code-v1.js"></script>',
               '<script src="living-brain-v6.js"></script>',
               '<script src="state-resilience-v2.js"></script>',
+              '<script src="v-backup-ui-v1.js"></script>',
               '<script src="dynamic-shell-v5.js"></script>',
+              '<script src="v-brand-v1.js"></script>',
           ]
           for tag in css_tags:
               if tag not in s:
@@ -181,6 +186,12 @@ jobs:
               'current HOME state':'current V-Brain state',
               'HOME state entries':'V-Brain state entries',
               'Restore previous HOME data':'Restore previous V-Brain data',
+              'HOME Recovery Code':'V Backup Code',
+              'How HOME currently reads you':'How V-Brain currently reads you',
+              'HOME explains what it currently sees':'V-Brain explains what it currently sees',
+              'HOME currently sees this as':'V-Brain currently sees this as',
+              'HOME currently sees only':'V-Brain currently sees only',
+              'HOME is still collecting enough evidence':'V-Brain is still collecting enough evidence',
           }
           for p in assets.glob('*'):
               if p.suffix.lower() not in {'.js','.html','.css'}: continue
