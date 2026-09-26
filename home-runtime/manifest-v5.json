@@ -1,6 +1,6 @@
 {
-  "version": 5,
-  "updatedAt": "server",
+  "version": 6,
+  "updatedAt": "2026-09-27",
   "modules": [
     {
       "name": "runtime.css",
@@ -55,6 +55,10 @@
     },
     {
       "name": "todo-pressure-v1.js",
+      "kind": "js"
+    },
+    {
+      "name": "sync-observability-v16.js",
       "kind": "js"
     }
   ]
