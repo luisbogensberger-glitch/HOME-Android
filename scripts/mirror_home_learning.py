@@ -34,7 +34,7 @@ def request_json(url, *, method="GET", body=None, bearer=""):
             "Authorization": f"Bearer {bearer}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "HOME-Private-Mirror/1.3",
+            "User-Agent": "V-Brain-Private-Mirror/1.4",
         },
     )
     try:
@@ -48,17 +48,17 @@ def request_json(url, *, method="GET", body=None, bearer=""):
 
 status, snapshot = request_json(f"{HOME_API}/api/snapshot", bearer=HOME_TOKEN)
 if status != 200 or not isinstance(snapshot, dict):
-    raise RuntimeError("HOME snapshot response was invalid")
+    raise RuntimeError("V-Brain snapshot response was invalid")
 
 attempts = snapshot.get("attempts") or []
 activity = snapshot.get("activity") or []
 tasks = snapshot.get("tasks") or []
 if not isinstance(attempts, list):
-    raise RuntimeError("HOME attempts payload was invalid")
+    raise RuntimeError("V-Brain attempts payload was invalid")
 if not isinstance(activity, list):
-    raise RuntimeError("HOME activity payload was invalid")
+    raise RuntimeError("V-Brain activity payload was invalid")
 if not isinstance(tasks, list):
-    raise RuntimeError("HOME tasks payload was invalid")
+    raise RuntimeError("V-Brain tasks payload was invalid")
 
 eligible_attempts = []
 for attempt in attempts:
@@ -69,20 +69,24 @@ for attempt in attempts:
         continue
     item = dict(attempt)
     item.setdefault("reflection", reflection)
-    item.setdefault("source", "home-sync-mirror")
+    item.setdefault("source", "vbrain-sync-mirror")
     eligible_attempts.append(item)
 
-# Explicit allowlist: never mirror raw Gmail/WhatsApp/private inbox activity here.
+# Generic behaviour remains content-minimised. Explicit V-Brain private context is allowed
+# through only for app-internal text fields that the user asked the adaptive model to read.
 allowed_exact = {
     "behavior_summary", "screen_dwell", "screen_open", "ui_usage_summary",
     "insights_open", "insights_node_open", "todo_open", "todo_complete", "todo_add",
     "tube_card_open", "tube_complete", "gym_open", "gym_start", "gym_complete",
-    "gym_plan_select", "behavior_ui_decision", "adaptive_profile_updated",
+    "gym_plan_select", "gym_exercise_toggle", "behavior_ui_decision", "adaptive_profile_updated",
     "habit_intervention", "todo_pressure_show", "todo_pressure_dismiss", "notification_plan",
     "feedback_prompt_shown", "feedback_prompt_dismissed", "feedback_response",
     "learning_method_selected", "semantic_learning_updated", "sentence_review_error",
-    "learning_engine_loaded",
+    "learning_engine_loaded", "ui_press", "screen_enter_detail", "screen_exit_detail",
+    "session_heartbeat", "session_background", "session_foreground", "home_impression",
+    "dynamic_module_open", "interface_manifest", "private_text_field",
 }
+private_kinds = {"private_text_field"}
 
 eligible_activity = []
 for row in activity:
@@ -93,20 +97,26 @@ for row in activity:
         continue
     if kind not in allowed_exact and not kind.startswith("behaviour_") and not kind.startswith("behavior_"):
         continue
-    item = {
-        "id": row.get("id"),
-        "kind": kind,
-        "type": kind,
-        "at": row.get("at"),
-        "createdAt": row.get("createdAt"),
-        "screen": row.get("screen"),
-        "data": row.get("data") if isinstance(row.get("data"), dict) else {},
-        "source": "home-sync-behaviour-mirror",
-    }
+    if kind in private_kinds:
+        item = dict(row)
+        item["kind"] = kind
+        item["type"] = kind
+        item.setdefault("source", "vbrain-private-context-mirror")
+    else:
+        item = {
+            "id": row.get("id"),
+            "kind": kind,
+            "type": kind,
+            "at": row.get("at"),
+            "createdAt": row.get("createdAt"),
+            "screen": row.get("screen"),
+            "data": row.get("data") if isinstance(row.get("data"), dict) else {},
+            "source": "vbrain-behaviour-mirror",
+        }
     eligible_activity.append(item)
 
-# Tasks intentionally include HOME-internal notes/details because Luis explicitly wants those
-# private fields available to the adaptive HOME model. They are sent only to the private
+# Tasks intentionally include V-Brain-internal notes/details because the user explicitly wants
+# those private fields available to the adaptive model. They are sent only to the private
 # Supabase task ingest endpoint; never to GitHub files or logs.
 eligible_tasks = []
 for task in tasks:
@@ -116,7 +126,7 @@ for task in tasks:
     if not task_id:
         continue
     item = dict(task)
-    item.setdefault("source", "home-sync-task-mirror")
+    item.setdefault("source", "vbrain-sync-task-mirror")
     eligible_tasks.append(item)
 
 mirrored = 0
@@ -157,6 +167,6 @@ for start in range(0, len(eligible_tasks), 300):
 
 # Never print raw attempts, notes or activity payloads: GitHub Actions logs are not a private data store.
 print(
-    f"HOME private mirror: {mirrored} written attempt(s), "
-    f"{activity_mirrored} behaviour event(s), {task_mirrored} task snapshot(s) upserted"
+    f"V-Brain private mirror: {mirrored} written attempt(s), "
+    f"{activity_mirrored} behaviour/context event(s), {task_mirrored} task snapshot(s) upserted"
 )
