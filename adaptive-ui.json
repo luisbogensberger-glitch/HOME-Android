@@ -1,6 +1,6 @@
 {
   "version": 6,
-  "updatedAt": "2026-09-25T15:08:00+01:00",
+  "updatedAt": "2026-09-26T04:28:26.403385Z",
   "theme": {
     "radius": 22,
     "density": "comfortable",
@@ -51,7 +51,7 @@
     "remoteMotion": true
   },
   "todos": {
-    "layout": "cards",
+    "layout": "focus",
     "maxVisible": 8,
     "showMeta": true,
     "showArea": true,
