@@ -205,6 +205,20 @@ final class AdaptiveBridge {
     }
 
     @JavascriptInterface
+    public int pendingPrivateSyncCount() { return worker.pendingOutboxCount(); }
+
+    @JavascriptInterface
+    public void flushPrivateSync() {
+        if (!worker.isConfigured()) return;
+        queue.execute(() -> {
+            worker.flushOutbox();
+            try { deliver("onHomePrivateSync", new JSONObject()
+                    .put("pending", worker.pendingOutboxCount())
+                    .put("at", System.currentTimeMillis())); } catch (Exception ignored) { }
+        });
+    }
+
+    @JavascriptInterface
     public boolean hasNotificationPermission() {
         return Build.VERSION.SDK_INT < 33 ||
                 activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;

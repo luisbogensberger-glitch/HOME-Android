@@ -17,6 +17,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -30,9 +31,13 @@ final class WorkerSync {
     private static final String LEARNING_LATEST = "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-latest";
     private static final String KEY_ALIAS = "home_worker_token_v1";
     private final Context context;
+    private final File outboxFile;
+    private final Object outboxLock = new Object();
+    private final AtomicBoolean flushing = new AtomicBoolean(false);
 
     WorkerSync(Context context) {
         this.context = context.getApplicationContext();
+        this.outboxFile = new File(this.context.getNoBackupFilesDir(), "home-private-outbox.json");
     }
 
     private File tokenFile() {
@@ -180,6 +185,73 @@ final class WorkerSync {
         }
     }
 
+    private JSONArray readOutbox() {
+        synchronized (outboxLock) {
+            if (!outboxFile.exists()) return new JSONArray();
+            try (FileInputStream in = new FileInputStream(outboxFile)) {
+                String raw = readAll(in);
+                return raw.trim().isEmpty() ? new JSONArray() : new JSONArray(raw);
+            } catch (Exception ignored) { return new JSONArray(); }
+        }
+    }
+
+    private void writeOutbox(JSONArray rows) throws Exception {
+        synchronized (outboxLock) {
+            File tmp = new File(outboxFile.getParentFile(), outboxFile.getName() + ".tmp");
+            try (FileOutputStream out = new FileOutputStream(tmp)) {
+                out.write(rows.toString().getBytes(StandardCharsets.UTF_8));
+                out.getFD().sync();
+            }
+            if (outboxFile.exists() && !outboxFile.delete()) throw new IllegalStateException("Could not rotate HOME outbox.");
+            if (!tmp.renameTo(outboxFile)) throw new IllegalStateException("Could not commit HOME outbox.");
+        }
+    }
+
+    private String enqueue(String type, JSONObject payload) throws Exception {
+        JSONObject row = new JSONObject()
+                .put("queueId", java.util.UUID.randomUUID().toString())
+                .put("type", type)
+                .put("createdAt", System.currentTimeMillis())
+                .put("payload", new JSONObject(payload.toString()));
+        synchronized (outboxLock) {
+            JSONArray rows = readOutbox();
+            rows.put(row);
+            writeOutbox(rows);
+        }
+        return row.getString("queueId");
+    }
+
+    private void removeQueued(String queueId) throws Exception {
+        synchronized (outboxLock) {
+            JSONArray rows = readOutbox(), keep = new JSONArray();
+            for (int i=0;i<rows.length();i++) {
+                JSONObject row=rows.optJSONObject(i);
+                if (row!=null && !queueId.equals(row.optString("queueId"))) keep.put(row);
+            }
+            writeOutbox(keep);
+        }
+    }
+
+    int pendingOutboxCount() { return readOutbox().length(); }
+
+    void flushOutbox() {
+        if (!isConfigured() || !flushing.compareAndSet(false, true)) return;
+        try {
+            JSONArray rows = readOutbox();
+            for (int i=0;i<rows.length();i++) {
+                JSONObject row=rows.optJSONObject(i); if(row==null) continue;
+                String q=row.optString("queueId"); JSONObject p=row.optJSONObject("payload");
+                if(p==null) { try { removeQueued(q); } catch(Exception ignored){} continue; }
+                try {
+                    if ("attempt".equals(row.optString("type"))) sendAttemptNow(p);
+                    else if ("private_activity".equals(row.optString("type"))) sendPrivateActivityNow(p);
+                    else continue;
+                    removeQueued(q);
+                } catch (Exception ignored) { break; }
+            }
+        } finally { flushing.set(false); }
+    }
+
     JSONObject snapshot() throws Exception {
         return requestObject("GET", "/api/snapshot", null);
     }
@@ -203,14 +275,23 @@ final class WorkerSync {
         return requestObject("POST", "/api/cards", new JSONObject(card.toString()));
     }
 
-    JSONObject saveAttempt(JSONObject attempt) throws Exception {
+    private JSONObject sendAttemptNow(JSONObject attempt) throws Exception {
         JSONObject saved = requestObject("POST", "/api/attempts", new JSONObject(attempt.toString()));
-        try {
-            mirrorLearningAttempt(attempt);
-        } catch (Exception ignored) {
-            // Cloudflare remains the source of truth if the private mirror is temporarily unavailable.
-        }
+        mirrorLearningAttempt(attempt);
         return saved;
+    }
+
+    JSONObject saveAttempt(JSONObject attempt) throws Exception {
+        if (attempt == null) throw new IllegalArgumentException("Learning attempt required.");
+        String q = enqueue("attempt", attempt);
+        try {
+            JSONObject saved = sendAttemptNow(attempt);
+            removeQueued(q);
+            flushOutbox();
+            return saved;
+        } catch (Exception ex) {
+            throw ex;
+        }
     }
 
     JSONObject mirrorLearningAttempt(JSONObject attempt) throws Exception {
@@ -225,18 +306,26 @@ final class WorkerSync {
         return requestObject("POST", "/api/activity", new JSONObject(activity.toString()));
     }
 
-    JSONObject savePrivateActivity(JSONObject activity) throws Exception {
-        if (activity == null) throw new IllegalArgumentException("Private activity required.");
+    private JSONObject sendPrivateActivityNow(JSONObject activity) throws Exception {
         JSONObject copy = new JSONObject(activity.toString());
         JSONObject saved = requestObject("POST", "/api/activity", copy);
-        try {
-            JSONArray activityRows = new JSONArray().put(new JSONObject(copy.toString()));
-            JSONObject body = new JSONObject().put("activity", activityRows);
-            requestAbsolute("POST", LEARNING_INGEST, body, 20000);
-        } catch (Exception ignored) {
-            // HOME Sync remains durable; scheduled mirroring can retry the Supabase copy.
-        }
+        JSONArray activityRows = new JSONArray().put(new JSONObject(copy.toString()));
+        JSONObject body = new JSONObject().put("activity", activityRows);
+        requestAbsolute("POST", LEARNING_INGEST, body, 20000);
         return saved;
+    }
+
+    JSONObject savePrivateActivity(JSONObject activity) throws Exception {
+        if (activity == null) throw new IllegalArgumentException("Private activity required.");
+        String q = enqueue("private_activity", activity);
+        try {
+            JSONObject saved = sendPrivateActivityNow(activity);
+            removeQueued(q);
+            flushOutbox();
+            return saved;
+        } catch (Exception ex) {
+            throw ex;
+        }
     }
 
     JSONObject latestLearning(int limit) throws Exception {

@@ -1,0 +1,61 @@
+{
+  "version": 5,
+  "updatedAt": "server",
+  "modules": [
+    {
+      "name": "runtime.css",
+      "kind": "css",
+      "id": "homeRemoteExtensionCss"
+    },
+    {
+      "name": "runtime.js",
+      "kind": "js"
+    },
+    {
+      "name": "behavior-v3.css",
+      "kind": "css",
+      "id": "homeBehaviourExtensionCss"
+    },
+    {
+      "name": "behavior-v3.js",
+      "kind": "js"
+    },
+    {
+      "name": "learning-resilience-v11.js",
+      "kind": "js"
+    },
+    {
+      "name": "state-resilience-v2.js",
+      "kind": "js"
+    },
+    {
+      "name": "post-install-resilience-v1.js",
+      "kind": "js"
+    },
+    {
+      "name": "interface-policy-v10.js",
+      "kind": "js"
+    },
+    {
+      "name": "learning-engine-v10.js",
+      "kind": "js"
+    },
+    {
+      "name": "living-brain-v6.js",
+      "kind": "js"
+    },
+    {
+      "name": "habit-adaptation-v1.js",
+      "kind": "js"
+    },
+    {
+      "name": "todo-premium.css",
+      "kind": "css",
+      "id": "homeTodoPremiumCss"
+    },
+    {
+      "name": "todo-pressure-v1.js",
+      "kind": "js"
+    }
+  ]
+}
