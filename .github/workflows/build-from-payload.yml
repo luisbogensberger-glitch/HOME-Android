@@ -206,8 +206,20 @@ jobs:
       - name: Build debug APK
         working-directory: src/luis-home-app
         run: gradle :app:assembleDebug --stacktrace
-      - name: Rename APK
-        run: cp src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk HOME-Living-Brain-v6.apk
+      - name: Re-sign and verify APK with stable HOME key
+        shell: bash
+        run: |
+          SRC="src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" sign \
+            --ks "$HOME/.android/debug.keystore" \
+            --ks-key-alias androiddebugkey \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out HOME-Living-Brain-v6.apk \
+            "$SRC"
+          "$APKSIGNER" verify --verbose --print-certs HOME-Living-Brain-v6.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
