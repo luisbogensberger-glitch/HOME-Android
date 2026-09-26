@@ -37,29 +37,31 @@ jobs:
       - name: Add Android overlay
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
 
-      - name: Bake only stable local core
+      - name: Bake stable local runtime
         shell: bash
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
           cp home-runtime/runtime.js "$ASSETS/runtime.js"
           cp home-runtime/runtime.css "$ASSETS/runtime.css"
 
-      - name: Build overlay-free V-Brain shell
+      - name: Build single-core V-Brain shell
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p=Path('src/luis-home-app/app/src/main/assets/index.html')
           s=p.read_text(encoding='utf-8')
 
-          # Remove every experimental layer that has previously been able to cover the UI.
+          # These layers previously created overlapping full-screen surfaces, duplicate
+          # launchers, MutationObservers, or executed cached remote JavaScript.
           banned=[
             'behavior-v3.js','behavior-v3.css','recovery-code-v1.js','living-brain-v6.js',
             'state-resilience-v2.js','v-backup-ui-v1.js','dynamic-shell-v5.js',
             'remote-extension-loader.js','post-install-resilience-v1.js','behaviour-map-v4.js',
-            'feedback-pulse-v1.js','safe-tools-v1.js','vbrain-stability-v1.js'
+            'feedback-pulse-v1.js','safe-tools-v1.js','vbrain-stability-v1.js',
+            'vbrain-safe-shell-v2.js'
           ]
-          import re
           for name in banned:
             s=re.sub(r'<script[^>]+src=["\'][^"\']*'+re.escape(name)+r'[^"\']*["\'][^>]*>\s*</script>\s*','',s,flags=re.I)
             s=re.sub(r'<link[^>]+href=["\'][^"\']*'+re.escape(name)+r'[^"\']*["\'][^>]*>\s*','',s,flags=re.I)
@@ -75,7 +77,8 @@ jobs:
             '<script src="adaptive-runtime.js"></script>',
             '<script src="todo-premium.js"></script>',
             '<script src="runtime.js"></script>',
-            '<script src="vbrain-safe-shell-v2.js"></script>',
+            '<script src="tube-remote.js"></script>',
+            '<script src="vbrain-safe-shell-v3.js"></script>',
           ]
           for tag in css_tags:
             if tag not in s: s=s.replace('</head>',tag+'\n</head>',1)
@@ -85,7 +88,7 @@ jobs:
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Enable native bridge and services
+      - name: Enable native bridge
         shell: bash
         run: |
           python3 - <<'PY'
@@ -96,7 +99,6 @@ jobs:
           add=needle+'\n        webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");'
           if '"AdaptiveNative"' not in s: s=s.replace(needle,add,1)
           java.write_text(s,encoding='utf-8')
-
           manifest=Path('src/luis-home-app/app/src/main/AndroidManifest.xml')
           m=manifest.read_text(encoding='utf-8')
           permission='<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
@@ -137,18 +139,34 @@ jobs:
       - name: Add Lean Startup fallback
         run: python3 scripts/add_lean_card.py
 
-      - name: Validate safe asset graph
+      - name: Validate interaction architecture
         shell: bash
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
-          grep -q 'vbrain-safe-shell-v2.js' "$ASSETS/index.html"
-          grep -q 'runtime.js' "$ASSETS/index.html"
-          ! grep -q 'remote-extension-loader.js' "$ASSETS/index.html"
-          ! grep -q 'behavior-v3.js' "$ASSETS/index.html"
-          ! grep -q 'living-brain-v6.js' "$ASSETS/index.html"
+          INDEX="$ASSETS/index.html"
+          grep -q 'vbrain-safe-shell-v3.js' "$INDEX"
+          grep -q 'runtime.js' "$INDEX"
+          grep -q 'tube-remote.js' "$INDEX"
+          ! grep -q 'remote-extension-loader.js' "$INDEX"
+          ! grep -q 'behavior-v3.js' "$INDEX"
+          ! grep -q 'living-brain-v6.js' "$INDEX"
+          ! grep -q 'state-resilience-v2.js' "$INDEX"
+          ! grep -q 'vbrain-safe-shell-v2.js' "$INDEX"
           node --check "$ASSETS/home-ui-v2.js"
+          node --check "$ASSETS/adaptive-runtime.js"
           node --check "$ASSETS/runtime.js"
-          node --check "$ASSETS/vbrain-safe-shell-v2.js"
+          node --check "$ASSETS/tube-remote.js"
+          node --check "$ASSETS/vbrain-safe-shell-v3.js"
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('src/luis-home-app/app/src/main/assets/index.html').read_text()
+          required=['home-ui-v2.js','adaptive-runtime.js','runtime.js','tube-remote.js','vbrain-safe-shell-v3.js']
+          positions=[s.index(x) for x in required]
+          assert positions==sorted(positions), positions
+          unsafe=['remote-extension-loader.js','behavior-v3.js','recovery-code-v1.js','living-brain-v6.js','state-resilience-v2.js','vbrain-stability-v1.js']
+          assert not any(x in s for x in unsafe)
+          print('Interaction architecture validated')
+          PY
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -184,12 +202,12 @@ jobs:
         run: |
           SRC="src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          "$APKSIGNER" sign --ks "$HOME/.android/debug.keystore" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out V-Brain-SAFE.apk "$SRC"
-          "$APKSIGNER" verify --verbose --print-certs V-Brain-SAFE.apk
+          "$APKSIGNER" sign --ks "$HOME/.android/debug.keystore" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out V-Brain-STABLE.apk "$SRC"
+          "$APKSIGNER" verify --verbose --print-certs V-Brain-STABLE.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: V-Brain-SAFE-apk
-          path: V-Brain-SAFE.apk
+          name: V-Brain-STABLE-apk
+          path: V-Brain-STABLE.apk
           if-no-files-found: error
