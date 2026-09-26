@@ -164,5 +164,5 @@ const originalRenderTodoDetail=renderTodoDetail;
 renderTodoDetail=function(){originalRenderTodoDetail();const t=findTodo(currentTodoDetailId),target=document.getElementById('notionTaskLink'),links=document.getElementById('detailLinks');target.innerHTML='';const hasPage=t?.taskPageUrl?.startsWith('https://');if(hasPage){const button=document.createElement('button');button.className='detailLink';button.textContent='Open full task guidance in Notion ↗';button.onclick=()=>openTodoLink(t.taskPageUrl);target.appendChild(button)}if(!(t?.details?.links||[]).length)links.innerHTML='';links.parentElement.classList.toggle('hidden',!(t?.details?.links||[]).length&&!hasPage)};
 renderTodos();updateHome();updateSyncUI();if(notionConnected())refreshNotion();
 </script>
-</body>
+<script src="remote-extension-loader.js"></script>\n</body>
 </html>
