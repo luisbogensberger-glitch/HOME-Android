@@ -66,7 +66,7 @@ final class AdaptiveBridge {
                 if (!activity.has("at")) activity.put("at", System.currentTimeMillis());
                 if (!activity.has("kind")) activity.put("kind", "private_home_context");
                 if (!activity.has("source")) activity.put("source", "android");
-                worker.saveActivity(activity);
+                worker.savePrivateActivity(activity);
             } catch (Exception ignored) { }
         });
     }
