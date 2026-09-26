@@ -170,6 +170,23 @@ final class AdaptiveBridge {
         });
     }
 
+    @JavascriptInterface
+    public void loadLatestLearning(int limit) {
+        if (!worker.isConfigured()) return;
+        final int safeLimit = Math.max(1, Math.min(limit, 20));
+        queue.execute(() -> {
+            try {
+                deliver("onHomeLatestLearning", worker.latestLearning(safeLimit));
+            } catch (Exception ex) {
+                try {
+                    deliver("onHomeLatestLearning", new JSONObject()
+                            .put("ok", false)
+                            .put("error", clean(ex.getMessage(), 300)));
+                } catch (Exception ignored) { }
+            }
+        });
+    }
+
     private void deliverReviewError(String requestId, String message) {
         try {
             JSONObject error = new JSONObject()
