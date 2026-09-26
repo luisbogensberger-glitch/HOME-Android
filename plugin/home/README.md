@@ -1,17 +1,19 @@
-# HOME – Personal OS plugin
+# Veqrya – Personal OS plugin
 
-This folder contains the public plugin package for HOME. The plugin is intentionally smaller than the private mobile build: it exposes secure task and learning workflows to ChatGPT/Codex and leaves phone-level notification/accessibility experiments out of the public integration.
+This folder contains the public plugin package for Veqrya. The plugin is intentionally smaller than the private mobile build: it exposes secure task and learning workflows to ChatGPT/Codex and leaves phone-level notification/accessibility experiments out of the public integration.
 
 ## Live architecture
 
-- `plugin/home/plugin.json` — portable Agent Plugins manifest.
+- `plugin/home/plugin.json` — portable Agent Plugins manifest for Veqrya.
 - `plugin/home/.mcp.json` — production MCP connection for the public plugin.
-- `plugin/home/skills/` — HOME workflow guidance for daily planning, task capture, and Tube Learning.
+- `plugin/home/skills/` — Veqrya workflow guidance for daily planning, task capture, and Tube Learning.
 - `supabase/migrations/20260925143000_home_plugin.sql` — per-user tables and Row Level Security.
-- `supabase/functions/home-mcp/index.ts` — authenticated HOME MCP implementation and source of truth for HOME tools.
+- `supabase/functions/home-mcp/index.ts` — authenticated MCP implementation and source of truth for task/learning tools.
 - Supabase Auth — OAuth 2.1 + PKCE + dynamic client registration for ChatGPT/Codex account linking.
-- Supabase `home-auth` Edge Function — production login/account-creation/OAuth-consent UI.
+- Supabase `home-auth` Edge Function — production Veqrya login/OAuth-consent UI.
 - Vercel `home-personal-os-plugin` — stable public plugin host, website/legal routes, OAuth Protected Resource Metadata, `/mcp` proxy, and OpenAI domain-verification challenge route.
+
+The Vercel project/domain keeps its existing technical name during the Veqrya rebrand. The public product name is Veqrya; keeping the production MCP origin stable avoids unnecessary OAuth and submission churn.
 
 Production host:
 
@@ -21,34 +23,41 @@ Production MCP URL:
 
 `https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/mcp`
 
-ChatGPT/Codex provides the reasoning layer, so the public plugin does not need a separate OpenAI API key for ordinary planning or learning evaluation.
+OAuth consent UI:
+
+`https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-auth/oauth/consent`
+
+ChatGPT/Codex provides the reasoning layer, so the public plugin does not require a separate publisher-owned OpenAI API key for ordinary planning or learning evaluation.
 
 ## Production state
 
 Completed:
 
-1. HOME Supabase project created in `eu-west-2`.
-2. HOME task/learning schema and Row Level Security applied.
-3. Supabase OAuth 2.1 Server enabled.
-4. Dynamic OAuth client registration enabled.
-5. Authorization Path set to `/oauth/consent`.
-6. Production HTTPS consent UI deployed.
-7. OAuth discovery verified, including authorization, token, JWKS, dynamic-registration, and PKCE metadata.
-8. HOME MCP Edge Function deployed.
-9. Public Vercel gateway deployed and Vercel Authentication disabled for production access.
-10. Public website and OAuth Protected Resource Metadata are reachable.
-11. Plugin manifest now points at the Vercel production host.
+1. Production Supabase project is live in `eu-west-2`.
+2. Task/learning schema and owner-only Row Level Security are applied.
+3. Supabase OAuth 2.1 Server is enabled.
+4. Dynamic OAuth client registration is enabled.
+5. Authorization Path is `/oauth/consent`.
+6. Production HTTPS Veqrya consent UI is deployed. It handles the `authorization_id`, authenticates the user, reads authorization details, displays requested scopes, and approves or denies the request through Supabase Auth.
+7. OAuth/OIDC discovery is available, including authorization, token, UserInfo, JWKS, dynamic-registration, and PKCE metadata.
+8. JWT signing is asymmetric ES256 / EC P-256.
+9. MCP Edge Function is deployed.
+10. Public Vercel gateway is deployed and Vercel Authentication is disabled for production access.
+11. Public website and OAuth Protected Resource Metadata are reachable.
+12. Unauthenticated `/mcp` access returns 401 rather than exposing user data.
+13. The plugin manifest is Veqrya-branded while retaining the stable production MCP host.
 
 Before public directory submission:
 
-1. Confirm production JWT signing is asymmetric (ES256 or RS256).
-2. Validate the complete MCP OAuth flow and tools with ChatGPT Developer Mode / MCP Inspector.
-3. Create and seed a dedicated OpenAI reviewer demo account.
-4. Create the OpenAI `With MCP` submission draft.
-5. Put the portal-provided verification token at `/.well-known/openai-apps-challenge` and verify the domain.
-6. Complete the real publisher/legal/support identity and policy attestations.
-7. Scan tools, attach the five positive and three negative tests in `SUBMISSION.md`, provide demo credentials/material, and submit for OpenAI review.
+1. Validate the complete MCP OAuth flow and tools with ChatGPT Developer Mode / MCP Inspector.
+2. Create and seed a dedicated OpenAI reviewer demo account with accessible credentials and no blocking MFA/confirmation step.
+3. Create the OpenAI `With MCP` submission draft.
+4. Put the portal-provided verification token at `/.well-known/openai-apps-challenge` and verify the domain.
+5. Complete the real publisher/legal/support identity and policy attestations.
+6. Scan tools, attach the five positive and three negative tests in `SUBMISSION.md`, provide demo credentials/material, and submit only after final validation.
 
-## Why this is the first public HOME release
+## Mobile relationship
 
-A plugin avoids maintaining separate public Android and iOS experiences for the first launch, avoids sensitive phone permissions, and uses ChatGPT/Codex as the AI interaction layer. The native HOME clients can later become companion apps for widgets, offline/local features, richer calendar UI, and background device integrations.
+The public Android and iOS Veqrya clients use the same Supabase account-isolated data plane as the ChatGPT connector. A user who connects ChatGPT with the same Veqrya account sees the same task and learning data while Row Level Security keeps other users' rows inaccessible.
+
+The mobile clients do not ask users to paste reusable AI-provider API keys into the app. Claude and Gemini are planned connectors rather than simulated integrations.
