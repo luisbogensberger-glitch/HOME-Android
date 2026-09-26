@@ -80,6 +80,7 @@ jobs:
             '<script src="vbrain-patch-v10.js"></script>',
             '<script src="vbrain-autonomy-v11.js"></script>',
             '<script src="vbrain-context-v12.js"></script>',
+            '<script src="vbrain-sense-v13.js"></script>',
           ]
           for tag in css_tags:
             if tag not in s: s=s.replace('</head>',tag+'\n</head>',1)
@@ -89,7 +90,7 @@ jobs:
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Enable native bridge
+      - name: Enable native bridges and live inbox services
         shell: bash
         run: |
           python3 - <<'PY'
@@ -97,13 +98,44 @@ jobs:
           java=Path('src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java')
           s=java.read_text(encoding='utf-8')
           needle='webView.addJavascriptInterface(new NativeBridge(), "Native");'
-          add=needle+'\n        webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");'
-          if '"AdaptiveNative"' not in s: s=s.replace(needle,add,1)
+          if '"AdaptiveNative"' not in s:
+              s=s.replace(needle,needle+'\n        webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");',1)
+          if '"VBrainNative"' not in s:
+              anchor='webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");'
+              s=s.replace(anchor,anchor+'\n        webView.addJavascriptInterface(new VBrainSettingsBridge(this), "VBrainNative");',1)
           java.write_text(s,encoding='utf-8')
+
           manifest=Path('src/luis-home-app/app/src/main/AndroidManifest.xml')
           m=manifest.read_text(encoding='utf-8')
           permission='<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
-          if 'android.permission.POST_NOTIFICATIONS' not in m: m=m.replace('<application',permission+'\n    <application',1)
+          if 'android.permission.POST_NOTIFICATIONS' not in m:
+              m=m.replace('<application',permission+'\n    <application',1)
+
+          services='''
+        <service
+            android:name=".WhatsAppNotificationListener"
+            android:label="V-Brain live inbox"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".WhatsAppAccessibilityService"
+            android:label="V-Brain WhatsApp screen reader"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/home_whatsapp_accessibility" />
+        </service>
+'''
+          if '.WhatsAppNotificationListener' not in m:
+              m=m.replace('</application>',services+'    </application>',1)
           manifest.write_text(m,encoding='utf-8')
           PY
 
@@ -145,13 +177,17 @@ jobs:
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
           INDEX="$ASSETS/index.html"
+          MANIFEST="src/luis-home-app/app/src/main/AndroidManifest.xml"
           sed -i 's/setTimeout(diagnose,400);setTimeout(diagnose,1200)//' "$ASSETS/vbrain-safe-shell-v3.js"
           grep -q 'vbrain-safe-shell-v3.js' "$INDEX"
           grep -q 'vbrain-patch-v10.js' "$INDEX"
           grep -q 'vbrain-autonomy-v11.js' "$INDEX"
           grep -q 'vbrain-context-v12.js' "$INDEX"
+          grep -q 'vbrain-sense-v13.js' "$INDEX"
           grep -q 'runtime.js' "$INDEX"
           grep -q 'tube-remote.js' "$INDEX"
+          grep -q '.WhatsAppNotificationListener' "$MANIFEST"
+          grep -q '.WhatsAppAccessibilityService' "$MANIFEST"
           ! grep -q 'remote-extension-loader.js' "$INDEX"
           ! grep -q 'vbrain-live-v9.js' "$INDEX"
           ! grep -q 'behavior-v3.js' "$INDEX"
@@ -166,10 +202,11 @@ jobs:
           node --check "$ASSETS/vbrain-patch-v10.js"
           node --check "$ASSETS/vbrain-autonomy-v11.js"
           node --check "$ASSETS/vbrain-context-v12.js"
+          node --check "$ASSETS/vbrain-sense-v13.js"
           python3 - <<'PY'
           from pathlib import Path
           s=Path('src/luis-home-app/app/src/main/assets/index.html').read_text()
-          required=['home-ui-v2.js','adaptive-runtime.js','runtime.js','tube-remote.js','vbrain-safe-shell-v3.js','vbrain-patch-v10.js','vbrain-autonomy-v11.js','vbrain-context-v12.js']
+          required=['home-ui-v2.js','adaptive-runtime.js','runtime.js','tube-remote.js','vbrain-safe-shell-v3.js','vbrain-patch-v10.js','vbrain-autonomy-v11.js','vbrain-context-v12.js','vbrain-sense-v13.js']
           positions=[s.index(x) for x in required]
           assert positions==sorted(positions), positions
           unsafe=['remote-extension-loader.js','vbrain-live-v9.js','behavior-v3.js','recovery-code-v1.js','living-brain-v6.js','state-resilience-v2.js','vbrain-stability-v1.js']
