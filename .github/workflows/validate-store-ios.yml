@@ -1,4 +1,4 @@
-name: Validate HOME Store iOS
+name: Validate Veqrya Store iOS
 
 on:
   workflow_dispatch:
@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Stage reviewed HOME web resources
+      - name: Stage reviewed Veqrya web resources
         shell: bash
         run: |
           set -euo pipefail
@@ -47,6 +47,8 @@ jobs:
           p=Path('ios/HOMEStore/Resources/Web/index.html')
           s=p.read_text(encoding='utf-8')
           s=s.replace('<script src="remote-extension-loader.js"></script>','')
+          s=s.replace('<title>HOME</title>','<title>Veqrya</title>')
+          s=s.replace('<h1 class="homeTitle">HOME</h1>','<h1 class="homeTitle">V</h1>')
           css=['<link rel="stylesheet" href="home-ui-v2.css" />','<link rel="stylesheet" href="adaptive-runtime.css" />','<link rel="stylesheet" href="todo-premium.css" />','<link rel="stylesheet" href="runtime.css" />','<link rel="stylesheet" href="behavior-v3.css" />']
           js=['<script src="home-ui-v2.js"></script>','<script src="adaptive-runtime.js"></script>','<script src="todo-premium.js"></script>','<script src="runtime.js"></script>','<script src="behavior-v3.js"></script>','<script src="dynamic-shell-v5.js"></script>','<script src="tube-remote.js"></script>']
           for tag in css:
@@ -56,6 +58,65 @@ jobs:
           p.write_text(s,encoding='utf-8')
           PY
           sed -i '' "s#https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/tube-feed.json#tube-feed.json#g" "$WEB/tube-remote.js"
+
+      - name: Generate minimal Veqrya V app icon
+        shell: bash
+        run: |
+          set -euo pipefail
+          ICONSET=ios/HOMEStore/Resources/Assets.xcassets/AppIcon.appiconset
+          mkdir -p "$ICONSET"
+          python3 - <<'PY'
+          from pathlib import Path
+          W=1024; H=1024
+          buf=bytearray([0,0,0])*(W*H)
+          def pix(x,y,c=(255,255,255)):
+              if 0<=x<W and 0<=y<H:
+                  i=(y*W+x)*3; buf[i:i+3]=bytes(c)
+          def line(x0,y0,x1,y1,width=15):
+              dx=x1-x0; dy=y1-y0; steps=max(abs(dx),abs(dy))
+              for n in range(steps+1):
+                  x=round(x0+dx*n/steps); y=round(y0+dy*n/steps)
+                  for yy in range(y-width//2,y+width//2+1):
+                      for xx in range(x-width//2,x+width//2+1): pix(xx,yy)
+          line(280,245,512,790)
+          line(512,790,744,245)
+          p=Path('/tmp/veqrya.ppm')
+          p.write_bytes(f'P6\n{W} {H}\n255\n'.encode()+buf)
+          PY
+          sips -s format png /tmp/veqrya.ppm --out "$ICONSET/icon-1024.png" >/dev/null
+          for pair in "40 icon-20@2x.png" "60 icon-20@3x.png" "58 icon-29@2x.png" "87 icon-29@3x.png" "80 icon-40@2x.png" "120 icon-40@3x.png" "120 icon-60@2x.png" "180 icon-60@3x.png" "20 icon-20@1x-ipad.png" "40 icon-20@2x-ipad.png" "29 icon-29@1x-ipad.png" "58 icon-29@2x-ipad.png" "40 icon-40@1x-ipad.png" "80 icon-40@2x-ipad.png" "76 icon-76@1x.png" "152 icon-76@2x.png" "167 icon-83.5@2x.png"; do
+            set -- $pair
+            sips -z "$1" "$1" "$ICONSET/icon-1024.png" --out "$ICONSET/$2" >/dev/null
+          done
+          cat > "$ICONSET/Contents.json" <<'EOF'
+          {
+            "images" : [
+              {"filename":"icon-20@2x.png","idiom":"iphone","scale":"2x","size":"20x20"},
+              {"filename":"icon-20@3x.png","idiom":"iphone","scale":"3x","size":"20x20"},
+              {"filename":"icon-29@2x.png","idiom":"iphone","scale":"2x","size":"29x29"},
+              {"filename":"icon-29@3x.png","idiom":"iphone","scale":"3x","size":"29x29"},
+              {"filename":"icon-40@2x.png","idiom":"iphone","scale":"2x","size":"40x40"},
+              {"filename":"icon-40@3x.png","idiom":"iphone","scale":"3x","size":"40x40"},
+              {"filename":"icon-60@2x.png","idiom":"iphone","scale":"2x","size":"60x60"},
+              {"filename":"icon-60@3x.png","idiom":"iphone","scale":"3x","size":"60x60"},
+              {"filename":"icon-20@1x-ipad.png","idiom":"ipad","scale":"1x","size":"20x20"},
+              {"filename":"icon-20@2x-ipad.png","idiom":"ipad","scale":"2x","size":"20x20"},
+              {"filename":"icon-29@1x-ipad.png","idiom":"ipad","scale":"1x","size":"29x29"},
+              {"filename":"icon-29@2x-ipad.png","idiom":"ipad","scale":"2x","size":"29x29"},
+              {"filename":"icon-40@1x-ipad.png","idiom":"ipad","scale":"1x","size":"40x40"},
+              {"filename":"icon-40@2x-ipad.png","idiom":"ipad","scale":"2x","size":"40x40"},
+              {"filename":"icon-76@1x.png","idiom":"ipad","scale":"1x","size":"76x76"},
+              {"filename":"icon-76@2x.png","idiom":"ipad","scale":"2x","size":"76x76"},
+              {"filename":"icon-83.5@2x.png","idiom":"ipad","scale":"2x","size":"83.5x83.5"},
+              {"filename":"icon-1024.png","idiom":"ios-marketing","scale":"1x","size":"1024x1024"}
+            ],
+            "info" : {"author":"xcode","version":1}
+          }
+          EOF
+          mkdir -p ios/HOMEStore/Resources/Assets.xcassets
+          cat > ios/HOMEStore/Resources/Assets.xcassets/Contents.json <<'EOF'
+          {"info":{"author":"xcode","version":1}}
+          EOF
 
       - name: Install XcodeGen
         run: brew install xcodegen
