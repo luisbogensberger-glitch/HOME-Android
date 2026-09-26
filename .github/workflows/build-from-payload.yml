@@ -1,4 +1,4 @@
-name: Build HOME Android APK
+name: Build V-Brain Android APK
 
 on:
   push:
@@ -38,9 +38,9 @@ jobs:
           cat todo-patch/part* > todo-details.patch
           cd src
           patch -p1 < ../todo-details.patch
-      - name: Add HOME Worker sync
+      - name: Add app sync overlay
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
-      - name: Bake stable adaptive HOME runtime
+      - name: Bake stable adaptive runtime
         shell: bash
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
@@ -59,7 +59,7 @@ jobs:
           cp home-runtime/state-resilience-v2.js "$ASSETS/state-resilience-v2.js"
           cp home-runtime/behaviour-map-v4.js "$ASSETS/behaviour-map-v4.js"
           cp home-runtime/recovery-code-v1.js "$ASSETS/recovery-code-v1.js"
-      - name: Add premium HOME dashboard and adaptive runtime
+      - name: Add premium dashboard and adaptive runtime
         shell: bash
         run: |
           python3 - <<'PY'
@@ -89,7 +89,7 @@ jobs:
                   s=s.replace('</body>', tag+'\n</body>', 1)
           p.write_text(s, encoding='utf-8')
           PY
-      - name: Enable adaptive native bridge and WhatsApp services
+      - name: Enable native bridge and services
         shell: bash
         run: |
           python3 - <<'PY'
@@ -113,7 +113,7 @@ jobs:
           whatsapp_service=(
               '        <service\n'
               '            android:name=".WhatsAppNotificationListener"\n'
-              '            android:label="HOME WhatsApp intelligence"\n'
+              '            android:label="V-Brain message intelligence"\n'
               '            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"\n'
               '            android:exported="true">\n'
               '            <intent-filter>\n'
@@ -126,7 +126,7 @@ jobs:
           accessibility_service=(
               '        <service\n'
               '            android:name=".WhatsAppAccessibilityService"\n'
-              '            android:label="HOME WhatsApp reader"\n'
+              '            android:label="V-Brain message reader"\n'
               '            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"\n'
               '            android:exported="true">\n'
               '            <intent-filter>\n'
@@ -141,21 +141,61 @@ jobs:
               m=m.replace('</application>',accessibility_service+'    </application>',1)
           manifest.write_text(m,encoding='utf-8')
           PY
+      - name: Apply V-Brain launcher icon and visible branding
+        shell: bash
+        run: |
+          mkdir -p src/luis-home-app/app/src/main/res/drawable
+          cp branding/vbrain_launcher.xml src/luis-home-app/app/src/main/res/drawable/vbrain_launcher.xml
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          manifest=Path('src/luis-home-app/app/src/main/AndroidManifest.xml')
+          m=manifest.read_text(encoding='utf-8')
+          app=re.search(r'<application\b[^>]*>',m,re.S)
+          if not app:
+              raise SystemExit('No application tag found')
+          tag=app.group(0)
+          def set_attr(tag,name,value):
+              if re.search(rf'android:{name}="[^"]*"',tag):
+                  return re.sub(rf'android:{name}="[^"]*"',f'android:{name}="{value}"',tag,1)
+              return tag[:-1]+f' android:{name}="{value}">'
+          tag=set_attr(tag,'icon','@drawable/vbrain_launcher')
+          tag=set_attr(tag,'roundIcon','@drawable/vbrain_launcher')
+          tag=set_attr(tag,'label','V-Brain')
+          m=m[:app.start()]+tag+m[app.end():]
+          manifest.write_text(m,encoding='utf-8')
+
+          assets=Path('src/luis-home-app/app/src/main/assets')
+          replacements={
+              'Connect HOME':'Connect V-Brain',
+              'Syncing with HOME Sync…':'Syncing with V-Brain Sync…',
+              'Could not read HOME tasks':'Could not read V-Brain tasks',
+              'Adding to HOME Sync…':'Adding to V-Brain Sync…',
+              'HOME is learning how you work.':'V-Brain is learning how you work.',
+              'HOME compares openings with meaningful completions':'V-Brain compares openings with meaningful completions',
+              'HOME currently sees a tendency':'V-Brain currently sees a tendency',
+              'HOME uses taps and dwell time':'V-Brain uses taps and dwell time',
+              "HOME WON’T HIDE IT":"V-BRAIN WON’T HIDE IT",
+              "HOME WON'T HIDE IT":"V-BRAIN WON'T HIDE IT",
+              'Save your current HOME state':'Save your current V-Brain state',
+              'current HOME state':'current V-Brain state',
+              'HOME state entries':'V-Brain state entries',
+              'Restore previous HOME data':'Restore previous V-Brain data',
+          }
+          for p in assets.glob('*'):
+              if p.suffix.lower() not in {'.js','.html','.css'}: continue
+              try: s=p.read_text(encoding='utf-8')
+              except Exception: continue
+              old=s
+              for a,b in replacements.items(): s=s.replace(a,b)
+              if s!=old: p.write_text(s,encoding='utf-8')
+          PY
       - name: Enable remote UI and Tube feed access
         shell: bash
         run: |
           FILE="src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java"
           sed -i 's/settings.setAllowFileAccessFromFileURLs(false);/settings.setAllowFileAccessFromFileURLs(true);/' "$FILE"
           sed -i 's/settings.setAllowUniversalAccessFromFileURLs(false);/settings.setAllowUniversalAccessFromFileURLs(true);/' "$FILE"
-      - name: Relabel legacy UI text
-        shell: bash
-        run: |
-          FILE="src/luis-home-app/app/src/main/assets/index.html"
-          sed -i 's/Connect Notion/Connect HOME/g' "$FILE"
-          sed -i 's/Syncing with Notion…/Syncing with HOME Sync…/g' "$FILE"
-          sed -i 's/Could not read Notion tasks/Could not read HOME tasks/g' "$FILE"
-          sed -i 's/Adding to Notion…/Adding to HOME Sync…/g' "$FILE"
-          sed -i 's/Open full task guidance in Notion ↗/Open full task guidance ↗/g' "$FILE"
       - name: Add Lean Startup learning card fallback
         run: python3 scripts/add_lean_card.py
       - name: Enable live Tube feed and hot-swappable remote UI extension
@@ -165,13 +205,9 @@ jobs:
           from pathlib import Path
           p=Path('src/luis-home-app/app/src/main/assets/index.html')
           s=p.read_text(encoding='utf-8')
-          tags=[
-              '<script src="tube-remote.js"></script>',
-              '<script src="remote-extension-loader.js"></script>',
-          ]
+          tags=['<script src="tube-remote.js"></script>','<script src="remote-extension-loader.js"></script>']
           for tag in tags:
-              if tag not in s:
-                  s=s.replace('</body>', tag+'\n</body>', 1)
+              if tag not in s: s=s.replace('</body>', tag+'\n</body>', 1)
           p.write_text(s, encoding='utf-8')
           PY
       - name: Set up Java 17
@@ -179,12 +215,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Restore stable HOME debug signer
+      - name: Restore stable V-Brain signer
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
           key: home-android-debug-keystore-v1
-      - name: Ensure stable HOME debug signer
+      - name: Ensure stable V-Brain signer
         shell: bash
         run: |
           mkdir -p "$HOME/.android"
@@ -197,7 +233,7 @@ jobs:
               -keyalg RSA \
               -keysize 2048 \
               -validity 10000 \
-              -dname "CN=Android Debug,O=HOME,C=GB"
+              -dname "CN=Android Debug,O=V-Brain,C=GB"
           fi
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
@@ -206,7 +242,7 @@ jobs:
       - name: Build debug APK
         working-directory: src/luis-home-app
         run: gradle :app:assembleDebug --stacktrace
-      - name: Re-sign and verify APK with stable HOME key
+      - name: Re-sign and verify APK with stable V-Brain key
         shell: bash
         run: |
           SRC="src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk"
@@ -217,12 +253,12 @@ jobs:
             --ks-key-alias androiddebugkey \
             --ks-pass pass:android \
             --key-pass pass:android \
-            --out HOME-Living-Brain-v6.apk \
+            --out V-Brain.apk \
             "$SRC"
-          "$APKSIGNER" verify --verbose --print-certs HOME-Living-Brain-v6.apk
+          "$APKSIGNER" verify --verbose --print-certs V-Brain.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HOME-living-brain-v6-apk
-          path: HOME-Living-Brain-v6.apk
+          name: V-Brain-apk
+          path: V-Brain.apk
           if-no-files-found: error
