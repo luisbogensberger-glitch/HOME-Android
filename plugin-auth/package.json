@@ -1,0 +1,22 @@
+{
+  "name": "home-plugin-auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:client": "mkdir -p public && esbuild src/client.ts --bundle --format=esm --target=es2022 --minify --outfile=public/app.js",
+    "typecheck": "tsc --noEmit",
+    "build:worker": "wrangler deploy --dry-run --outdir dist",
+    "build": "npm run build:client && npm run build:worker",
+    "deploy": "npm run build:client && wrangler deploy"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.76.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260925.1",
+    "esbuild": "^0.25.10",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.0.0"
+  }
+}

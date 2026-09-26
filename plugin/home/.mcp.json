@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "home": {
+      "type": "streamable-http",
+      "url": "https://home-personal-os-plugin.vercel.app/mcp"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/", "destination": "/api/index?_vroute=home" },
+    { "source": "/website", "destination": "/api/index?_vroute=home" },
+    { "source": "/privacy", "destination": "/api/index?_vroute=privacy" },
+    { "source": "/terms", "destination": "/api/index?_vroute=terms" },
+    { "source": "/support", "destination": "/api/index?_vroute=support" },
+    { "source": "/mcp", "destination": "/api/index?_vroute=mcp" },
+    { "source": "/.well-known/oauth-protected-resource", "destination": "/api/index?_vroute=oauth" },
+    { "source": "/.well-known/oauth-protected-resource/mcp", "destination": "/api/index?_vroute=oauth" },
+    { "source": "/.well-known/openai-apps-challenge", "destination": "/api/index?_vroute=challenge" }
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  }
+}

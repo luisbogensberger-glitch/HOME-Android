@@ -1,0 +1,89 @@
+name: Deploy HOME Plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      openai_apps_challenge:
+        description: 'Optional exact OpenAI domain verification token from the submission portal'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      HOME_SUPABASE_URL: ${{ vars.HOME_SUPABASE_URL }}
+      HOME_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.HOME_SUPABASE_PUBLISHABLE_KEY }}
+      HOME_SUPABASE_SECRET_KEY: ${{ secrets.HOME_SUPABASE_SECRET_KEY }}
+      HOME_SUPABASE_JWKS: ${{ secrets.HOME_SUPABASE_JWKS }}
+      HOME_PUBLISHER_NAME: ${{ vars.HOME_PUBLISHER_NAME }}
+      HOME_SUPPORT_EMAIL: ${{ vars.HOME_SUPPORT_EMAIL }}
+      OPENAI_APPS_CHALLENGE: ${{ inputs.openai_apps_challenge }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID HOME_SUPABASE_URL HOME_SUPABASE_PUBLISHABLE_KEY HOME_SUPABASE_SECRET_KEY HOME_SUPABASE_JWKS HOME_PUBLISHER_NAME HOME_SUPPORT_EMAIL; do
+            test -n "${!name:-}" || { echo "Missing required GitHub secret/variable: $name"; exit 1; }
+          done
+          [[ "$HOME_SUPABASE_URL" == https://*.supabase.co ]] || { echo 'HOME_SUPABASE_URL must be the production HTTPS Supabase project URL'; exit 1; }
+          [[ "$HOME_SUPPORT_EMAIL" == *@* ]] || { echo 'HOME_SUPPORT_EMAIL must be a monitored email address'; exit 1; }
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install MCP gateway dependencies
+        working-directory: plugin-server
+        run: npm install --no-audit --no-fund
+
+      - name: Deploy public MCP gateway
+        working-directory: plugin-server
+        shell: bash
+        run: |
+          npx wrangler deploy \
+            --var "SUPABASE_URL:$HOME_SUPABASE_URL" \
+            --var "SUPABASE_PUBLISHABLE_KEY:$HOME_SUPABASE_PUBLISHABLE_KEY" \
+            --var "SUPABASE_JWKS:$HOME_SUPABASE_JWKS" \
+            --var "PUBLISHER_NAME:$HOME_PUBLISHER_NAME" \
+            --var "SUPPORT_EMAIL:$HOME_SUPPORT_EMAIL" \
+            --var "OPENAI_APPS_CHALLENGE:$OPENAI_APPS_CHALLENGE"
+          printf '%s' "$HOME_SUPABASE_SECRET_KEY" | npx wrangler secret put SUPABASE_SECRET_KEY
+
+      - name: Install OAuth frontend dependencies
+        working-directory: plugin-auth
+        run: npm install --no-audit --no-fund
+
+      - name: Deploy HOME OAuth consent frontend
+        working-directory: plugin-auth
+        shell: bash
+        run: |
+          npm run build:client
+          npx wrangler deploy \
+            --var "SUPABASE_URL:$HOME_SUPABASE_URL" \
+            --var "SUPABASE_PUBLISHABLE_KEY:$HOME_SUPABASE_PUBLISHABLE_KEY"
+
+      - name: Deployment follow-up
+        shell: bash
+        run: |
+          cat <<'EOF'
+          HOME workers deployed.
+          Next production configuration in Supabase:
+          - enable OAuth 2.1 Server
+          - enable dynamic client registration
+          - use asymmetric ES256 or RS256 signing
+          - set Site URL to the deployed HOME auth worker origin
+          - set Authorization Path to /oauth/consent
+          - apply supabase/migrations/20260925143000_home_plugin.sql
+          Then test the public MCP worker /mcp endpoint in ChatGPT Developer Mode.
+          EOF
