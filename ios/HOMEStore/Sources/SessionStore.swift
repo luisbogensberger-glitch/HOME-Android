@@ -14,8 +14,8 @@ final class SessionStore: ObservableObject {
     @Published var errorMessage: String?
     @Published var busy = false
 
-    private let service = "com.homeadaptive.store.session"
-    private let account = "home-session"
+    private let service = "com.veqrya.app.session"
+    private let account = "veqrya-session"
 
     init() {
         session = loadKeychain()
@@ -26,17 +26,17 @@ final class SessionStore: ObservableObject {
 
     private var apiURL: URL {
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "HOME_API_URL") as? String,
-              let url = URL(string: raw), url.scheme == "https" else { fatalError("HOME_API_URL missing") }
+              let url = URL(string: raw), url.scheme == "https" else { fatalError("Veqrya API URL missing") }
         return url
     }
     private var supabaseURL: URL {
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "HOME_SUPABASE_URL") as? String,
-              let url = URL(string: raw), url.scheme == "https" else { fatalError("HOME_SUPABASE_URL missing") }
+              let url = URL(string: raw), url.scheme == "https" else { fatalError("Veqrya authentication URL missing") }
         return url
     }
     private var anonKey: String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: "HOME_SUPABASE_ANON_KEY") as? String,
-              value.count > 20 else { fatalError("HOME_SUPABASE_ANON_KEY missing") }
+              value.count > 20 else { fatalError("Veqrya authentication key missing") }
         return value
     }
 
@@ -58,8 +58,8 @@ final class SessionStore: ObservableObject {
             let result = try await supabase(path: path, body: ["email": cleanEmail, "password": password], bearer: nil)
             guard let access = result["access_token"] as? String,
                   let refresh = result["refresh_token"] as? String else {
-                if create { throw HomeError.message("Account created. Confirm your email, then sign in.") }
-                throw HomeError.message("Authentication did not return a session.")
+                if create { throw VeqryaError.message("Account created. Confirm your email, then sign in.") }
+                throw VeqryaError.message("Authentication did not return a session.")
             }
             let expires = (result["expires_in"] as? NSNumber)?.doubleValue ?? 3600
             let user = result["user"] as? [String: Any]
@@ -105,26 +105,26 @@ final class SessionStore: ObservableObject {
             (data, response) = try await URLSession.shared.data(for: request)
         }
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw parseError(data, fallback: "HOME request failed")
+            throw parseError(data, fallback: "Veqrya request failed")
         }
         if data.isEmpty { return [:] }
         return try JSONSerialization.jsonObject(with: data)
     }
 
     private func accessToken() async throws -> String {
-        guard let current = session else { throw HomeError.message("Sign in to HOME first.") }
+        guard let current = session else { throw VeqryaError.message("Sign in to Veqrya first.") }
         if current.expiresAt > Date().addingTimeInterval(90) { return current.accessToken }
         return try await refresh(force: false)
     }
 
     private func refresh(force: Bool) async throws -> String {
-        guard let current = session else { throw HomeError.message("Sign in to HOME first.") }
+        guard let current = session else { throw VeqryaError.message("Sign in to Veqrya first.") }
         if !force, current.expiresAt > Date().addingTimeInterval(90) { return current.accessToken }
         let result = try await supabase(path: "/auth/v1/token?grant_type=refresh_token",
                                         body: ["refresh_token": current.refreshToken], bearer: nil)
         guard let access = result["access_token"] as? String,
               let refreshToken = result["refresh_token"] as? String else {
-            signOut(); throw HomeError.message("Your HOME session expired. Sign in again.")
+            signOut(); throw VeqryaError.message("Your Veqrya session expired. Sign in again.")
         }
         let expires = (result["expires_in"] as? NSNumber)?.doubleValue ?? 3600
         let refreshed = Session(accessToken: access, refreshToken: refreshToken, email: current.email,
@@ -153,9 +153,9 @@ final class SessionStore: ObservableObject {
     private func parseError(_ data: Data, fallback: String) -> Error {
         if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             let message = (object["error"] as? String) ?? (object["message"] as? String) ?? (object["msg"] as? String)
-            if let message, !message.isEmpty { return HomeError.message(message) }
+            if let message, !message.isEmpty { return VeqryaError.message(message) }
         }
-        return HomeError.message(fallback)
+        return VeqryaError.message(fallback)
     }
 
     private func saveKeychain(_ value: Session) throws {
@@ -169,7 +169,7 @@ final class SessionStore: ObservableObject {
             kSecValueData as String: data
         ]
         let status = SecItemAdd(query as CFDictionary, nil)
-        guard status == errSecSuccess else { throw HomeError.message("Could not securely save the HOME session.") }
+        guard status == errSecSuccess else { throw VeqryaError.message("Could not securely save the Veqrya session.") }
     }
 
     private func loadKeychain() -> Session? {
@@ -196,7 +196,7 @@ final class SessionStore: ObservableObject {
     }
 }
 
-enum HomeError: LocalizedError {
+enum VeqryaError: LocalizedError {
     case message(String)
-    var errorDescription: String? { if case let .message(message) = self { return message }; return "HOME error" }
+    var errorDescription: String? { if case let .message(message) = self { return message }; return "Veqrya error" }
 }
