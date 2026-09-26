@@ -1,6 +1,6 @@
 {
-  "version": 9,
-  "updatedAt": "2026-09-26T14:46:00+01:00",
+  "version": 10,
+  "updatedAt": "2026-09-26T16:03:00+01:00",
   "theme": {
     "radius": 22,
     "density": "comfortable",
@@ -15,18 +15,9 @@
         "image": "https://images.unsplash.com/photo-1435527173128-983b87201f4d?auto=format&fit=crop&w=1400&q=84",
         "position": "center 52%"
       },
-      "todos": {
-        "image": "",
-        "position": "center"
-      },
-      "tube": {
-        "image": "",
-        "position": "center"
-      },
-      "gym": {
-        "image": "",
-        "position": "center"
-      }
+      "todos": {"image": "", "position": "center"},
+      "tube": {"image": "", "position": "center"},
+      "gym": {"image": "", "position": "center"}
     }
   },
   "tube": {
@@ -64,12 +55,7 @@
     "home": {
       "orderMode": "adaptive",
       "order": ["calendar", "todos", "tube", "gym"],
-      "visible": {
-        "calendar": true,
-        "todos": true,
-        "tube": true,
-        "gym": true
-      },
+      "visible": {"calendar": true, "todos": true, "tube": true, "gym": true},
       "gap": 14,
       "minHeight": 132,
       "scale": 1.0,
@@ -91,9 +77,9 @@
       "pressScale": 0.985
     },
     "banner": {
-      "visible": false,
-      "title": "",
-      "text": "",
+      "visible": true,
+      "title": "Live control active",
+      "text": "This card was pushed to the running app through V-Brain's live control plane.",
       "target": "todos"
     },
     "modules": []
@@ -116,11 +102,7 @@
     "allowDynamicModules": true,
     "allowNotificationExperiments": true,
     "learnFromMeaningfulActionsNotClicks": true,
-    "inactiveDays": {
-      "gentle": 2,
-      "lowFriction": 4,
-      "recovery": 7
-    },
+    "inactiveDays": {"gentle": 2, "lowFriction": 4, "recovery": 7},
     "minEventsBeforeMajorChange": 8,
     "cooldownHours": 6,
     "maxMajorExperimentsPerDay": 2
