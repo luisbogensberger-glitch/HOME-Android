@@ -21,7 +21,7 @@
 
   function initialReset(){
     try{document.body.style.overflow=''}catch(e){}
-    ['homeBehaviourOverlayV4','vbrainDataModal','homeFlexSheet','vbrainLegacyBackup','homeSafeBrainModal','homeSafeBackupModal'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.classList.remove('show');el.style.pointerEvents='none';if(id!=='homeFlexSheet')el.style.display='none'});
+    ['homeBehaviourOverlayV4','vbrainDataModal','homeFlexSheet','vbrainLegacyBackup','homeSafeBrainModal','homeSafeBackupModal'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.classList.remove('show');el.style.removeProperty('pointer-events');el.style.removeProperty('display')});
     const home=document.getElementById('homeScreen');if(home){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('show'));home.classList.add('show');home.style.pointerEvents='auto';home.style.position='relative'}
   }
 
