@@ -2,13 +2,6 @@ name: Build V-Brain Android APK
 
 on:
   push:
-    branches: [ main, feature/notion-task-sync, worker-backend-sync ]
-    paths-ignore:
-      - 'tube-feed.json'
-      - 'adaptive-ui.json'
-      - 'home-runtime/**'
-      - 'home-bridge/**'
-  pull_request:
     branches: [ main ]
     paths-ignore:
       - 'tube-feed.json'
@@ -25,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Recreate Android source
         shell: bash
         run: |
@@ -32,68 +26,65 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir -p src
           unzip -q source.zip -d src
+
       - name: Apply To-Do detail update
         shell: bash
         run: |
           cat todo-patch/part* > todo-details.patch
           cd src
           patch -p1 < ../todo-details.patch
-      - name: Add app sync overlay
+
+      - name: Add Android overlay
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
-      - name: Bake stable adaptive runtime
+
+      - name: Bake only stable local core
         shell: bash
         run: |
           ASSETS="src/luis-home-app/app/src/main/assets"
           cp home-runtime/runtime.js "$ASSETS/runtime.js"
           cp home-runtime/runtime.css "$ASSETS/runtime.css"
-          cp home-runtime/behavior-v3.js "$ASSETS/behavior-v3.js"
-          cp home-runtime/behavior-v3.css "$ASSETS/behavior-v3.css"
-          cp home-runtime/behavior-v3-base.js "$ASSETS/behavior-v3-base.js"
-          cp home-runtime/learning-engine-v10.js "$ASSETS/learning-engine-v10.js"
-          cp home-runtime/learning-resilience-v11.js "$ASSETS/learning-resilience-v11.js"
-          cp home-runtime/interface-policy-v10.js "$ASSETS/interface-policy-v10.js"
-          cp home-runtime/habit-adaptation-v1.js "$ASSETS/habit-adaptation-v1.js"
-          cp home-runtime/todo-pressure-v1.js "$ASSETS/todo-pressure-v1.js"
-          cp home-runtime/post-install-resilience-v1.js "$ASSETS/post-install-resilience-v1.js"
-          cp home-runtime/living-brain-v6.js "$ASSETS/living-brain-v6.js"
-          cp home-runtime/state-resilience-v2.js "$ASSETS/state-resilience-v2.js"
-          cp home-runtime/behaviour-map-v4.js "$ASSETS/behaviour-map-v4.js"
-          cp home-runtime/recovery-code-v1.js "$ASSETS/recovery-code-v1.js"
-          cp home-runtime/v-backup-ui-v1.js "$ASSETS/v-backup-ui-v1.js"
-          cp home-runtime/v-brand-v1.js "$ASSETS/v-brand-v1.js"
-      - name: Add premium dashboard and adaptive runtime
+
+      - name: Build overlay-free V-Brain shell
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('src/luis-home-app/app/src/main/assets/index.html')
           s=p.read_text(encoding='utf-8')
+
+          # Remove every experimental layer that has previously been able to cover the UI.
+          banned=[
+            'behavior-v3.js','behavior-v3.css','recovery-code-v1.js','living-brain-v6.js',
+            'state-resilience-v2.js','v-backup-ui-v1.js','dynamic-shell-v5.js',
+            'remote-extension-loader.js','post-install-resilience-v1.js','behaviour-map-v4.js',
+            'feedback-pulse-v1.js','safe-tools-v1.js','vbrain-stability-v1.js'
+          ]
+          import re
+          for name in banned:
+            s=re.sub(r'<script[^>]+src=["\'][^"\']*'+re.escape(name)+r'[^"\']*["\'][^>]*>\s*</script>\s*','',s,flags=re.I)
+            s=re.sub(r'<link[^>]+href=["\'][^"\']*'+re.escape(name)+r'[^"\']*["\'][^>]*>\s*','',s,flags=re.I)
+
           css_tags=[
-              '<link rel="stylesheet" href="home-ui-v2.css" />',
-              '<link rel="stylesheet" href="adaptive-runtime.css" />',
-              '<link rel="stylesheet" href="todo-premium.css" />',
-              '<link rel="stylesheet" href="behavior-v3.css" />',
+            '<link rel="stylesheet" href="home-ui-v2.css" />',
+            '<link rel="stylesheet" href="adaptive-runtime.css" />',
+            '<link rel="stylesheet" href="todo-premium.css" />',
+            '<link rel="stylesheet" href="runtime.css" />',
           ]
           js_tags=[
-              '<script src="home-ui-v2.js"></script>',
-              '<script src="adaptive-runtime.js"></script>',
-              '<script src="todo-premium.js"></script>',
-              '<script src="behavior-v3.js"></script>',
-              '<script src="recovery-code-v1.js"></script>',
-              '<script src="living-brain-v6.js"></script>',
-              '<script src="state-resilience-v2.js"></script>',
-              '<script src="v-backup-ui-v1.js"></script>',
-              '<script src="dynamic-shell-v5.js"></script>',
-              '<script src="v-brand-v1.js"></script>',
+            '<script src="home-ui-v2.js"></script>',
+            '<script src="adaptive-runtime.js"></script>',
+            '<script src="todo-premium.js"></script>',
+            '<script src="runtime.js"></script>',
+            '<script src="vbrain-safe-shell-v2.js"></script>',
           ]
           for tag in css_tags:
-              if tag not in s:
-                  s=s.replace('</head>', tag+'\n</head>', 1)
+            if tag not in s: s=s.replace('</head>',tag+'\n</head>',1)
           for tag in js_tags:
-              if tag not in s:
-                  s=s.replace('</body>', tag+'\n</body>', 1)
-          p.write_text(s, encoding='utf-8')
+            if tag not in s: s=s.replace('</body>',tag+'\n</body>',1)
+          s=s.replace('<title>HOME</title>','<title>V-Brain</title>')
+          p.write_text(s,encoding='utf-8')
           PY
+
       - name: Enable native bridge and services
         shell: bash
         run: |
@@ -103,50 +94,17 @@ jobs:
           s=java.read_text(encoding='utf-8')
           needle='webView.addJavascriptInterface(new NativeBridge(), "Native");'
           add=needle+'\n        webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");'
-          if '"AdaptiveNative"' not in s:
-              s=s.replace(needle,add,1)
+          if '"AdaptiveNative"' not in s: s=s.replace(needle,add,1)
           java.write_text(s,encoding='utf-8')
 
           manifest=Path('src/luis-home-app/app/src/main/AndroidManifest.xml')
           m=manifest.read_text(encoding='utf-8')
           permission='<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
-          if 'android.permission.POST_NOTIFICATIONS' not in m:
-              m=m.replace('<application',permission+'\n    <application',1)
-          receiver='        <receiver android:name=".HomeNotificationReceiver" android:exported="false" />\n'
-          if '.HomeNotificationReceiver' not in m:
-              m=m.replace('</application>',receiver+'    </application>',1)
-          whatsapp_service=(
-              '        <service\n'
-              '            android:name=".WhatsAppNotificationListener"\n'
-              '            android:label="V-Brain message intelligence"\n'
-              '            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"\n'
-              '            android:exported="true">\n'
-              '            <intent-filter>\n'
-              '                <action android:name="android.service.notification.NotificationListenerService" />\n'
-              '            </intent-filter>\n'
-              '        </service>\n'
-          )
-          if '.WhatsAppNotificationListener' not in m:
-              m=m.replace('</application>',whatsapp_service+'    </application>',1)
-          accessibility_service=(
-              '        <service\n'
-              '            android:name=".WhatsAppAccessibilityService"\n'
-              '            android:label="V-Brain message reader"\n'
-              '            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"\n'
-              '            android:exported="true">\n'
-              '            <intent-filter>\n'
-              '                <action android:name="android.accessibilityservice.AccessibilityService" />\n'
-              '            </intent-filter>\n'
-              '            <meta-data\n'
-              '                android:name="android.accessibilityservice"\n'
-              '                android:resource="@xml/home_whatsapp_accessibility" />\n'
-              '        </service>\n'
-          )
-          if '.WhatsAppAccessibilityService' not in m:
-              m=m.replace('</application>',accessibility_service+'    </application>',1)
+          if 'android.permission.POST_NOTIFICATIONS' not in m: m=m.replace('<application',permission+'\n    <application',1)
           manifest.write_text(m,encoding='utf-8')
           PY
-      - name: Apply V-Brain launcher icon and visible branding
+
+      - name: Apply V-Brain icon and name
         shell: bash
         run: |
           mkdir -p src/luis-home-app/app/src/main/res/drawable
@@ -157,119 +115,81 @@ jobs:
           manifest=Path('src/luis-home-app/app/src/main/AndroidManifest.xml')
           m=manifest.read_text(encoding='utf-8')
           app=re.search(r'<application\b[^>]*>',m,re.S)
-          if not app:
-              raise SystemExit('No application tag found')
+          if not app: raise SystemExit('No application tag')
           tag=app.group(0)
           def set_attr(tag,name,value):
-              if re.search(rf'android:{name}="[^"]*"',tag):
-                  return re.sub(rf'android:{name}="[^"]*"',f'android:{name}="{value}"',tag,1)
-              return tag[:-1]+f' android:{name}="{value}">'
+            if re.search(rf'android:{name}="[^"]*"',tag): return re.sub(rf'android:{name}="[^"]*"',f'android:{name}="{value}"',tag,1)
+            return tag[:-1]+f' android:{name}="{value}">'
           tag=set_attr(tag,'icon','@drawable/vbrain_launcher')
           tag=set_attr(tag,'roundIcon','@drawable/vbrain_launcher')
           tag=set_attr(tag,'label','V-Brain')
           m=m[:app.start()]+tag+m[app.end():]
           manifest.write_text(m,encoding='utf-8')
-
-          assets=Path('src/luis-home-app/app/src/main/assets')
-          replacements={
-              'Connect HOME':'Connect V-Brain',
-              'Syncing with HOME Sync…':'Syncing with V-Brain Sync…',
-              'Could not read HOME tasks':'Could not read V-Brain tasks',
-              'Adding to HOME Sync…':'Adding to V-Brain Sync…',
-              'HOME is learning how you work.':'V-Brain is learning how you work.',
-              'HOME compares openings with meaningful completions':'V-Brain compares openings with meaningful completions',
-              'HOME currently sees a tendency':'V-Brain currently sees a tendency',
-              'HOME uses taps and dwell time':'V-Brain uses taps and dwell time',
-              "HOME WON’T HIDE IT":"V-BRAIN WON’T HIDE IT",
-              "HOME WON'T HIDE IT":"V-BRAIN WON'T HIDE IT",
-              'Save your current HOME state':'Save your current V-Brain state',
-              'current HOME state':'current V-Brain state',
-              'HOME state entries':'V-Brain state entries',
-              'Restore previous HOME data':'Restore previous V-Brain data',
-              'HOME Recovery Code':'V Backup Code',
-              'How HOME currently reads you':'How V-Brain currently reads you',
-              'HOME explains what it currently sees':'V-Brain explains what it currently sees',
-              'HOME currently sees this as':'V-Brain currently sees this as',
-              'HOME currently sees only':'V-Brain currently sees only',
-              'HOME is still collecting enough evidence':'V-Brain is still collecting enough evidence',
-          }
-          for p in assets.glob('*'):
-              if p.suffix.lower() not in {'.js','.html','.css'}: continue
-              try: s=p.read_text(encoding='utf-8')
-              except Exception: continue
-              old=s
-              for a,b in replacements.items(): s=s.replace(a,b)
-              if s!=old: p.write_text(s,encoding='utf-8')
           PY
-      - name: Enable remote UI and Tube feed access
+
+      - name: Enable local WebView access
         shell: bash
         run: |
           FILE="src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java"
           sed -i 's/settings.setAllowFileAccessFromFileURLs(false);/settings.setAllowFileAccessFromFileURLs(true);/' "$FILE"
           sed -i 's/settings.setAllowUniversalAccessFromFileURLs(false);/settings.setAllowUniversalAccessFromFileURLs(true);/' "$FILE"
-      - name: Add Lean Startup learning card fallback
+
+      - name: Add Lean Startup fallback
         run: python3 scripts/add_lean_card.py
-      - name: Enable live Tube feed and hot-swappable remote UI extension
+
+      - name: Validate safe asset graph
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('src/luis-home-app/app/src/main/assets/index.html')
-          s=p.read_text(encoding='utf-8')
-          tags=['<script src="tube-remote.js"></script>','<script src="remote-extension-loader.js"></script>']
-          for tag in tags:
-              if tag not in s: s=s.replace('</body>', tag+'\n</body>', 1)
-          p.write_text(s, encoding='utf-8')
-          PY
+          ASSETS="src/luis-home-app/app/src/main/assets"
+          grep -q 'vbrain-safe-shell-v2.js' "$ASSETS/index.html"
+          grep -q 'runtime.js' "$ASSETS/index.html"
+          ! grep -q 'remote-extension-loader.js' "$ASSETS/index.html"
+          ! grep -q 'behavior-v3.js' "$ASSETS/index.html"
+          ! grep -q 'living-brain-v6.js' "$ASSETS/index.html"
+          node --check "$ASSETS/home-ui-v2.js"
+          node --check "$ASSETS/runtime.js"
+          node --check "$ASSETS/vbrain-safe-shell-v2.js"
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Restore stable V-Brain signer
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
           key: home-android-debug-keystore-v1
+
       - name: Ensure stable V-Brain signer
         shell: bash
         run: |
           mkdir -p "$HOME/.android"
           if [ ! -f "$HOME/.android/debug.keystore" ]; then
-            keytool -genkeypair -v \
-              -keystore "$HOME/.android/debug.keystore" \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Android Debug,O=V-Brain,C=GB"
+            keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=V-Brain,C=GB"
           fi
+
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
       - name: Build debug APK
         working-directory: src/luis-home-app
         run: gradle :app:assembleDebug --stacktrace
-      - name: Re-sign and verify APK with stable V-Brain key
+
+      - name: Re-sign and verify APK
         shell: bash
         run: |
           SRC="src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          test -x "$APKSIGNER"
-          "$APKSIGNER" sign \
-            --ks "$HOME/.android/debug.keystore" \
-            --ks-key-alias androiddebugkey \
-            --ks-pass pass:android \
-            --key-pass pass:android \
-            --out V-Brain.apk \
-            "$SRC"
-          "$APKSIGNER" verify --verbose --print-certs V-Brain.apk
+          "$APKSIGNER" sign --ks "$HOME/.android/debug.keystore" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out V-Brain-SAFE.apk "$SRC"
+          "$APKSIGNER" verify --verbose --print-certs V-Brain-SAFE.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: V-Brain-apk
-          path: V-Brain.apk
+          name: V-Brain-SAFE-apk
+          path: V-Brain-SAFE.apk
           if-no-files-found: error
