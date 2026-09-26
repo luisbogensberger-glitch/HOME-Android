@@ -1,41 +1,31 @@
-/* V-Brain remote extension loader v4 — local core first, remote layers second. */
+/* HOME live loader v5 — signed-in shell, remotely versioned UI modules with local/cache fallback. */
 (function(){
-  'use strict';
-  if(window.__HOME_REMOTE_LOADER_V4__)return;window.__HOME_REMOTE_LOADER_V4__=true;
-  const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
-  const PARTS=[
-    {name:'runtime.css',key:'homeRemoteCssV2',kind:'css',id:'homeRemoteExtensionCss'},
-    {name:'runtime.js',key:'homeRemoteJsV2',kind:'js',label:'home-runtime-remote.js'},
-    {name:'behavior-v3.css',key:'homeBehaviorCssV3',kind:'css',id:'homeBehaviourExtensionCss'},
-    {name:'behavior-v3.js',key:'homeBehaviorJsV3',kind:'js',label:'home-behaviour-remote.js'}
-  ];
-  async function fetchRemote(name){try{const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});if(r.ok)return r.text()}catch(e){}throw new Error('Remote failed '+name)}
-  async function fetchLocal(name){try{const r=await fetch(name+'?local='+Date.now(),{cache:'no-store'});if(r.ok)return r.text()}catch(e){}throw new Error('Local failed '+name)}
-  function applyCss(id,css){if(!css)return false;let s=document.getElementById(id);if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s)}s.textContent=css;return true}
-  function run(js,name){if(!js)return false;new Function(js+'\n//# sourceURL='+name)();return true}
-  function apply(part,text,source){try{if(part.kind==='css')return applyCss(part.id,text);if(part.name==='runtime.js'&&window.HOMERemote)return true;return run(text,source==='cache'?part.label.replace('remote','cache'):part.label)}catch(e){try{console.warn('V-Brain layer failed',part.name,e)}catch(_){}return false}}
-  function cached(part){try{return localStorage.getItem(part.key)||''}catch(e){return''}}
-  function save(part,text){try{if(text)localStorage.setItem(part.key,text)}catch(e){}}
-
-  async function bootstrapLocalCore(){
-    const css=PARTS[0],js=PARTS[1];
-    try{apply(css,await fetchLocal(css.name),'local')}catch(e){}
-    try{if(!window.HOMERemote)apply(js,await fetchLocal(js.name),'local')}catch(e){}
-    try{if(!window.__VBRAIN_STABILITY_V1__)run(await fetchLocal('vbrain-stability-v1.js'),'vbrain-stability-local.js')}catch(e){}
-    try{window.__homeRemoteV2Refresh?.();window.VBrainStability?.repair?.()}catch(e){}
-  }
-
-  async function refresh(){
-    const results=await Promise.allSettled(PARTS.map(p=>fetchRemote(p.name)));
-    const state={fresh:[],cache:[],failed:[]};
-    PARTS.forEach((part,i)=>{const result=results[i];if(result.status==='fulfilled'&&result.value){if(apply(part,result.value,'remote')){save(part,result.value);state.fresh.push(part.name)}else state.failed.push(part.name)}else{const old=cached(part);if(old&&apply(part,old,'cache'))state.cache.push(part.name);else state.failed.push(part.name)}});
-    try{window.HOMELivingBrainV6?.repair?.();window.HOMEStateV2?.repair?.();window.VBrainStability?.repair?.();window.__homeRemoteV2Refresh?.()}catch(e){}
-    try{window.homeAdaptiveLog&&window.homeAdaptiveLog('remote_extension_loaded',{version:4,fresh:state.fresh,cache:state.cache,failed:state.failed})}catch(e){}
-    return state;
-  }
-
-  PARTS.forEach(p=>{const old=cached(p);if(old)apply(p,old,'cache')});
-  window.HOMERemoteExtension={version:4,refresh};
-  bootstrapLocalCore().then(refresh);
-  const oldResume=window.onAppResume;window.onAppResume=function(){try{if(oldResume)oldResume()}catch(e){}bootstrapLocalCore().then(refresh)};
+'use strict'; if(window.__HOME_REMOTE_LOADER_V5__)return; window.__HOME_REMOTE_LOADER_V5__=true;
+const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
+const CORE=[
+ {name:'runtime.css',kind:'css',id:'homeRemoteExtensionCss'},
+ {name:'runtime.js',kind:'js'},
+ {name:'behavior-v3.css',kind:'css',id:'homeBehaviourExtensionCss'},
+ {name:'behavior-v3.js',kind:'js'}
+];
+const key=n=>'homeLiveV5:'+n;
+const okName=n=>/^[a-zA-Z0-9._/-]+\.(?:js|css)$/.test(n)&&!n.includes('..')&&n.length<120;
+async function get(url){const r=await fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(String(r.status));return r.text()}
+function apply(p,t,label){if(!t)return false;try{if(p.kind==='css'){let s=document.getElementById(p.id||('homeLive-'+p.name.replace(/\W/g,'-')));if(!s){s=document.createElement('style');s.id=p.id||('homeLive-'+p.name.replace(/\W/g,'-'));document.head.appendChild(s)}s.textContent=t}else{new Function(t+'\n//# sourceURL='+label)()}return true}catch(e){console.warn('HOME live module failed',p.name,e);return false}}
+function cache(p,t){try{localStorage.setItem(key(p.name),t)}catch(e){}}
+function cached(p){try{return localStorage.getItem(key(p.name))||''}catch(e){return''}}
+async function localCore(){for(const p of CORE){try{const t=await get(p.name);apply(p,t,'home-local-'+p.name)}catch(e){}}}
+async function manifest(){try{const m=JSON.parse(await get(BASE+'manifest-v5.json'));const mods=Array.isArray(m.modules)?m.modules:[];return mods.filter(x=>x&&okName(String(x.name||''))&&['js','css'].includes(x.kind)).slice(0,40)}catch(e){return CORE}}
+async function refresh(){
+ const parts=await manifest(), state={fresh:[],cache:[],failed:[]};
+ for(const p of parts){try{const t=await get(BASE+p.name);if(apply(p,t,'home-live-'+p.name)){cache(p,t);state.fresh.push(p.name)}else throw Error('apply')}catch(e){const old=cached(p);if(old&&apply(p,old,'home-cache-'+p.name))state.cache.push(p.name);else state.failed.push(p.name)}}
+ try{window.HOMELivingBrainV6?.repair?.();window.HOMEStateV2?.repair?.();window.VBrainStability?.repair?.();window.__homeRemoteV2Refresh?.();AdaptiveNative?.flushPrivateSync?.()}catch(e){}
+ try{window.homeAdaptiveLog?.('remote_extension_loaded',{version:5,...state})}catch(e){}
+ return state;
+}
+window.HOMERemoteExtension={version:5,refresh};
+CORE.forEach(p=>{const t=cached(p);if(t)apply(p,t,'home-cache-'+p.name)});
+localCore().then(refresh);
+const old=window.onAppResume;window.onAppResume=function(){try{old?.()}catch(e){}refresh()};
+setInterval(()=>{if(document.visibilityState==='visible')refresh()},5*60*1000);
 })();
