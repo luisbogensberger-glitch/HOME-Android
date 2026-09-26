@@ -44,12 +44,7 @@ async function proxyMcp(req, res, origin) {
 
   const method = req.method || 'GET'
   const body = ['GET', 'HEAD'].includes(method) ? undefined : await readBody(req)
-  const upstream = await fetch(MCP_UPSTREAM, {
-    method,
-    headers,
-    body,
-    redirect: 'manual'
-  })
+  const upstream = await fetch(MCP_UPSTREAM, { method, headers, body, redirect: 'manual' })
 
   res.statusCode = upstream.status
   upstream.headers.forEach((value, key) => {
@@ -64,10 +59,23 @@ async function proxyMcp(req, res, origin) {
   Readable.fromWeb(upstream.body).pipe(res)
 }
 
+function routedPath(url) {
+  const route = url.searchParams.get('_vroute')
+  return ({
+    home: '/',
+    privacy: '/privacy',
+    terms: '/terms',
+    support: '/support',
+    mcp: '/mcp',
+    oauth: '/.well-known/oauth-protected-resource',
+    challenge: '/.well-known/openai-apps-challenge'
+  })[route] || url.pathname
+}
+
 export default async function handler(req, res) {
   const origin = originFor(req)
   const url = new URL(req.url || '/', origin)
-  const path = url.pathname
+  const path = routedPath(url)
   const publisher = escapeHtml((process.env.PUBLISHER_NAME || 'Veqrya').trim())
   const supportEmail = (process.env.SUPPORT_EMAIL || '').trim()
   const support = supportEmail.includes('@')
@@ -76,7 +84,7 @@ export default async function handler(req, res) {
 
   if (path === '/mcp') return proxyMcp(req, res, origin)
 
-  if (path === '/.well-known/oauth-protected-resource' || path === '/.well-known/oauth-protected-resource/mcp') {
+  if (path === '/.well-known/oauth-protected-resource') {
     return send(res, 200, JSON.stringify({
       resource: `${origin}/mcp`,
       authorization_servers: [AUTH_SERVER],
