@@ -1,5 +1,15 @@
 {
-  "commands": [],
+  "commands": [
+    {
+      "alg": "X25519-HKDF-SHA256+A256GCM",
+      "ciphertext": "WDLL-9Zbyvv1zirSUuWYBqYU_pVI05JJJkC7npaXQJevlwyC9mA3Gheeef6sba2LvvVmooCvDunZbhMW3TDZmHRDD7nXWvt-iHkpaEkrw_HewCkrGg7pecFMC1Cr26_yK0wYnu69XKsnu6voLPt0DBIYTzLQ7vLy_TuJsXFHbQOUQvOeLHfQ6kPsceHKfEaeqsMXN0x6Y2kUGDJgnfmk5jG_LGjwPn-yS7PxQnYap4f6dXh0ePVGPCbq4xLUFGUTykGBKQEZEcuEg2dcWug6F1-leVo-uz-bX5kmhkIFVU_sbdBdEEA0UOnvc4R45DhYk85QA1Eso0x1oaBk6eSsIt-uOQ4RR6ZjnKoSEv9wp6_Jl4-7qfBn4kKuHn-ed-uzRxROKVb2Kb016s5Q7qt8wumYwHvom-FNIA6TebGK01F_4Pl4Ec4WRfg0kqN6wNUqjv2VJ2BfE0DrhwUBpSIrg46Q1VmKkF82iTh101bLzcBhtcRxcHwS3HHqXJy26BPfQ8btdJoSlfRlb0zFZwBR78U1FhaagXO4XaHr2d76U41O5lErAT7gE6BwQU5ubg2_VbnFgbvxr72orTr0MlAx038Tch7b7NDgBE552owQGK8JE7CtekGAw2DydgVeb80i2hLUDVKNFtR_bgNZFlb_PMikcWUyc8ftWc3UkXC-KipePSh_zFLnpxM7nlOZgoFu-ME849A9RAzweb8B3LxOa2UU3HjjfgNwOg",
+      "ephemeralPublicKey": "6OAJ1Zz_XBuTekqe8pXJxuBWT93iEMEcTEgFZWGwLnE",
+      "id": "cmd-c3e741148c374758a7c06580e1922f5f",
+      "nonce": "lcyR4HDRKNeAAWuN",
+      "salt": "Zd9vKTKAtjn8ElVQmCracg",
+      "v": 2
+    }
+  ],
   "lastProcessedAtMs": 1790358633640,
   "lastProcessedCount": 2,
   "version": 2
