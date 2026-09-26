@@ -13,15 +13,15 @@ This folder contains the public plugin package for Veqrya. The plugin is intenti
 - Supabase `home-auth` Edge Function — production Veqrya login/OAuth-consent UI.
 - Vercel `home-personal-os-plugin` — stable public plugin host, website/legal routes, OAuth Protected Resource Metadata, `/mcp` proxy, and OpenAI domain-verification challenge route.
 
-The Vercel project/domain keeps its existing technical name during the Veqrya rebrand. The public product name is Veqrya; keeping the production MCP origin stable avoids unnecessary OAuth and submission churn.
+The Vercel project keeps its existing technical name during the Veqrya rebrand. The public product name is Veqrya.
 
 Production host:
 
-`https://home-personal-os-plugin-luisbogensberger-9259.vercel.app`
+`https://home-personal-os-plugin.vercel.app`
 
 Production MCP URL:
 
-`https://home-personal-os-plugin-luisbogensberger-9259.vercel.app/mcp`
+`https://home-personal-os-plugin.vercel.app/mcp`
 
 OAuth consent UI:
 
@@ -38,14 +38,16 @@ Completed:
 3. Supabase OAuth 2.1 Server is enabled.
 4. Dynamic OAuth client registration is enabled.
 5. Authorization Path is `/oauth/consent`.
-6. Production HTTPS Veqrya consent UI is deployed. It handles the `authorization_id`, authenticates the user, reads authorization details, displays requested scopes, and approves or denies the request through Supabase Auth.
+6. Production HTTPS Veqrya consent UI is deployed.
 7. OAuth/OIDC discovery is available, including authorization, token, UserInfo, JWKS, dynamic-registration, and PKCE metadata.
 8. JWT signing is asymmetric ES256 / EC P-256.
 9. MCP Edge Function is deployed.
 10. Public Vercel gateway is deployed and Vercel Authentication is disabled for production access.
-11. Public website and OAuth Protected Resource Metadata are reachable.
-12. Unauthenticated `/mcp` access returns 401 rather than exposing user data.
-13. The plugin manifest is Veqrya-branded while retaining the stable production MCP host.
+11. Veqrya homepage, privacy, terms and support routes are live.
+12. OAuth Protected Resource Metadata is reachable.
+13. Unauthenticated `/mcp` access returns 401 and advertises the protected-resource metadata endpoint.
+14. Production-contract CI validates the live public surface and currently passes.
+15. The plugin manifest is Veqrya-branded and points to the current production host.
 
 Before public directory submission:
 
