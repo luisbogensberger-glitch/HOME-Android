@@ -1,4 +1,4 @@
-name: Build HOME Store Android AAB
+name: Build Veqrya Store Android AAB
 
 on:
   workflow_dispatch:
@@ -52,14 +52,14 @@ jobs:
           mkdir -p src
           unzip -q source.zip -d src
 
-      - name: Apply current HOME task UI
+      - name: Apply current task UI
         shell: bash
         run: |
           cat todo-patch/part* > todo-details.patch
           cd src
           patch -p1 < ../todo-details.patch
 
-      - name: Add HOME native sync overlay
+      - name: Add native sync overlay
         shell: bash
         run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
 
@@ -110,6 +110,48 @@ jobs:
           PY
           sed -i "s#https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/tube-feed.json#tube-feed.json#g" src/luis-home-app/app/src/main/assets/tube-remote.js
 
+      - name: Apply Veqrya branding and minimal V icon
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('src/luis-home-app/app/src/main')
+          index=root/'assets/index.html'
+          s=index.read_text(encoding='utf-8')
+          s=s.replace('<title>HOME</title>','<title>Veqrya</title>')
+          s=s.replace('<h1 class="homeTitle">HOME</h1>','<h1 class="homeTitle">V</h1>')
+          index.write_text(s,encoding='utf-8')
+          for p in root.rglob('strings.xml'):
+              x=p.read_text(encoding='utf-8')
+              x=re.sub(r'<string\s+name="app_name">.*?</string>','<string name="app_name">Veqrya</string>',x,flags=re.S)
+              p.write_text(x,encoding='utf-8')
+          PY
+          RES=src/luis-home-app/app/src/main/res
+          mkdir -p "$RES/drawable" "$RES/values" "$RES/mipmap-anydpi" "$RES/mipmap-anydpi-v26"
+          cat > "$RES/values/veqrya_colors.xml" <<'EOF'
+          <resources><color name="veqrya_icon_bg">#000000</color></resources>
+          EOF
+          cat > "$RES/drawable/veqrya_icon_foreground.xml" <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+            <path android:pathData="M27,25 L54,82 L81,25" android:fillColor="@android:color/transparent" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="square" android:strokeLineJoin="miter"/>
+          </vector>
+          EOF
+          cat > "$RES/mipmap-anydpi/ic_launcher.xml" <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+            <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z" android:fillColor="#000000"/>
+            <path android:pathData="M27,25 L54,82 L81,25" android:fillColor="@android:color/transparent" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="square" android:strokeLineJoin="miter"/>
+          </vector>
+          EOF
+          cp "$RES/mipmap-anydpi/ic_launcher.xml" "$RES/mipmap-anydpi/ic_launcher_round.xml"
+          cat > "$RES/mipmap-anydpi-v26/ic_launcher.xml" <<'EOF'
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@color/veqrya_icon_bg"/>
+            <foreground android:drawable="@drawable/veqrya_icon_foreground"/>
+          </adaptive-icon>
+          EOF
+          cp "$RES/mipmap-anydpi-v26/ic_launcher.xml" "$RES/mipmap-anydpi-v26/ic_launcher_round.xml"
+
       - name: Patch native shell for Store account bridge
         shell: bash
         run: |
@@ -154,6 +196,7 @@ jobs:
           s=p.read_text(encoding='utf-8')
           s=re.sub(r'compileSdk(?:Version)?\s+\d+','compileSdk 36',s,count=1)
           s=re.sub(r'targetSdk(?:Version)?\s+\d+','targetSdk 36',s,count=1)
+          s=re.sub(r'applicationId\s+["\'][^"\']+["\']','applicationId "com.veqrya.app"',s,count=1)
           def esc(v): return v.replace('\\','\\\\').replace('"','\\"')
           fields=(
               f'        buildConfigField "String", "HOME_API_URL", "\\"{esc(os.environ["HOME_API_URL"])}\\""\n'
@@ -198,7 +241,7 @@ jobs:
       - name: Restore upload keystore
         if: github.event_name == 'workflow_dispatch'
         shell: bash
-        run: echo "$ANDROID_UPLOAD_KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/home-upload.jks"
+        run: echo "$ANDROID_UPLOAD_KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/veqrya-upload.jks"
 
       - name: Build signed release AAB
         if: github.event_name == 'workflow_dispatch'
@@ -206,7 +249,7 @@ jobs:
         shell: bash
         run: |
           gradle :app:bundleRelease --stacktrace \
-            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/home-upload.jks" \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/veqrya-upload.jks" \
             -Pandroid.injected.signing.store.password="$ANDROID_UPLOAD_KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$ANDROID_UPLOAD_KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$ANDROID_UPLOAD_KEY_PASSWORD"
@@ -215,6 +258,6 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: HOME-store-release-aab
+          name: Veqrya-store-release-aab
           path: src/luis-home-app/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
