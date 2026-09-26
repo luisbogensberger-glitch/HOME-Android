@@ -9,7 +9,11 @@
     {name:'behavior-v3.css',key:'homeBehaviorCssV3',kind:'css',id:'homeBehaviourExtensionCss'},
     {name:'behavior-v3.js',key:'homeBehaviorJsV3',kind:'js',label:'home-behaviour-remote.js'}
   ];
-  async function fetchText(name){const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status+' '+name);return r.text()}
+  async function fetchText(name){
+    try{const r=await fetch(BASE+name+'?v='+Date.now(),{cache:'no-store'});if(r.ok)return r.text()}catch(e){}
+    try{const r=await fetch(name+'?local='+Date.now(),{cache:'no-store'});if(r.ok)return r.text()}catch(e){}
+    throw new Error('Could not load '+name);
+  }
   function applyCss(id,css){if(!css)return false;let s=document.getElementById(id);if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s)}s.textContent=css;return true}
   function run(js,name){if(!js)return false;new Function(js+'\n//# sourceURL='+name)();return true}
   function apply(part,text,source){try{if(part.kind==='css')return applyCss(part.id,text);return run(text,source==='cache'?part.label.replace('remote','cache'):part.label)}catch(e){try{console.warn('HOME remote layer failed',part.name,e)}catch(_){}return false}}
@@ -33,7 +37,6 @@
     return state;
   }
 
-  /* Apply known-good cache immediately; network refresh may replace each layer independently. */
   PARTS.forEach(p=>{const old=cached(p);if(old)apply(p,old,'cache')});
   window.HOMERemoteExtension={version:3,refresh};
   refresh();
