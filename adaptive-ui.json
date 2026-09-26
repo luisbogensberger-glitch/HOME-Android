@@ -1,6 +1,6 @@
 {
-  "version": 7,
-  "updatedAt": "2026-09-26T13:30:00+01:00",
+  "version": 8,
+  "updatedAt": "2026-09-26T14:38:00+01:00",
   "theme": {
     "radius": 22,
     "density": "comfortable",
@@ -59,37 +59,41 @@
     "archiveCollapsed": true,
     "focusCount": 3
   },
-  "vbrain": {
-    "motion": {
-      "dragSensitivity": 0.0045,
-      "rotationDamping": 0.18,
-      "zoomDamping": 0.16,
-      "minZoom": 0.72,
-      "maxZoom": 1.9,
-      "idleDrift": 0.00022,
-      "tapMovePx": 10
-    },
-    "brain": {
-      "nodeScale": 1.0,
-      "edgeOpacity": 0.88,
-      "detailMaxHeight": 0.34,
-      "showHint": true
+  "vbrainPatch": {
+    "refreshMs": 60000,
+    "home": {
+      "order": ["calendar", "todos", "tube", "gym"],
+      "visible": {
+        "calendar": true,
+        "todos": true,
+        "tube": true,
+        "gym": true
+      },
+      "gap": 14,
+      "minHeight": 132,
+      "scale": 1.0,
+      "heroImage": "",
+      "heroPosition": "center"
     },
     "score": {
       "title": "Your signal today",
-      "showDomainMini": true
+      "subtitle": "",
+      "showMini": true
     },
-    "home": {
-      "orderMode": "adaptive",
-      "cardOrder": ["calendar", "todos", "tube", "gym"]
+    "brain": {
+      "hint": "drag to rotate · pinch to zoom · tap a node",
+      "detailMaxVh": 35,
+      "nodeScale": 1.0
     },
-    "context": {
-      "mirrorText": true,
-      "debounceMs": 1500,
-      "maxChars": 5000
+    "motion": {
+      "cardMs": 140,
+      "pressScale": 0.985
     },
-    "interface": {
-      "publishManifest": true
+    "banner": {
+      "visible": false,
+      "title": "",
+      "text": "",
+      "target": "todos"
     }
   },
   "notifications": {
@@ -99,7 +103,7 @@
   "adaptation": {
     "enabled": true,
     "localDaily": true,
-    "allowLayoutChanges": false,
+    "allowLayoutChanges": true,
     "allowCardPriorityChanges": true,
     "allowGoalReframes": true,
     "allowMicroActions": true,
@@ -111,9 +115,9 @@
       "lowFriction": 4,
       "recovery": 7
     },
-    "minEventsBeforeMajorChange": 12,
-    "cooldownHours": 20,
-    "maxMajorExperimentsPerDay": 1
+    "minEventsBeforeMajorChange": 8,
+    "cooldownHours": 6,
+    "maxMajorExperimentsPerDay": 2
   },
   "generatedBy": "private-vbrain-behavior-engine"
 }
