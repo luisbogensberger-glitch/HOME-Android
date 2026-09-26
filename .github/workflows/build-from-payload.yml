@@ -133,7 +133,7 @@ jobs:
                   android:name="android.accessibilityservice"
                   android:resource="@xml/home_whatsapp_accessibility" />
           </service>
-'''
+          '''
           if '.WhatsAppNotificationListener' not in m:
               m=m.replace('</application>',services+'    </application>',1)
           manifest.write_text(m,encoding='utf-8')
