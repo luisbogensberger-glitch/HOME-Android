@@ -1,0 +1,116 @@
+name: Validate Veqrya Production Surfaces
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ home-plugin-v1 ]
+    paths:
+      - 'plugin/home/**'
+      - 'supabase/functions/home-mcp/**'
+      - 'plugin-auth/**'
+      - '.github/workflows/validate-veqrya-production.yml'
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_ORIGIN: https://skgmgxthymnzubbobqxu.supabase.co
+  MOBILE_API: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api
+  CONSENT_URL: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-auth/oauth/consent
+  PLUGIN_ORIGIN: https://home-personal-os-plugin-luisbogensberger-9259.vercel.app
+
+jobs:
+  production-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Veqrya mobile API health
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 "$MOBILE_API/health" > /tmp/mobile.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/mobile.json'))
+          assert x.get('ok') is True, x
+          assert x.get('service') == 'veqrya-mobile-api', x
+          assert x.get('ai_billing') == 'none', x
+          PY
+
+      - name: Verify user data is not public
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --output /tmp/tasks.json --write-out '%{http_code}' "$MOBILE_API/api/tasks")
+          test "$code" = '401' || { cat /tmp/tasks.json; echo "Expected 401, got $code"; exit 1; }
+
+      - name: Verify OAuth and OIDC discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 "$SUPABASE_ORIGIN/auth/v1/.well-known/openid-configuration" > /tmp/oidc.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/oidc.json'))
+          assert x['authorization_endpoint'].startswith('https://'), x
+          assert x['token_endpoint'].startswith('https://'), x
+          assert x['userinfo_endpoint'].startswith('https://'), x
+          assert x['jwks_uri'].startswith('https://'), x
+          assert 'S256' in x.get('code_challenge_methods_supported', []), x
+          scopes=set(x.get('scopes_supported', []))
+          assert {'openid','email'}.issubset(scopes), x
+          PY
+
+      - name: Verify Veqrya OAuth consent surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 "$CONSENT_URL" > /tmp/consent.html
+          grep -q 'Authorize Veqrya' /tmp/consent.html
+          grep -q 'authorization_id' /tmp/consent.html
+
+      - name: Verify MCP protected-resource metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 "$PLUGIN_ORIGIN/.well-known/oauth-protected-resource" > /tmp/resource.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/resource.json'))
+          assert x.get('resource','').endswith('/mcp'), x
+          servers=x.get('authorization_servers') or []
+          assert any(s.startswith('https://skgmgxthymnzubbobqxu.supabase.co/auth/v1') for s in servers), x
+          scopes=set(x.get('scopes_supported') or [])
+          assert {'openid','email'}.issubset(scopes), x
+          PY
+
+      - name: Verify unauthenticated MCP is protected
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --output /tmp/mcp.txt --write-out '%{http_code}' "$PLUGIN_ORIGIN/mcp")
+          test "$code" = '401' || { cat /tmp/mcp.txt; echo "Expected MCP 401, got $code"; exit 1; }
+
+      - name: Inspect OpenAI domain challenge state
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --output /tmp/challenge.txt --write-out '%{http_code}' "$PLUGIN_ORIGIN/.well-known/openai-apps-challenge")
+          if [ "$code" = '404' ]; then
+            echo 'OpenAI domain challenge token is not configured yet (expected before portal verification).'
+          elif [ "$code" = '200' ]; then
+            test -s /tmp/challenge.txt || { echo 'Challenge endpoint returned 200 but no token'; exit 1; }
+            echo 'OpenAI domain challenge endpoint is populated.'
+          else
+            cat /tmp/challenge.txt
+            echo "Unexpected challenge status: $code"
+            exit 1
+          fi
+
+      - name: Flag remaining public-site rebrand
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 "$PLUGIN_ORIGIN/" > /tmp/site.html
+          if grep -q 'HOME' /tmp/site.html; then
+            echo '::warning::The stable Vercel public site is still HOME-branded and must be rebranded to Veqrya before final submission.'
+          fi
