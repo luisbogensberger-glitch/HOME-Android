@@ -61,39 +61,39 @@ function staticRoute(request: Request, env: Env): Response | null {
     return new Response(token, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } })
   }
 
-  const publisher = escapeHtml((env.PUBLISHER_NAME || 'HOME').trim())
+  const publisher = escapeHtml((env.PUBLISHER_NAME || 'Veqrya').trim())
   const support = (env.SUPPORT_EMAIL || '').trim()
   const supportHtml = support.includes('@') ? `<a href="mailto:${escapeHtml(support)}">${escapeHtml(support)}</a>` : 'Support contact will be configured before public release.'
 
   if (url.pathname === '/' || url.pathname === '/website') {
-    return page('HOME – Personal OS', `<h1>HOME – Personal OS</h1><p>HOME is a personal execution layer for tasks, daily planning, and deliberate learning inside ChatGPT and Codex.</p><p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p><p class="muted">Publisher: ${publisher}</p>`)
+    return page('Veqrya – Personal OS', `<h1>Veqrya</h1><p>Veqrya is a personal execution and learning layer for tasks, daily planning, and deliberate learning inside supported AI clients.</p><p><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p><p class="muted">Publisher: ${publisher}</p>`)
   }
   if (url.pathname === '/support') {
-    return page('HOME Support', `<h1>Support</h1><p>For HOME support, contact ${supportHtml}.</p>`)
+    return page('Veqrya Support', `<h1>Veqrya Support</h1><p>For Veqrya support, contact ${supportHtml}.</p>`)
   }
   if (url.pathname === '/privacy') {
-    return page('HOME Privacy Policy', `<h1>HOME Privacy Policy</h1><p><strong>Last updated: 25 September 2026.</strong></p><p>HOME stores account identifiers, tasks, task notes and status, optional due times and priorities, learning cards, reflections, feedback, and settings that users choose to store.</p><p>The public HOME plugin does not require precise location, contacts, SMS, WhatsApp content, Android Accessibility data, or notification scraping.</p><h2>Purpose</h2><p>HOME uses this information only to provide requested task, planning, and learning workflows. ChatGPT/Codex may send the information required for a selected HOME tool call to HOME's MCP server.</p><h2>Processors</h2><p>HOME uses Supabase for authentication and data infrastructure. ChatGPT/Codex is provided by OpenAI under the user's applicable OpenAI terms and privacy controls.</p><h2>Retention and rights</h2><p>HOME data is retained only as needed to provide the service or meet applicable legal obligations. Users may disconnect HOME at any time and may request access, correction, export, or deletion through ${supportHtml}.</p><h2>Security</h2><p>HOME uses authenticated access, encrypted transport, and per-user Row Level Security policies designed to prevent one user from accessing another user's data.</p><p class="muted">Publisher: ${publisher}</p>`)
+    return page('Veqrya Privacy Policy', `<h1>Veqrya Privacy Policy</h1><p><strong>Last updated: 26 September 2026.</strong></p><p>Veqrya stores account identifiers, tasks, task notes and status, optional due times and priorities, learning cards, reflections, feedback, and settings that users choose to store.</p><p>The public Veqrya integration does not require precise location, contacts, SMS, WhatsApp content, Android Accessibility data, or notification scraping.</p><h2>Purpose</h2><p>Veqrya uses this information only to provide requested task, planning, and learning workflows. Supported AI clients may send the information required for a selected Veqrya tool call to Veqrya's MCP server.</p><h2>Processors</h2><p>Veqrya uses Supabase for authentication and data infrastructure and Vercel for the public gateway. Third-party AI clients remain subject to their own terms and privacy controls.</p><h2>Retention and rights</h2><p>Veqrya data is retained only as needed to provide the service or meet applicable legal obligations. Users may disconnect Veqrya at any time and may request access, correction, export, or deletion through ${supportHtml}.</p><h2>Security</h2><p>Veqrya uses authenticated access, encrypted transport, and per-user Row Level Security policies designed to prevent one user from accessing another user's data.</p><p class="muted">Publisher: ${publisher}</p>`)
   }
   if (url.pathname === '/terms') {
-    return page('HOME Terms of Service', `<h1>HOME Terms of Service</h1><p><strong>Last updated: 25 September 2026.</strong></p><p>HOME provides tools for storing and managing personal tasks and learning information through supported clients including ChatGPT and Codex.</p><h2>User responsibility</h2><p>Users are responsible for the information they choose to store and for reviewing important actions and AI-generated output. HOME is not a substitute for professional medical, legal, financial, emergency, or other regulated advice.</p><h2>Account security</h2><p>Users must protect their authentication credentials and may not attempt to access another person's data, bypass security controls, or interfere with the service.</p><h2>Availability</h2><p>HOME may be updated, changed, suspended, or discontinued for maintenance, security, legal, or product reasons.</p><h2>Privacy</h2><p>Personal data is handled as described in the <a href="/privacy">HOME Privacy Policy</a>.</p><h2>Contact</h2><p>${supportHtml}</p><p class="muted">Publisher: ${publisher}</p>`)
+    return page('Veqrya Terms of Service', `<h1>Veqrya Terms of Service</h1><p><strong>Last updated: 26 September 2026.</strong></p><p>Veqrya provides tools for storing and managing personal tasks and learning information through supported mobile and AI clients.</p><h2>User responsibility</h2><p>Users are responsible for the information they choose to store and for reviewing important actions and AI-generated output. Veqrya is not a substitute for professional medical, legal, financial, emergency, or other regulated advice.</p><h2>Account security</h2><p>Users must protect their authentication credentials and may not attempt to access another person's data, bypass security controls, or interfere with the service.</p><h2>Availability</h2><p>Veqrya may be updated, changed, suspended, or discontinued for maintenance, security, legal, or product reasons.</p><h2>Privacy</h2><p>Personal data is handled as described in the <a href="/privacy">Veqrya Privacy Policy</a>.</p><h2>Contact</h2><p>${supportHtml}</p><p class="muted">Publisher: ${publisher}</p>`)
   }
   return null
 }
 
 function createHomeServer(supabase: any) {
   const server = new McpServer(
-    { name: 'home-personal-os', version: '0.1.0' },
+    { name: 'veqrya-personal-os', version: '0.3.0' },
     {
       instructions:
-        'HOME stores the signed-in user’s task and learning data. Read current HOME data before planning. Never complete or delete work unless the user clearly asks. Prefer small, explicit writes and avoid inventing dates.',
+        'Veqrya stores the signed-in user’s task and learning data. Read current Veqrya data before planning. Never complete or delete work unless the user clearly asks. Prefer small, explicit writes and avoid inventing dates.',
     },
   )
 
   server.registerTool(
     'get_home_snapshot',
     {
-      title: 'Get HOME snapshot',
-      description: 'Read the signed-in user’s open tasks, recent completed tasks, and active HOME learning cards before planning or summarizing.',
+      title: 'Get Veqrya snapshot',
+      description: 'Read the signed-in user’s open tasks, recent completed tasks, and active Veqrya learning cards before planning or summarizing.',
       inputSchema: {
         task_limit: z.number().int().min(1).max(100).default(50),
         learning_limit: z.number().int().min(1).max(50).default(10),
@@ -113,15 +113,15 @@ function createHomeServer(supabase: any) {
       ])
       for (const query of [openTasks, doneTasks, cards]) if (query.error) throw new Error(query.error.message)
       const structuredContent = { open_tasks: openTasks.data ?? [], completed_tasks: doneTasks.data ?? [], learning_cards: cards.data ?? [] }
-      return result(`HOME has ${structuredContent.open_tasks.length} open tasks and ${structuredContent.learning_cards.length} active learning cards.`, structuredContent)
+      return result(`Veqrya has ${structuredContent.open_tasks.length} open tasks and ${structuredContent.learning_cards.length} active learning cards.`, structuredContent)
     },
   )
 
   server.registerTool(
     'create_task',
     {
-      title: 'Create HOME task',
-      description: 'Create one actionable task in HOME. Do not invent a due time when the user did not supply one.',
+      title: 'Create Veqrya task',
+      description: 'Create one actionable task in Veqrya. Do not invent a due time when the user did not supply one.',
       inputSchema: {
         title: z.string().trim().min(1).max(200),
         notes: z.string().max(4000).default(''),
@@ -135,15 +135,15 @@ function createHomeServer(supabase: any) {
     async ({ title, notes, due_at, area, priority }) => {
       const { data, error } = await supabase.from('home_tasks').insert({ title, notes, due_at, area, priority }).select('id,title,notes,status,due_at,area,priority,created_at,updated_at').single()
       if (error) throw new Error(error.message)
-      return result(`Created HOME task “${data.title}”.`, { task: data })
+      return result(`Created Veqrya task “${data.title}”.`, { task: data })
     },
   )
 
   server.registerTool(
     'update_task',
     {
-      title: 'Update HOME task',
-      description: 'Change fields on one existing HOME task. Use only for changes the user requested or clearly approved.',
+      title: 'Update Veqrya task',
+      description: 'Change fields on one existing Veqrya task. Use only for changes the user requested or clearly approved.',
       inputSchema: {
         id: z.string().uuid(),
         title: z.string().trim().min(1).max(200).optional(),
@@ -163,15 +163,15 @@ function createHomeServer(supabase: any) {
       const { data, error } = await supabase.from('home_tasks').update(patch).eq('id', id).select('id,title,notes,status,due_at,area,priority,created_at,updated_at').maybeSingle()
       if (error) throw new Error(error.message)
       if (!data) throw new Error('Task not found.')
-      return result(`Updated HOME task “${data.title}”.`, { task: data })
+      return result(`Updated Veqrya task “${data.title}”.`, { task: data })
     },
   )
 
   server.registerTool(
     'complete_task',
     {
-      title: 'Complete HOME task',
-      description: 'Mark one existing HOME task as done. Use only when the user explicitly says the task is finished or asks to mark it complete.',
+      title: 'Complete Veqrya task',
+      description: 'Mark one existing Veqrya task as done. Use only when the user explicitly says the task is finished or asks to mark it complete.',
       inputSchema: { id: z.string().uuid() },
       outputSchema: { task: z.object(taskShape) },
       annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
@@ -180,15 +180,15 @@ function createHomeServer(supabase: any) {
       const { data, error } = await supabase.from('home_tasks').update({ status: 'done' }).eq('id', id).select('id,title,notes,status,due_at,area,priority,created_at,updated_at').maybeSingle()
       if (error) throw new Error(error.message)
       if (!data) throw new Error('Task not found.')
-      return result(`Marked HOME task “${data.title}” as done.`, { task: data })
+      return result(`Marked Veqrya task “${data.title}” as done.`, { task: data })
     },
   )
 
   server.registerTool(
     'delete_task',
     {
-      title: 'Delete HOME task',
-      description: 'Permanently delete one HOME task. Use only when the user explicitly asks to remove it rather than complete or archive it.',
+      title: 'Delete Veqrya task',
+      description: 'Permanently delete one Veqrya task. Use only when the user explicitly asks to remove it rather than complete or archive it.',
       inputSchema: { id: z.string().uuid() },
       outputSchema: { deleted_id: z.string(), title: z.string() },
       annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
@@ -197,15 +197,15 @@ function createHomeServer(supabase: any) {
       const { data, error } = await supabase.from('home_tasks').delete().eq('id', id).select('id,title').maybeSingle()
       if (error) throw new Error(error.message)
       if (!data) throw new Error('Task not found.')
-      return result(`Deleted HOME task “${data.title}”.`, { deleted_id: data.id, title: data.title })
+      return result(`Deleted Veqrya task “${data.title}”.`, { deleted_id: data.id, title: data.title })
     },
   )
 
   server.registerTool(
     'list_learning_cards',
     {
-      title: 'List HOME learning cards',
-      description: 'List the signed-in user’s active HOME learning cards for Tube Learning, recall, or review.',
+      title: 'List Veqrya learning cards',
+      description: 'List the signed-in user’s active Veqrya learning cards for Tube Learning, recall, or review.',
       inputSchema: { limit: z.number().int().min(1).max(50).default(20) },
       outputSchema: { cards: z.array(z.object(cardShape)) },
       annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
@@ -214,14 +214,14 @@ function createHomeServer(supabase: any) {
       const { data, error } = await supabase.from('home_learning_cards').select('id,title,topic,content,status,created_at,updated_at').eq('status', 'active').order('updated_at', { ascending: false }).limit(limit)
       if (error) throw new Error(error.message)
       const cards = data ?? []
-      return result(`Found ${cards.length} active HOME learning cards.`, { cards })
+      return result(`Found ${cards.length} active Veqrya learning cards.`, { cards })
     },
   )
 
   server.registerTool(
     'save_learning_attempt',
     {
-      title: 'Save HOME learning attempt',
+      title: 'Save Veqrya learning attempt',
       description: 'Save the user’s own reflection plus concise feedback after a meaningful recall or application attempt.',
       inputSchema: {
         card_id: z.string().uuid().nullable().default(null),
@@ -239,7 +239,7 @@ function createHomeServer(supabase: any) {
     async ({ card_id, reflection, feedback, overall_score }) => {
       const { data, error } = await supabase.from('home_learning_attempts').insert({ card_id, reflection, feedback, overall_score }).select('id,card_id,reflection,feedback,overall_score,created_at').single()
       if (error) throw new Error(error.message)
-      return result('Saved this HOME learning attempt.', { attempt: data })
+      return result('Saved this Veqrya learning attempt.', { attempt: data })
     },
   )
 
