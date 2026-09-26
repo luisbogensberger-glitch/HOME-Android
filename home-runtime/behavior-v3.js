@@ -10,8 +10,6 @@
     document.getElementById('homeSafeToolsStyle')?.remove();
     ['homeSafeBrainModal','homeSafeBackupModal','homeSafeBackupBtn'].forEach(id=>document.getElementById(id)?.remove());
     document.body && (document.body.style.overflow='');
-
-    /* Keep only genuinely obsolete v2/v3 launchers out of the way. v4 is the active one again. */
     ['homeDayScoreV2','homeDayScoreV3','homeBehaviourOverlayV2','homeBehaviourOverlayV3']
       .forEach(id=>document.getElementById(id)?.remove());
   }catch(e){}
@@ -42,20 +40,14 @@
     await safeLoad('todo-pressure-v1.js','home-todo-pressure-v1.js');
     await safeLoad('post-install-resilience-v1.js','home-post-install-resilience-v1.js');
 
-    /* Classic working path: behaviour-map-v4 creates the visible DAY SCORE button itself. */
     const brain=await safeLoad('behaviour-map-v4.js','home-behaviour-map-v4.js');
 
-    function repair(){
+    async function repair(){
       try{
         document.getElementById('homeBehaviourEmergencyDisable')?.remove();
-        const api=window.HOMEBehaviourIntelligence;
-        if(api){
-          /* If another script removed the launcher, reload v4 after clearing its one-shot guard. */
-          if(!document.getElementById('homeDayScoreV4')){
-            try{delete window.__HOME_BEHAVIOUR_MAP_V4__}catch(e){window.__HOME_BEHAVIOUR_MAP_V4__=false}
-            safeLoad('behaviour-map-v4.js','home-behaviour-map-v4-repair.js');
-          }
-        }
+        if(document.getElementById('homeDayScoreV4')&&window.HOMEBehaviourIntelligence)return;
+        try{delete window.__HOME_BEHAVIOUR_MAP_V4__}catch(e){window.__HOME_BEHAVIOUR_MAP_V4__=false}
+        await safeLoad('behaviour-map-v4.js','home-behaviour-map-v4-repair.js');
       }catch(e){}
     }
     setTimeout(repair,300);
