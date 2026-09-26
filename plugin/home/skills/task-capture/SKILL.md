@@ -1,9 +1,9 @@
 ---
 name: task-capture
-description: Capture, update, complete, archive, or remove actionable tasks in HOME. Use when the user asks to remember something as a task, add a to-do, change task details, or clean up completed work.
+description: Capture, update, complete, archive, or remove actionable tasks in Veqrya. Use when the user asks to remember something as a task, add a to-do, change task details, or clean up completed work.
 ---
 
-Treat HOME as the source of truth for explicit tasks.
+Treat Veqrya as the source of truth for explicit tasks.
 
 - Convert the user's request into a short action-oriented title.
 - Preserve useful details in notes instead of bloating the title.
