@@ -24,7 +24,7 @@ struct HomeShellView: View {
             }
             .padding(.top, 8).padding(.trailing, 12)
         }
-        .alert("Delete HOME account?", isPresented: $showDelete) {
+        .alert("Delete Veqrya account?", isPresented: $showDelete) {
             Button("Cancel", role: .cancel) {}
             Button("Delete permanently", role: .destructive) {
                 Task {
@@ -33,7 +33,7 @@ struct HomeShellView: View {
                 }
             }
         } message: {
-            Text("This permanently deletes your HOME account, tasks, learning progress and associated HOME data.")
+            Text("This permanently deletes your Veqrya account, tasks, learning progress and associated Veqrya data.")
         }
         .alert("Could not delete account", isPresented: Binding(get: { deleteError != nil }, set: { if !$0 { deleteError = nil } })) {
             Button("OK", role: .cancel) { deleteError = nil }
