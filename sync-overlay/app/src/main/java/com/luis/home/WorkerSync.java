@@ -224,6 +224,20 @@ final class WorkerSync {
         return requestObject("POST", "/api/activity", new JSONObject(activity.toString()));
     }
 
+    JSONObject savePrivateActivity(JSONObject activity) throws Exception {
+        if (activity == null) throw new IllegalArgumentException("Private activity required.");
+        JSONObject copy = new JSONObject(activity.toString());
+        JSONObject saved = requestObject("POST", "/api/activity", copy);
+        try {
+            JSONArray activityRows = new JSONArray().put(new JSONObject(copy.toString()));
+            JSONObject body = new JSONObject().put("activity", activityRows);
+            requestAbsolute("POST", LEARNING_INGEST, body, 20000);
+        } catch (Exception ignored) {
+            // HOME Sync remains durable; scheduled mirroring can retry the Supabase copy.
+        }
+        return saved;
+    }
+
     JSONObject reviewSentence(JSONObject payload) throws Exception {
         if (payload == null) throw new IllegalArgumentException("Sentence review payload required.");
         return requestObject("POST", "/api/review-sentence", new JSONObject(payload.toString()), 35000);
