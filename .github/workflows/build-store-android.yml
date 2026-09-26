@@ -16,12 +16,16 @@ on:
 permissions:
   contents: read
 
+env:
+  VEQRYA_MOBILE_API: https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api
+  VEQRYA_SUPABASE_URL: https://skgmgxthymnzubbobqxu.supabase.co
+
 jobs:
   build-store:
     runs-on: ubuntu-latest
     env:
-      HOME_API_URL: ${{ vars.HOME_STORE_API_URL || 'https://example.invalid' }}
-      HOME_SUPABASE_URL: ${{ vars.HOME_SUPABASE_URL || 'https://example.supabase.co' }}
+      HOME_API_URL: ${{ vars.HOME_STORE_API_URL || 'https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/veqrya-mobile-api' }}
+      HOME_SUPABASE_URL: ${{ vars.HOME_SUPABASE_URL || 'https://skgmgxthymnzubbobqxu.supabase.co' }}
       HOME_SUPABASE_ANON_KEY: ${{ secrets.HOME_SUPABASE_ANON_KEY || 'validation-anon-key-not-used-at-build-time-0000000000' }}
       ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
       ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
@@ -31,18 +35,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify Veqrya production mobile API
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 "$VEQRYA_MOBILE_API/health" | tee /tmp/veqrya-health.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/veqrya-health.json'))
+          assert data.get('ok') is True, data
+          assert data.get('service') == 'veqrya-mobile-api', data
+          assert data.get('ai_billing') == 'none', data
+          PY
+
       - name: Validate release configuration
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
-          test "$HOME_API_URL" != 'https://example.invalid' || { echo 'Missing repository variable HOME_STORE_API_URL'; exit 1; }
-          test "$HOME_SUPABASE_URL" != 'https://example.supabase.co' || { echo 'Missing repository variable HOME_SUPABASE_URL'; exit 1; }
+          test "$HOME_API_URL" = "$VEQRYA_MOBILE_API" || echo "Using explicit HOME_STORE_API_URL override: $HOME_API_URL"
+          test "$HOME_SUPABASE_URL" = "$VEQRYA_SUPABASE_URL" || echo "Using explicit HOME_SUPABASE_URL override: $HOME_SUPABASE_URL"
           test "$HOME_SUPABASE_ANON_KEY" != 'validation-anon-key-not-used-at-build-time-0000000000' || { echo 'Missing secret HOME_SUPABASE_ANON_KEY'; exit 1; }
-          test -n "$ANDROID_UPLOAD_KEYSTORE_B64" || { echo 'Missing Android upload keystore secret'; exit 1; }
-          test -n "$ANDROID_UPLOAD_KEYSTORE_PASSWORD" || exit 1
-          test -n "$ANDROID_UPLOAD_KEY_ALIAS" || exit 1
-          test -n "$ANDROID_UPLOAD_KEY_PASSWORD" || exit 1
+          test -n "$ANDROID_UPLOAD_KEYSTORE_B64" || { echo 'Missing ANDROID_UPLOAD_KEYSTORE_B64'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEYSTORE_PASSWORD" || { echo 'Missing ANDROID_UPLOAD_KEYSTORE_PASSWORD'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEY_ALIAS" || { echo 'Missing ANDROID_UPLOAD_KEY_ALIAS'; exit 1; }
+          test -n "$ANDROID_UPLOAD_KEY_PASSWORD" || { echo 'Missing ANDROID_UPLOAD_KEY_PASSWORD'; exit 1; }
 
       - name: Recreate Android source
         shell: bash
