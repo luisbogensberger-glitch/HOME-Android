@@ -13,21 +13,22 @@
     const byId=new Map(), bySemantic=new Map();
     for(const raw of Array.isArray(list)?list:[]){
       if(!raw||!raw.title)continue;
-      const id=String(raw.id||raw.notionId||'').trim();
-      if(id&&byId.has(id)){byId.set(id,richer(byId.get(id),raw));continue}
-      const k=key(raw);
+      const id=String(raw.id||raw.notionId||'').trim(),k=key(raw);
+      if(id&&byId.has(id)){
+        const keep=richer(byId.get(id),raw);byId.set(id,keep);if(k)bySemantic.set(k,keep);continue;
+      }
       if(k&&bySemantic.has(k)){
-        const keep=richer(bySemantic.get(k),raw);bySemantic.set(k,keep);
-        if(id)byId.set(id,keep);
+        const keep=richer(bySemantic.get(k),raw);bySemantic.set(k,keep);if(id)byId.set(id,keep);
       }else{if(k)bySemantic.set(k,raw);if(id)byId.set(id,raw)}
     }
     return [...new Set(bySemantic.size?[...bySemantic.values()]:[...byId.values()])];
   }
   function localAll(){try{return [...(todoState?.active||[]),...(todoState?.archive||[])]}catch(_){return[]}}
-  function prepareRemote(t,local){
+  function prepareRemote(t,local,dirty){
     const prior=local.find(x=>String(x.id)===String(t.id))||local.find(x=>key(x)===key(t));
-    const merged={...t,details:t.details||prior?.details||{outcome:'',info:[],tips:[],links:[],personalNote:''}};
-    try{return typeof enrichTodo==='function'?enrichTodo(merged):merged}catch(_){return merged}
+    // If this exact task still has an unsent local write, local state wins until it is acknowledged.
+    const base=dirty?.has(String(t.id))&&prior?{...t,...prior,id:t.id,notionId:t.notionId||prior.notionId||t.id}:{...t,details:t.details||prior?.details||{outcome:'',info:[],tips:[],links:[],personalNote:''}};
+    try{return typeof enrichTodo==='function'?enrichTodo(base):base}catch(_){return base}
   }
   function persistLocal(){
     try{
@@ -41,11 +42,11 @@
   window.onNotionSnapshot=function(data){
     try{
       const local=localAll(),dirty=new Set((data?.pendingTaskIds||[]).map(String));
-      let active=dedupe((data?.open||[]).map(t=>prepareRemote(t,local)));
-      let archive=dedupe((data?.completed||[]).map(t=>prepareRemote(t,local)));
+      let active=dedupe((data?.open||[]).map(t=>prepareRemote(t,local,dirty)));
+      let archive=dedupe((data?.completed||[]).map(t=>prepareRemote(t,local,dirty)));
       const serverIds=new Set([...active,...archive].map(x=>String(x.id||'')));
       const serverKeys=new Set([...active,...archive].map(key));
-      // Preserve genuinely unsent local writes, but never resurrect a duplicate or a task the server already completed.
+      // Preserve genuinely unsent local writes, but never resurrect a duplicate or a task the server already knows.
       for(const t of (todoState?.active||[])){
         if(!dirty.has(String(t.id)))continue;
         if(serverIds.has(String(t.id))||serverKeys.has(key(t)))continue;
@@ -82,7 +83,7 @@
   const fmt=t=>t?new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'}).format(t):'not yet';
   function repairPanel(){
     const panel=document.querySelector('#vbrainControl17 .vb17Panel');if(!panel)return;
-    const s=syncState(),dts=[...panel.querySelectorAll('dt')],dt=dts.find(x=>/private sync/i.test(x.textContent||''));
+    const s=syncState(),dts=[...panel.querySelectorAll('dt')],dt=dts.find(x=>/private sync|data sync/i.test(x.textContent||''));
     if(dt){dt.textContent='Data sync';const dd=dt.nextElementSibling;if(dd){
       const user=Number(s.pendingUser??s.pending??0),tele=Number(s.pendingTelemetry??0);
       dd.textContent=!s.configured?'Connect HOME Sync to send your app data':user?`${user} data change${user===1?'':'s'} waiting · last sent ${fmt(s.lastSyncedAt)}`:tele?`User data synced · ${tele} background signals queued`:`Up to date · last sent ${fmt(s.lastSyncedAt)}`;
