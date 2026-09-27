@@ -44,6 +44,9 @@ jobs:
       - name: Harden V-Brain 18 private sync
         run: python3 scripts/patch_worker_sync_v18.py src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java
 
+      - name: Add V-Brain 22 context sensor bridge
+        run: python3 scripts/patch_context_sensor_v22.py src/luis-home-app/app/src/main/java/com/luis/home/AdaptiveBridge.java
+
       - name: Harden V-Brain 19 live rollback watchdog
         run: python3 scripts/patch_runtime_watchdog_v19.py src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
 
@@ -73,6 +76,7 @@ jobs:
           node tests/vbrain-v19.e2e.cjs
           node tests/vbrain-sense-v20.e2e.cjs
           node tests/vbrain-personalizer-v21.e2e.cjs
+          node tests/vbrain-context-sensors-v22.e2e.cjs
 
       - name: Upload UI screenshots
         if: always()
