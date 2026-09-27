@@ -41,6 +41,9 @@ jobs:
           cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
           cp -a sync-overlay/app/src/androidTest src/luis-home-app/app/src/androidTest
 
+      - name: Harden V-Brain 18 private sync
+        run: python3 scripts/patch_worker_sync_v18.py src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java
+
       - name: Build and validate complete live release
         run: |
           python3 scripts/build_live_release.py
