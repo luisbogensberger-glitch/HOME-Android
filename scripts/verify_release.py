@@ -11,6 +11,8 @@ assert manifest['version'].startswith('18.')
 assert 'name="vbrain-host" content="18"' in html
 assert 'data-source="vbrain-remote-ui-v18.js"' in html
 assert 'data-source="vbrain-sense-v20.js"' in html
+assert 'data-source="vbrain-context-compat-v21.js"' in html
+assert 'vbrainPrivatePatch' in html and 'brainContext' in html and 'brain_context_compat_synced' in html
 assert 'data-source="vbrain-personalizer-v21.js"' in html
 assert 'data-source="vbrain-personalizer-hook-v21.js"' in html
 assert "document.getElementById('vBrainV19')" in html
@@ -38,4 +40,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + Personalizer v21 + V19 private brain context + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + live context compat + Personalizer v21 + V19 private brain context + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
