@@ -124,6 +124,11 @@ jobs:
             adb install -r src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk
             adb install -r src/luis-home-app/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell pm grant com.luis.home android.permission.POST_NOTIFICATIONS
+            # Keep the smoke test on the just-built bundled UI. Otherwise the app can
+            # download the previously published live release before the candidate is tested.
+            adb shell cmd connectivity airplane-mode enable || true
+            adb shell svc wifi disable || true
+            adb shell svc data disable || true
             adb shell am instrument -w com.luis.home.test/com.luis.home.RuntimeSmoke | tee android-smoke.txt
             grep -q VBRAIN_SMOKE_OK android-smoke.txt
 
