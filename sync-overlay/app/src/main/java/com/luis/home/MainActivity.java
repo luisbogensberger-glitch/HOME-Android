@@ -42,6 +42,7 @@ public class MainActivity extends Activity {
     private final ExecutorService liveQueue = Executors.newSingleThreadExecutor();
     private final java.util.concurrent.atomic.AtomicBoolean liveChecking = new java.util.concurrent.atomic.AtomicBoolean(false);
     private volatile boolean runtimeHealthy = false;
+    private volatile String runtimeToken = "";
     private int runtimeGeneration=0;
     private final ExecutorService syncQueue = Executors.newSingleThreadExecutor();
     private volatile boolean syncReady = false;
@@ -110,8 +111,10 @@ public class MainActivity extends Activity {
     private void loadLiveDocument() {
         final int generation=++runtimeGeneration;
         runtimeHealthy=false;
+        runtimeToken=java.util.UUID.randomUUID().toString();
         try {
             String document=liveRuntime.document();
+            document=document.replace("</head>","<meta name=\"vbrain-boot\" content=\""+runtimeToken+"\"></head>");
             webView.loadDataWithBaseURL("file:///android_asset/index.html",document,"text/html","UTF-8",null);
             webView.postDelayed(()->{
                 if(generation==runtimeGeneration&&!runtimeHealthy&&liveRuntime.rollback())loadLiveDocument();
@@ -355,7 +358,8 @@ public class MainActivity extends Activity {
 
     public class NativeBridge {
         @JavascriptInterface public String liveRuntimeStatus() { return liveRuntime.status().toString(); }
-        @JavascriptInterface public void markRuntimeHealthy() {
+        @JavascriptInterface public void markRuntimeHealthy(String token) {
+            if(!runtimeToken.equals(token))return;
             runtimeHealthy=true;liveRuntime.healthy();runOnUiThread(()->deliverReminderRoute());
         }
         @JavascriptInterface public void checkLiveUpdate() {

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class RuntimeSmoke extends Instrumentation {
     private Activity activity;
     private WebView web;
+    private String phase="boot";
     @Override public void onCreate(Bundle args){super.onCreate(args);start();}
     private String eval(String js)throws Exception{
         CountDownLatch done=new CountDownLatch(1);AtomicReference<String> result=new AtomicReference<>("");
@@ -24,7 +25,7 @@ public class RuntimeSmoke extends Instrumentation {
     private void waitFor(String js,int seconds)throws Exception{
         long end=System.currentTimeMillis()+seconds*1000L;
         while(System.currentTimeMillis()<end){if("true".equals(eval(js)))return;Thread.sleep(250);}
-        throw new Exception("Condition failed: "+js+" result="+eval(js));
+        throw new Exception("Condition failed in "+phase+": "+js+" result="+eval(js)+" status="+eval("typeof Native!=='undefined'?Native.liveRuntimeStatus():'no bridge'")+" DOM="+eval("document.body.innerText.slice(-400)"));
     }
     private String stage(String html)throws Exception{
         byte[] bytes=html.getBytes(StandardCharsets.UTF_8);StringBuilder digest=new StringBuilder();
@@ -40,6 +41,7 @@ public class RuntimeSmoke extends Instrumentation {
             Intent start=new Intent(Intent.ACTION_MAIN).setClassName(getTargetContext(),"com.luis.home.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             activity=startActivitySync(start);web=(WebView)((FrameLayout)activity.findViewById(android.R.id.content)).getChildAt(0);
             waitFor("!!window.VBrainLive && !!window.VBrain && !!document.getElementById('vbrainLiveStatus17')",25);
+            phase="native back";
             eval("VBrain.openBrain();true");waitFor("document.getElementById('vBrainV8').classList.contains('show')",5);
             runOnMainSync(()->activity.onBackPressed());waitFor("!document.getElementById('vBrainV8').classList.contains('show')",5);
             if(activity.isFinishing())throw new Exception("Back closed the activity");
@@ -48,15 +50,19 @@ public class RuntimeSmoke extends Instrumentation {
             try(InputStream in=getTargetContext().getAssets().open("live-app.html");ByteArrayOutputStream out=new ByteArrayOutputStream()){
                 byte[] b=new byte[8192];for(int n;(n=in.read(b))!=-1;)out.write(b,0,n);html=out.toString("UTF-8");
             }
-            String sha=stage(html.replace("V BRAIN 17 · ","V BRAIN LIVE TEST · "));
+            phase="activate live document";
+            String sha=stage(html.replace("</head>","<meta name=\"vbrain-smoke\" content=\"live-test\"></head>"));
             eval("Native.applyLiveUpdate();true");
-            waitFor("!!document.getElementById('vbrainLiveStatus17') && document.getElementById('vbrainLiveStatus17').textContent.includes('LIVE TEST')",25);
+            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive",25);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).source==='live'",5);
             waitFor("localStorage.getItem('vbrainSmokeSentinel')==='persist' && Native.loadState('vbrainSmokeSentinel')==='persist'",5);
-            Thread.sleep(2000);
+            waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",10);
+            phase="reject unhealthy document";
             stage("<!doctype html><meta name=\"vbrain-host\" content=\"17\"><p id=\"broken\">Unhealthy update</p>");
             eval("Native.applyLiveUpdate();true");waitFor("!!document.getElementById('broken')",10);
-            waitFor("!!document.getElementById('vbrainLiveStatus17') && document.getElementById('vbrainLiveStatus17').textContent.includes('LIVE TEST')",30);
+            phase="rollback to healthy document";
+            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive",30);
+            waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",10);
             result.putString("stream","VBRAIN_SMOKE_OK: real Android boot, native Back, full live UI activation, storage continuity, failed-release rollback\n");
             finish(Activity.RESULT_OK,result);
         }catch(Throwable e){result.putString("stream","VBRAIN_SMOKE_FAILED: "+e.toString()+"\n");finish(Activity.RESULT_CANCELED,result);}

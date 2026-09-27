@@ -132,7 +132,7 @@
   ui();flushFields();
   setTimeout(()=>{
     if(typeof showScreen!=='function'||!window.VBrain||!window.HOMEAdaptive||!document.querySelector('#homeScreen .homeGrid'))return;
-    if(native()){Native.markRuntimeHealthy();Native.checkLiveUpdate()}
+    if(native()){Native.markRuntimeHealthy(document.querySelector('meta[name="vbrain-boot"]')?.content||'');Native.checkLiveUpdate()}
     status();log('runtime_ready',{version:live.version,nativeVersion:VERSION,source:live.source});heartbeat();planReminders();
   },1600);
   setInterval(()=>{if(!document.hidden)heartbeat()},15000);

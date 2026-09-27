@@ -56,7 +56,7 @@ final class LiveRuntime {
         return hex.toString();
     }
 
-    synchronized JSONObject check() {
+    JSONObject check() {
         try {
             JSONObject manifest = new JSONObject(new String(download("live-release.json", 12000), StandardCharsets.UTF_8));
             if (manifest.optInt("schema") != 1 || manifest.optInt("minNative", 999) > HOST
@@ -77,7 +77,11 @@ final class LiveRuntime {
                 try { stream.write(data); target.finishWrite(stream); }
                 catch (Exception e) { target.failWrite(stream); throw e; }
             }
-            state.edit().putString("ready", sha).putString("readyVersion", manifest.getString("version")).commit();
+            synchronized (this) {
+                // Downloads never hold the UI/status lock. Activation may have changed while offline.
+                if (!sha.equals(state.getString("rejected", "")) && !sha.equals(state.getString("active", "")))
+                    state.edit().putString("ready", sha).putString("readyVersion", manifest.getString("version")).commit();
+            }
         } catch (Exception e) { state.edit().putString("error", e.getMessage() == null ? "Update unavailable" : e.getMessage()).apply(); }
         return status();
     }
@@ -130,6 +134,7 @@ final class LiveRuntime {
                     .put("source", active.isEmpty() ? "bundled" : "live")
                     .put("ready", !state.getString("ready", "").isEmpty())
                     .put("checkedAt", state.getLong("checkedAt", 0)).put("recovered", recovered)
+                    .put("healthy", !state.getBoolean("bootPending", false))
                     .put("error", state.getString("error", ""));
         } catch (Exception ignored) { }
         return out;
