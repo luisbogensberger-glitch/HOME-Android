@@ -1,4 +1,4 @@
-/* V-Brain sync recovery v21 — surface rejected HOME tokens without exposing credentials to the WebView. */
+/* V-Brain sync recovery v21 — event-driven secure reconnect fallback without a polling loop. */
 (function(){
   'use strict';
   if(window.__VBRAIN_SYNC_RECONNECT_V21__)return;window.__VBRAIN_SYNC_RECONNECT_V21__=true;
@@ -29,8 +29,8 @@
     try{previousConnected?.apply(this,arguments)}catch(_){}
     try{AdaptiveNative?.flushPrivateSync?.()}catch(_){}
     try{AdaptiveNative?.checkDeviceCommands?.()}catch(_){}
-    setTimeout(paint,500);
+    setTimeout(paint,120);
   };
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(paint,250)});
-  setTimeout(paint,2200);setInterval(()=>{if(!document.hidden)paint()},5000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(paint,120)});
+  window.addEventListener('vbrain:hydrated',paint);
 })();
