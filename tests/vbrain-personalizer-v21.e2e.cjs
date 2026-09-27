@@ -41,14 +41,15 @@ const path = require('path');
   await page.waitForFunction(()=>window.VBrainPersonalizer?.version===21&&window.VBrainPatch?.version);
   await page.evaluate(()=>window.VBrainPersonalizer.refresh());
 
-  const first=await page.evaluate(()=>({decision:window.VBrainPersonalizer.decision(),patch:window.HOMEAdaptive?.config?.vbrainPatch,button:document.getElementById('vb21ContextBtn')?.textContent,logs:window.__p21logs}));
+  const first=await page.evaluate(()=>({decision:window.VBrainPersonalizer.decision(),patch:window.HOMEAdaptive?.config?.vbrainPatch,logs:window.__p21logs}));
   if(first.decision?.order?.[0]!=='tube')throw new Error('Expected learning evidence to prioritize Tube '+JSON.stringify(first.decision));
   if(first.patch?.home?.order?.[0]!=='tube'||first.patch?.home?.visible?.todos!==true)throw new Error('Bounded home patch failed '+JSON.stringify(first.patch));
-  if(first.button!=='CONTEXT · 2')throw new Error('Context count UI failed '+JSON.stringify(first.button));
   if(!first.logs.some(x=>x.kind==='behavior_ui_decision'&&x.source==='vbrain-personalizer-v21'))throw new Error('Decision audit event missing');
 
   await page.evaluate(()=>window.VBrain.openBrain());
   await page.waitForSelector('#vBrainV8.show #vb21ContextBtn');
+  const button=await page.textContent('#vb21ContextBtn');
+  if(button!=='CONTEXT · 2')throw new Error('Context count UI failed '+JSON.stringify(button));
   await page.click('#vb21ContextBtn');
   const panel=await page.textContent('#vb21ContextPanel');
   if(!panel.includes('Wissen aufbauen')||!panel.includes('Gehirnansicht erhalten'))throw new Error('Private context panel missing semantic items '+panel);
