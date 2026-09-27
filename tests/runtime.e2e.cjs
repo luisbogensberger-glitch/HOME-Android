@@ -15,13 +15,27 @@ const root=path.resolve(__dirname,'..');
   const seed={active:[{id:'test-task',notionId:'test-task',title:'Prepare seminar notes',area:'Learning',details:{outcome:'Be ready for class',info:[],tips:[],links:[],personalNote:''}}],archive:[]};
   if(!localStorage.getItem('native:todoState'))localStorage.setItem('native:todoState',JSON.stringify(seed));
   window.Native={loadState:k=>localStorage.getItem('native:'+k)||'',saveState:(k,v)=>localStorage.setItem('native:'+k,v),acceptRemoteTodoState:v=>localStorage.setItem('native:todoState',v),hasNotionConnection:()=>true,requestNotionSync:()=>{},hasCalendarPermission:()=>true,getCalendarEvents:()=>'[]',openUrl:()=>{},setNotionTaskDone:()=>{},
-   liveRuntimeStatus:()=>JSON.stringify({version:'17.test',source:'bundled',checkedAt:Date.now(),ready:!!window.__updateReady}),checkLiveUpdate:()=>{},markRuntimeHealthy:()=>{window.__healthy=true},applyLiveUpdate:()=>{window.__applied=true}};
+   liveRuntimeStatus:()=>JSON.stringify({version:'18.test',source:'bundled',checkedAt:Date.now(),ready:!!window.__updateReady}),checkLiveUpdate:()=>{},markRuntimeHealthy:()=>{window.__healthy=true},applyLiveUpdate:()=>{window.__applied=true}};
   window.AdaptiveNative={logActivity:r=>window.__events.push(JSON.parse(r)),logPrivateActivity:r=>window.__private.push(JSON.parse(r)),queuePrivateActivity:r=>{window.__private.push(JSON.parse(r));return'queued'},queueLearningAttempt:r=>{window.__attempts.push(JSON.parse(r));return'queued'},saveTodoState:()=>{},homeSyncStatus:()=>JSON.stringify({configured:true,pending:0,lastSyncedAt:Date.now()}),flushPrivateSync:()=>{},checkDeviceCommands:()=>{},hasNotificationPermission:()=>true,requestNotificationPermission:()=>{},notificationSettings:()=>'{}',setRemindersEnabled:()=>{},scheduleSmartReminder:r=>window.__reminders.push(JSON.parse(r)),scheduleNotification:()=>{},cancelNotification:()=>{},reviewSentence:r=>{const x=JSON.parse(r);setTimeout(()=>window.onHomeSentenceReview?.({requestId:x.requestId,cardId:x.cardId,error:'Offline test'}),40)}};
  });
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8765');await page.waitForFunction(()=>window.__healthy);
  assert.equal(await page.locator('#homeScreen .homeCard').count(),4,'one card for each core area');
  await page.screenshot({path:path.join(root,'home-screen-test.png'),fullPage:true});
+ // Generic host-18 renderer: arbitrary shapes, bindings and routing without replacing native code.
+ await page.evaluate(()=>{HOMEAdaptive.config.remoteUI={enabled:true,replaceHome:true,scene:{layout:'grid',columns:2,mobileColumns:2,gap:8,padding:8},components:[
+  {type:'button',id:'shape-circle',shape:'circle',size:'sm',title:'Circle',metric:'{{todoActive}}',action:{type:'route',target:'todos'}},
+  {type:'button',id:'shape-pill',shape:'pill',size:'wide',title:'Pill',action:{type:'route',target:'tube'}},
+  {type:'button',id:'shape-diamond',shape:'diamond',size:'sm',title:'Brain',action:{type:'brain'}},
+  {type:'text',id:'binding',size:'full',text:'{{todoActive}} tasks · {{time}}'}
+ ]};VBrainRemoteUI.render()});
+ assert.equal(await page.locator('#vbrainRemoteUIV18 [data-vbri-id]').count(),4,'remote renderer keeps all declared nodes');
+ assert.equal(await page.locator('[data-vbri-id="shape-circle"].vbri-shape-circle').count(),1,'circle preset applied');
+ assert.equal(await page.locator('[data-vbri-id="shape-pill"].vbri-shape-pill').count(),1,'pill preset applied');
+ assert.ok((await page.locator('[data-vbri-id="binding"]').innerText()).includes('1 tasks'),'live binding resolved');
+ await page.locator('[data-vbri-id="shape-diamond"]').click();await page.waitForSelector('#vBrainV8.show');
+ assert.equal(await page.evaluate(()=>handleAndroidBack()),'handled');assert.equal(await page.locator('#vBrainV8.show').count(),0);
+ await page.evaluate(()=>{HOMEAdaptive.config.remoteUI={enabled:false};VBrainRemoteUI.restore()});
  await page.locator('#vbrainScoreV8').click();await page.waitForSelector('#vBrainV8.show');
  await page.screenshot({path:path.join(root,'brain-screen-test.png')});
  assert.equal(await page.evaluate(()=>handleAndroidBack()),'handled');assert.equal(await page.locator('#vBrainV8.show').count(),0);
@@ -55,6 +69,6 @@ const root=path.resolve(__dirname,'..');
  assert.equal(await page.evaluate(()=>todoState.active[0].details.personalNote),'Remote note');
  await page.evaluate(()=>{window.__updateReady=true;onVBrainLiveUpdate(JSON.parse(Native.liveRuntimeStatus()))});assert.equal(await page.evaluate(()=>__applied),true);
  assert.deepEqual(errors,[],'no runtime exceptions');
- console.log('PASS: home, brain Back, calendar, notes, update deferral, Tube answer/review/offline persistence, reminders and remote task conflicts');
+ console.log('PASS: host-18 remote shapes/bindings, home, brain Back, calendar, notes, update deferral, Tube answer/review/offline persistence, reminders and remote task conflicts');
  await browser.close();server.close();
 })().catch(error=>{console.error(error);process.exit(1)});
