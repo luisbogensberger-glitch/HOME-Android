@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 (async()=>{
-  const browser=await chromium.launch({headless:true});
+  const browser=await chromium.launch({headless:true,executablePath:process.env.BROWSER_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
   const page=await browser.newPage({viewport:{width:390,height:844}});
   await page.addInitScript(()=>{
     const state={};
