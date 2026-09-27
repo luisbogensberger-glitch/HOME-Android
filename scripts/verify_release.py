@@ -21,13 +21,22 @@ assert "document.getElementById('vBrainV19')" in html
 assert "closest('#vBrainV8')" in html
 assert 'data-source="remote-extension-loader.js"' in html
 assert '__HOME_REMOTE_LOADER_V4__' in html
-assert "CACHE_SCHEMA='host18-v4'" in html
+assert "CACHE_SCHEMA='host18-v5'" in html
+assert "mode:'bundled-live-release'" in html
 assert 'homeRemoteJsV2' in html and 'homeBehaviorJsV3' in html and 'purgeLegacy' in html
-assert "new Function(js+'\\n//# sourceURL='+name)" in html
+assert "new Function(js+'\\n//# sourceURL='+name)" not in html
+assert "{name:'behavior-v3.js'" not in html
 assert 'data-source="vbrain-backup-retirement-v22.js"' in html
 assert '__VBRAIN_BACKUP_RETIREMENT_V22__' in html
 assert "'vbRestoreInline'" in html and "'vBackupCard'" in html and "'homeRecoveryLauncher'" in html
 assert html.index('data-source="vbrain-backup-retirement-v22.js"') > html.index('data-source="remote-extension-loader.js"')
+assert 'data-source="vbrain-ui-performance-v23.js"' in html
+assert '__VBRAIN_UI_PERFORMANCE_V23__' in html
+assert "localStorage.setItem('homeTubeLayoutV6','stack')" in html
+assert '#homeDayScoreV4' in html and '#homeMomentum' in html and '#vbrainLiveStatus17' in html
+assert 'setInterval(tick,5000)' in html and 'VBrainHotLoader?.refresh?.()' in html and 'Native?.checkLiveUpdate?.()' in html
+assert 'backdrop-filter:none!important' in html
+assert html.index('data-source="vbrain-ui-performance-v23.js"') > html.index('data-source="vbrain-backup-retirement-v22.js"')
 assert 'data-source="behavior-v3.js"' not in html
 assert 'data-source="vbrain-sense-v13.js"' not in html
 assert 'brain_context' in (root/'sync-overlay/app/src/main/java/com/luis/home/HomeSyncJob.java').read_text()
@@ -47,4 +56,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + live context compat + Personalizer v21 + Veqrya/HOME reconnect fallback + backup UI retirement v22 + V19 private brain context + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + live context compat + Personalizer v21 + Veqrya/HOME reconnect fallback + backup retirement v22 + unified fast UI v23 + V19 private brain context + lean HOME compatibility loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
