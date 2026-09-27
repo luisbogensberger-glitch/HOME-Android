@@ -3,6 +3,7 @@
   'use strict';
   if(window.__VBRAIN_PERSONALIZER_HOOK_V21__)return;window.__VBRAIN_PERSONALIZER_HOOK_V21__=true;
   const text=(el,v)=>{if(el)el.textContent=String(v??'')};
+  const finish=()=>{setTimeout(()=>{try{window.VBrainContextSensors?.mount?.()}catch(_){}},0);return true};
   function mountV19(){
     const brain=document.getElementById('vBrainV19'),top=brain?.querySelector('.vb19Top');
     if(!brain||!top||!window.VBrainPersonalizer)return false;
@@ -18,8 +19,8 @@
       brain.appendChild(panel);panel.querySelector('button').onclick=()=>panel.classList.remove('show');btn.onclick=()=>panel.classList.toggle('show');
     }
     const ctx=window.VBrainPersonalizer.context?.()||{items:[]};text(btn,`CONTEXT · ${ctx.items?.length||0}`);
-    const list=panel.querySelector('.vb21List');if(!list)return true;list.innerHTML='';
-    if(!ctx.items?.length){const e=document.createElement('div');e.className='vb21Empty';e.textContent='No synchronized semantic context yet. Behaviour learning continues locally.';list.appendChild(e);return true}
+    const list=panel.querySelector('.vb21List');if(!list)return finish();list.innerHTML='';
+    if(!ctx.items?.length){const e=document.createElement('div');e.className='vb21Empty';e.textContent='No synchronized semantic context yet. Behaviour learning continues locally.';list.appendChild(e);return finish()}
     for(const item of ctx.items){
       const row=document.createElement('article');row.className='vb21Item';
       const kind=document.createElement('div');kind.className='vb21Kind';kind.textContent=String(item.kind||'context');
@@ -27,7 +28,7 @@
       const meta=document.createElement('div');meta.className='vb21Meta';meta.textContent=`${Math.round(Number(item.confidence||0)*100)}% confidence · ${Number(item.evidenceCount||0)} evidence`;
       row.append(kind,st,meta);list.appendChild(row);
     }
-    return true;
+    return finish();
   }
   function afterOpen(){try{window.VBrainPersonalizer?.refresh?.()}catch(_){};setTimeout(mountV19,0)}
   function install(){
