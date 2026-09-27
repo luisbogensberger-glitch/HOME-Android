@@ -64,7 +64,10 @@ public class RuntimeSmoke extends Instrumentation {
             waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive",30);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",10);
             result.putString("stream","VBRAIN_SMOKE_OK: real Android boot, native Back, full live UI activation, storage continuity, failed-release rollback\n");
+            runOnMainSync(()->activity.finish());
             finish(Activity.RESULT_OK,result);
-        }catch(Throwable e){result.putString("stream","VBRAIN_SMOKE_FAILED: "+e.toString()+"\n");finish(Activity.RESULT_CANCELED,result);}
+        }catch(Throwable e){result.putString("stream","VBRAIN_SMOKE_FAILED: "+e.toString()+"\n");
+            try { if(activity!=null) runOnMainSync(()->activity.finish()); } catch(Throwable ignored) { }
+            finish(Activity.RESULT_CANCELED,result);}
     }
 }
