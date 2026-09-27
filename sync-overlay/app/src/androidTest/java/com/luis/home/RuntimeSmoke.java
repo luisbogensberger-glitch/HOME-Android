@@ -40,10 +40,10 @@ public class RuntimeSmoke extends Instrumentation {
         try{
             Intent start=new Intent(Intent.ACTION_MAIN).setClassName(getTargetContext(),"com.luis.home.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             activity=startActivitySync(start);web=(WebView)((FrameLayout)activity.findViewById(android.R.id.content)).getChildAt(0);
-            waitFor("!!window.VBrainLive && !!window.VBrain && !!window.VBrainRemoteUI && !!document.getElementById('vbrainLiveStatus17')",25);
+            waitFor("!!window.VBrainLive && !!window.VBrain && !!window.VBrainRemoteUI && !!window.VBrainGraph && !!window.VBrainTodos && !!window.VBrainRuntime && !!window.VBrainHotLoader && !!document.getElementById('vbrainLiveStatus17')",25);
             phase="native back";
-            eval("VBrain.openBrain();true");waitFor("document.getElementById('vBrainV8').classList.contains('show')",5);
-            runOnMainSync(()->activity.onBackPressed());waitFor("!document.getElementById('vBrainV8').classList.contains('show')",5);
+            eval("VBrain.openBrain();true");waitFor("document.getElementById('vBrainV19').classList.contains('show')",5);
+            runOnMainSync(()->activity.onBackPressed());waitFor("!document.getElementById('vBrainV19').classList.contains('show')",5);
             if(activity.isFinishing())throw new Exception("Back closed the activity");
             eval("localStorage.setItem('vbrainSmokeSentinel','persist');Native.saveState('vbrainSmokeSentinel','persist');true");
             String html;
@@ -53,7 +53,7 @@ public class RuntimeSmoke extends Instrumentation {
             phase="activate live document";
             String sha=stage(html.replace("</head>","<meta name=\"vbrain-smoke\" content=\"live-test\"></head>"));
             eval("Native.applyLiveUpdate();true");
-            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive && !!window.VBrainRemoteUI",25);
+            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive && !!window.VBrainRemoteUI && !!window.VBrainGraph && !!window.VBrainTodos && !!window.VBrainRuntime && !!window.VBrainHotLoader",25);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).source==='live'",5);
             waitFor("localStorage.getItem('vbrainSmokeSentinel')==='persist' && Native.loadState('vbrainSmokeSentinel')==='persist'",5);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",10);
@@ -61,9 +61,9 @@ public class RuntimeSmoke extends Instrumentation {
             stage("<!doctype html><meta name=\"vbrain-host\" content=\"18\"><p id=\"broken\">Unhealthy update</p>");
             eval("Native.applyLiveUpdate();true");waitFor("!!document.getElementById('broken')",10);
             phase="rollback to healthy document";
-            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive && !!window.VBrainRemoteUI",30);
+            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive && !!window.VBrainRemoteUI && !!window.VBrainGraph && !!window.VBrainTodos",30);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",10);
-            result.putString("stream","VBRAIN_SMOKE_OK: real Android boot, remote UI renderer, native Back, full live UI activation, storage continuity, failed-release rollback\n");
+            result.putString("stream","VBRAIN_SMOKE_OK: real Android boot, persistent V19 brain, unified To-Dos, verified hot loader, runtime evidence, native Back, full live UI activation, storage continuity, failed-release rollback\n");
             runOnMainSync(()->activity.finish());
             finish(Activity.RESULT_OK,result);
         }catch(Throwable e){result.putString("stream","VBRAIN_SMOKE_FAILED: "+e.toString()+"\n");
