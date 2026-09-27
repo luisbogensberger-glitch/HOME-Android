@@ -1,15 +1,15 @@
 {
-  "version": 18,
-  "updatedAt": "2026-09-27T05:34:00Z",
+  "version": 19,
+  "updatedAt": "2026-09-27T05:41:00Z",
   "theme": {
-    "radius": 12,
-    "density": "compact",
+    "radius": 36,
+    "density": "comfortable",
     "motion": "smooth",
-    "accent": "#c8ff72",
-    "surfaceOpacity": 0.92
+    "accent": "#77e7ff",
+    "surfaceOpacity": 0.66
   },
   "home": {
-    "editable": false,
+    "editable": true,
     "cards": {
       "calendar": {"image": "", "position": "center"},
       "todos": {"image": "", "position": "center"},
@@ -18,104 +18,169 @@
     }
   },
   "tube": {
-    "layout": "stack",
-    "visibleCount": 5,
-    "cardImageRatio": 0.28,
+    "layout": "grid",
+    "visibleCount": 6,
+    "cardImageRatio": 0.42,
     "showHooks": true,
     "showTopic": true,
-    "readerDepth": "balanced",
-    "sectionLimit": 3,
-    "paragraphScale": 1.0,
-    "quizMode": "mcq_sentence",
+    "readerDepth": "deep",
+    "sectionLimit": 5,
+    "paragraphScale": 1.05,
+    "quizMode": "mixed",
     "sentenceMinWords": 5,
-    "sentenceTargetWords": 14,
+    "sentenceTargetWords": 16,
     "completionAction": "replace_card",
-    "allowedLayouts": ["stack"],
+    "allowedLayouts": ["grid", "stack", "swipe", "story"],
     "remoteStructure": true,
     "remoteReader": true,
     "remoteQuiz": true,
     "remoteMotion": true
   },
   "todos": {
-    "layout": "focus",
-    "maxVisible": 8,
+    "layout": "timeline",
+    "maxVisible": 12,
     "showMeta": true,
     "showArea": true,
     "showMinutes": true,
     "showNotes": false,
     "groupBy": "none",
-    "archiveCollapsed": true,
-    "focusCount": 3
+    "archiveCollapsed": false,
+    "focusCount": 4
   },
   "vbrainPatch": {
     "refreshMs": 30000,
     "home": {
       "orderMode": "fixed",
-      "order": ["gym", "tube", "todos", "calendar"],
+      "order": ["tube", "calendar", "gym", "todos"],
       "visible": {
         "calendar": false,
         "todos": false,
         "tube": false,
         "gym": false
       },
-      "gap": 26,
-      "minHeight": 190,
-      "scale": 1.06,
-      "heroImage": "https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?auto=format&fit=crop&w=1800&q=88",
-      "heroPosition": "center 44%"
+      "gap": 9,
+      "minHeight": 104,
+      "scale": 0.95,
+      "heroImage": "https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1800&q=88",
+      "heroPosition": "center 50%"
     },
     "score": {
-      "title": "REMOTE SHELL ACTIVE",
-      "subtitle": "Adaptive UI channel test",
-      "showMini": false
+      "title": "CONTROL DECK / 19",
+      "subtitle": "Shape + routing stress test",
+      "showMini": true
     },
     "brain": {
-      "hint": "TEST MODE · live interface control",
-      "detailMaxVh": 30,
-      "nodeScale": 1.18
+      "hint": "LIVE TEST · bigger nodes · tap anything",
+      "detailMaxVh": 48,
+      "nodeScale": 1.33
     },
     "motion": {
-      "cardMs": 260,
-      "pressScale": 0.95
+      "cardMs": 90,
+      "pressScale": 0.94
     },
     "banner": {
       "visible": true,
-      "title": "LIVE CONTROL TEST",
-      "text": "This interface was changed through the adaptive V-Brain channel. Tap to open Gym.",
-      "target": "gym"
+      "title": "◉ LIVE JUMP · TODAY",
+      "text": "Wide command strip · tap to open Calendar",
+      "target": "calendar"
     },
     "modules": [
       {
-        "id": "test-calendar",
+        "id": "orb-focus",
         "visible": true,
         "order": 1,
+        "shape": "circle",
+        "size": "small",
         "tone": "focus",
-        "kicker": "01 / TIME",
-        "title": "TIME GRID",
-        "text": "Calendar routed through the experimental control surface.",
-        "metric": "CAL",
-        "target": "calendar"
-      },
-      {
-        "id": "test-focus",
-        "visible": true,
-        "order": 2,
-        "tone": "health",
-        "kicker": "02 / ACTION",
-        "title": "FOCUS QUEUE",
-        "text": "Tasks collapsed into a different action channel.",
+        "icon": "◎",
+        "kicker": "NOW",
+        "title": "FOCUS",
+        "text": "Open current tasks",
         "metric": "DO",
         "target": "todos"
       },
       {
-        "id": "test-learn",
+        "id": "pill-tube",
+        "visible": true,
+        "order": 2,
+        "shape": "pill",
+        "size": "wide",
+        "tone": "learn",
+        "icon": "↗",
+        "kicker": "LEARN",
+        "title": "TUBE STREAM",
+        "text": "Jump into the knowledge grid",
+        "metric": "06",
+        "target": "tube"
+      },
+      {
+        "id": "square-gym",
         "visible": true,
         "order": 3,
-        "tone": "learn",
-        "kicker": "03 / LEARN",
-        "title": "KNOWLEDGE FEED",
-        "text": "Tube learning routed through the test shell.",
-        "metric": "TUBE",
+        "shape": "square",
+        "size": "medium",
+        "tone": "health",
+        "icon": "+",
+        "kicker": "BODY",
+        "title": "GYM",
+        "text": "Training control",
+        "metric": "45m",
+        "target": "gym"
+      },
+      {
+        "id": "tall-calendar",
+        "visible": true,
+        "order": 4,
+        "shape": "tall",
+        "size": "large",
+        "tone": "time",
+        "icon": "⌁",
+        "kicker": "TIME",
+        "title": "DAY MAP",
+        "text": "Calendar as vertical command tile",
+        "metric": "CAL",
+        "target": "calendar"
+      },
+      {
+        "id": "diamond-brain",
+        "visible": true,
+        "order": 5,
+        "shape": "diamond",
+        "size": "small",
+        "tone": "signal",
+        "icon": "◇",
+        "kicker": "MODEL",
+        "title": "BRAIN",
+        "text": "Open behaviour model",
+        "metric": "V8",
+        "target": "brain"
+      },
+      {
+        "id": "bar-todos",
+        "visible": true,
+        "order": 6,
+        "shape": "bar",
+        "size": "full",
+        "tone": "action",
+        "icon": "→",
+        "kicker": "QUEUE",
+        "title": "NEXT ACTIONS",
+        "text": "Full-width command strip for the task timeline",
+        "metric": "OPEN",
+        "target": "todos"
+      },
+      {
+        "id": "capsule-lab",
+        "visible": true,
+        "order": 7,
+        "shape": "capsule",
+        "size": "compact",
+        "tone": "experimental",
+        "icon": "✦",
+        "kicker": "LAB",
+        "title": "MUTATE UI",
+        "text": "Experimental live-control surface",
+        "metric": "19",
         "target": "tube"
       }
     ]
@@ -143,5 +208,5 @@
     "cooldownHours": 6,
     "maxMajorExperimentsPerDay": 2
   },
-  "generatedBy": "vbrain-live-test"
+  "generatedBy": "vbrain-live-shape-test"
 }
