@@ -64,9 +64,9 @@ const root=path.resolve(__dirname,'..');
   const routeMs=await page.evaluate(()=>{const t=performance.now();showScreen('todos');return performance.now()-t});
   assert.ok(routeMs<50,`todo route should be synchronous, got ${routeMs}ms`);
   await page.waitForSelector('#todosScreen.show');
-  const todoPerf=await page.evaluate(()=>({rows:document.querySelectorAll('#todoList .todo').length,more:!!document.querySelector('#todoList .v25More'),total:document.getElementById('todoStats').textContent,sync:window.__notionSync,backdrop:getComputedStyle(document.querySelector('#todoList .todo')).backdropFilter}));
+  const todoPerf=await page.evaluate(()=>({rows:document.querySelectorAll('#todoList .todo').length,more:!!document.querySelector('#todoList .v25More'),total:document.getElementById('todoStats').textContent,sync:window.__notionSync,syncBar:document.querySelector('#todosScreen .syncBar')?.textContent,backdrop:getComputedStyle(document.querySelector('#todoList .todo')).backdropFilter}));
   assert.ok(todoPerf.rows<=18,'193 tasks must not become 193 DOM cards');
-  assert.equal(todoPerf.more,true);assert.equal(todoPerf.total,'193 open');assert.ok(todoPerf.sync>=1);assert.ok(todoPerf.backdrop===''||todoPerf.backdrop==='none');
+  assert.equal(todoPerf.more,true);assert.equal(todoPerf.total,'193 open');assert.ok(todoPerf.sync>=1);assert.ok(todoPerf.syncBar?.includes('Sync now')&&!todoPerf.syncBar.includes('Notion'),'the on-device task screen must retain its sync controls');assert.ok(todoPerf.backdrop===''||todoPerf.backdrop==='none');
 
   await page.locator('#todoList .todo').first().click();
   await page.waitForSelector('#todoDetailScreen.show #detailPersonalNote');
