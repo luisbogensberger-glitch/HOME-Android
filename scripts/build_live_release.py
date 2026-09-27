@@ -7,17 +7,13 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'sync-overlay/app/src/main/assets'
-CSS = ['home-ui-v2.css', 'adaptive-runtime.css', 'todo-premium.css', 'runtime.css']
-JS = ['home-ui-v2.js', 'adaptive-runtime.js', 'todo-premium.js', 'runtime.js',
-      'tube-remote.js', 'vbrain-safe-shell-v3.js', 'vbrain-patch-v10.js',
-      'vbrain-autonomy-v11.js', 'vbrain-context-v12.js', 'vbrain-sense-v20.js',
-      'vbrain-context-compat-v21.js', 'vbrain-personalizer-v21.js', 'vbrain-personalizer-hook-v21.js',
-      'learning-engine-v10.js', 'learning-resilience-v11.js',
-      'vbrain-android-back-v14.js', 'vbrain-live-core-v17.js', 'vbrain-sync-reconnect-v21.js',
-      'vbrain-remote-ui-v18.js', 'vbrain-todo-core-v19.js',
-      'vbrain-graph-v19.js', 'vbrain-hot-loader-v19.js', 'vbrain-runtime-v19.js',
-      'vbrain-compat-restore-v1.js', 'remote-extension-loader.js', 'vbrain-backup-retirement-v22.js',
-      'vbrain-ui-performance-v23.js']
+
+# V24 deliberately keeps the verified base document as the product core.
+# One small runtime owns telemetry, Brain, live UI and fast declarative changes.
+# Historical UI/adaptation/repair layers stay in git for migration/reference only;
+# they are NOT executed by the shipping document.
+CSS = []
+JS = ['vbrain-lean-runtime-v24.js']
 
 def source(name):
     path = ASSETS / name
@@ -32,7 +28,7 @@ def build():
     html = html.replace('\\n</body>', '\n</body>').replace('<title>HOME</title>', '<title>V-Brain</title>')
     styles = '\n'.join('<style data-source="'+name+'">\n'+source(name)+'\n</style>' for name in CSS)
     scripts = '\n'.join('<script data-source="'+name+'">\n'+source(name).replace('</script', '<\\/script')+'\n</script>' for name in JS)
-    # Pin the API of the native host. This marker is also verified before a downloaded UI is activated.
+    # Pin the native host contract. LiveRuntime validates this marker before activation.
     html = html.replace('</head>', styles+'\n<meta name="vbrain-host" content="18">\n</head>')
     html = html.replace('</body>', scripts+'\n</body>')
     payload = html.encode()
