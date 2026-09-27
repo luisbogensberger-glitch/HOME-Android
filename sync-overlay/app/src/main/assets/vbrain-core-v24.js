@@ -43,6 +43,8 @@
   }
   window.homeAdaptiveLog=log;
   window.HOMEAdaptive={config,version:VERSION,refresh:()=>refresh(true),log,activity:()=>activity().slice()};
+  // Old callers may still invoke VBrainPatch. Keep the API, but never let it own layout again.
+  window.VBrainPatch={version:VERSION,apply:()=>{try{window.dispatchEvent(new CustomEvent('vbrain:config',{detail:{version:VERSION,source:'compat-apply',config:window.HOMEAdaptive.config}}))}catch(_){}return window.HOMEAdaptive.config},refresh:()=>refresh(true),config:()=>clone(window.HOMEAdaptive.config?.vbrainPatch||{})};
   publish(config,'boot-cache');
   const poll=()=>{if(!document.hidden)refresh(false)};
   setTimeout(()=>refresh(true),180);
