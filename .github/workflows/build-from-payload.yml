@@ -37,7 +37,9 @@ jobs:
           patch -p1 < ../todo-details.patch
 
       - name: Add Android overlay
-        run: cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
+        run: |
+          cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
+          cp -a sync-overlay/app/src/androidTest src/luis-home-app/app/src/androidTest
 
       - name: Build and validate complete live release
         run: |
@@ -53,6 +55,7 @@ jobs:
           s=p.read_text()
           s=re.sub(r'versionCode \d+', 'versionCode '+str(17000+int(os.environ['GITHUB_RUN_NUMBER'])),s)
           s=re.sub(r"versionName '[^']+'", "versionName '17.0.'"+" + '"+os.environ['GITHUB_RUN_NUMBER']+"'",s)
+          s=s.replace("minSdk 26", 'minSdk 26\n        testInstrumentationRunner "com.luis.home.RuntimeSmoke"')
           p.write_text(s)
           PYCODE
 
@@ -97,7 +100,27 @@ jobs:
 
       - name: Build debug APK
         working-directory: src/luis-home-app
-        run: gradle :app:assembleDebug --stacktrace
+        run: gradle :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Verify Android live activation and rollback
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install -r src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r src/luis-home-app/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell pm grant com.luis.home android.permission.POST_NOTIFICATIONS
+            adb shell am instrument -w com.luis.home.test/com.luis.home.RuntimeSmoke | tee android-smoke.txt
+            grep -q VBRAIN_SMOKE_OK android-smoke.txt
 
       - name: Re-sign and verify APK
         shell: bash
