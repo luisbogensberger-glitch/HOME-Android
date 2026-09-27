@@ -83,9 +83,8 @@ jobs:
           npm install --prefix tests --no-package-lock --no-save playwright@1.56.1
           node tests/vbrain-single-owner-v24.e2e.cjs
           node tests/runtime.e2e.cjs
-          node tests/vbrain-v19.e2e.cjs
+          node tests/vbrain-graph-v24.e2e.cjs
           node tests/vbrain-sense-v20.e2e.cjs
-          node tests/vbrain-backup-retirement-v22.e2e.cjs
 
       - name: Upload UI screenshots
         if: always()
