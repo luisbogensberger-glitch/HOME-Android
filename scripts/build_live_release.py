@@ -12,7 +12,8 @@ JS = ['home-ui-v2.js', 'adaptive-runtime.js', 'todo-premium.js', 'runtime.js',
       'tube-remote.js', 'vbrain-safe-shell-v3.js', 'vbrain-patch-v10.js',
       'vbrain-autonomy-v11.js', 'vbrain-context-v12.js',
       'learning-engine-v10.js', 'learning-resilience-v11.js',
-      'vbrain-android-back-v14.js', 'vbrain-live-core-v17.js']
+      'vbrain-android-back-v14.js', 'vbrain-live-core-v17.js',
+      'vbrain-remote-ui-v18.js']
 
 def source(name):
     path = ASSETS / name
@@ -28,11 +29,11 @@ def build():
     styles = '\n'.join('<style data-source="'+name+'">\n'+source(name)+'\n</style>' for name in CSS)
     scripts = '\n'.join('<script data-source="'+name+'">\n'+source(name).replace('</script', '<\\/script')+'\n</script>' for name in JS)
     # Pin the API of the native host. This marker is also verified before a downloaded UI is activated.
-    html = html.replace('</head>', styles+'\n<meta name="vbrain-host" content="17">\n</head>')
+    html = html.replace('</head>', styles+'\n<meta name="vbrain-host" content="18">\n</head>')
     html = html.replace('</body>', scripts+'\n</body>')
     payload = html.encode()
     digest = hashlib.sha256(payload).hexdigest()
-    manifest = {'schema': 1, 'version': '17.'+digest[:12], 'minNative': 17,
+    manifest = {'schema': 1, 'version': '18.'+digest[:12], 'minNative': 18,
                 'file': 'live-app.html', 'sha256': digest, 'bytes': len(payload)}
     out = ROOT / 'home-runtime'
     expected = [(out/'live-app.html', payload),
