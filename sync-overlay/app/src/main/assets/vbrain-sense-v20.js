@@ -1,4 +1,4 @@
-/* V-Brain Sense v20 — lightweight, UI-only behavioural sensing with a separate private text channel. */
+/* V-Brain Sense v20 — lightweight UI interaction telemetry. Private text remains owned by V-Brain Live v17. */
 (function(){
   'use strict';
   if(window.__VBRAIN_SENSE_V20__)return;window.__VBRAIN_SENSE_V20__=true;
@@ -6,16 +6,12 @@
   const VERSION=20;
   const SESSION='s20-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
   const GENERIC_DEBOUNCE_MS=320;
-  const PRIVATE_TEXT_DEBOUNCE_MS=1200;
   const HEARTBEAT_MS=60000;
   const IDLE_MS=90000;
-  const MAX_PRIVATE_TEXT=4000;
   const SECRET_RE=/(password|passwd|passcode|secret|token|credential|cookie|session|bearer|api[_ -]?key|private[_ -]?key)/i;
 
   const now=()=>Date.now();
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0));
-  const timers=new WeakMap();
-  const lastPrivate=new WeakMap();
   let startedAt=now(),lastActive=now(),lastBeat=now();
   let lastScreen='',screenAt=now(),maxScroll=0,presses=0,inputs=0;
 
@@ -30,19 +26,6 @@
         id:'s20-'+kind+'-'+now().toString(36)+'-'+Math.random().toString(36).slice(2,7),
         kind,type:kind,at:now(),screen:currentScreen(),source:'vbrain-sense-v20',sessionId:SESSION,data:data||{}
       }));
-      return true;
-    }catch(_){return false}
-  }
-  function privateEvent(kind,payload){
-    try{
-      if(typeof AdaptiveNative==='undefined'||typeof AdaptiveNative.queuePrivateActivity!=='function')return false;
-      const body={
-        id:'s20-private-'+now().toString(36)+'-'+Math.random().toString(36).slice(2,7),
-        kind,at:now(),screen:currentScreen(),source:'vbrain-sense-v20',sessionId:SESSION,
-        data:{sensorVersion:VERSION}
-      };
-      Object.entries(payload||{}).forEach(([k,v])=>{body[k]=v});
-      AdaptiveNative.queuePrivateActivity(JSON.stringify(body));
       return true;
     }catch(_){return false}
   }
@@ -71,9 +54,10 @@
     const meta=fieldMeta(el);
     return type==='password'||/password/.test(ac)||SECRET_RE.test(meta.field);
   }
-  function fieldValue(el){
+  function fieldLength(el){
+    if(!isTextField(el)||isSensitiveField(el))return 0;
     const raw=el?.isContentEditable?el.innerText:el?.value;
-    return String(raw??'').trim().slice(0,MAX_PRIVATE_TEXT);
+    return Math.min(4000,String(raw??'').trim().length);
   }
   function scrollDepth(){
     const root=document.scrollingElement||document.documentElement;
@@ -81,19 +65,6 @@
     return clamp(Math.round((root?.scrollTop||scrollY||0)/h*100),0,100);
   }
   function touch(){lastActive=now()}
-  function flushPrivateText(el,reason){
-    if(!isTextField(el)||isSensitiveField(el))return;
-    const text=fieldValue(el);
-    if(!text||text===lastPrivate.get(el))return;
-    lastPrivate.set(el,text);
-    const m=fieldMeta(el);
-    privateEvent('private_text_field',{field:m.field,fieldType:m.type,text,chars:text.length,reason:safe(reason,40)});
-  }
-  function scheduleField(el){
-    const prior=timers.get(el);if(prior)clearTimeout(prior);
-    const t=setTimeout(()=>{timers.delete(el);flushPrivateText(el,'idle')},PRIVATE_TEXT_DEBOUNCE_MS);
-    timers.set(el,t);
-  }
   function noteScreen(next,reason){
     next=String(next||currentScreen());
     if(!lastScreen){lastScreen=next;screenAt=now();generic('screen_enter_v20',{name:next,reason:'boot',viewportW:innerWidth,viewportH:innerHeight});return}
@@ -112,29 +83,19 @@
   },true);
   document.addEventListener('input',e=>{
     touch();inputs++;const el=e.target;if(!(el instanceof Element))return;
-    const m=fieldMeta(el),chars=isTextField(el)?fieldValue(el).length:0;
+    const m=fieldMeta(el),chars=fieldLength(el);
     const prior=el.__vbrainSenseGenericTimer;if(prior)clearTimeout(prior);
     el.__vbrainSenseGenericTimer=setTimeout(()=>generic('field_activity_v20',{...m,chars}),GENERIC_DEBOUNCE_MS);
-    if(isTextField(el)&&!isSensitiveField(el))scheduleField(el);
-  },true);
-  document.addEventListener('focusout',e=>{
-    const el=e.target;if(!(el instanceof Element))return;
-    const prior=timers.get(el);if(prior){clearTimeout(prior);timers.delete(el)}
-    flushPrivateText(el,'blur');
   },true);
   addEventListener('scroll',()=>{touch();maxScroll=Math.max(maxScroll,scrollDepth())},{passive:true});
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden){
       generic('session_background_v20',{sessionMs:now()-startedAt,screen:lastScreen,maxScroll,presses,inputs,idleMs:now()-lastActive});
-      document.querySelectorAll('input,textarea,[contenteditable="true"]').forEach(el=>flushPrivateText(el,'background'));
     }else{
       startedAt=now();lastBeat=now();lastActive=now();noteScreen(currentScreen(),'foreground');generic('session_foreground_v20',{screen:currentScreen()});
     }
   });
-  addEventListener('pagehide',()=>{
-    generic('session_end_v20',{sessionMs:now()-startedAt,screen:lastScreen,maxScroll,presses,inputs,idleMs:now()-lastActive});
-    document.querySelectorAll('input,textarea,[contenteditable="true"]').forEach(el=>flushPrivateText(el,'pagehide'));
-  });
+  addEventListener('pagehide',()=>generic('session_end_v20',{sessionMs:now()-startedAt,screen:lastScreen,maxScroll,presses,inputs,idleMs:now()-lastActive}));
   setInterval(()=>{
     noteScreen(currentScreen(),'poll');
     if(document.hidden)return;
@@ -144,7 +105,7 @@
   setInterval(()=>noteScreen(currentScreen(),'poll'),1000);
 
   lastScreen=currentScreen();screenAt=now();
-  generic('vbrain_sense_ready',{version:VERSION,sessionId:SESSION,privateText:true,uiOnly:true});
+  generic('vbrain_sense_ready',{version:VERSION,sessionId:SESSION,privateTextOwner:'vbrain-v17',uiOnly:true});
   generic('screen_enter_v20',{name:lastScreen,reason:'boot',viewportW:innerWidth,viewportH:innerHeight});
-  window.VBrainSense={version:VERSION,status:()=>({version:VERSION,sessionId:SESSION,screen:lastScreen,startedAt,privateText:true,uiOnly:true})};
+  window.VBrainSense={version:VERSION,status:()=>({version:VERSION,sessionId:SESSION,screen:lastScreen,startedAt,privateTextOwner:'vbrain-v17',uiOnly:true})};
 })();
