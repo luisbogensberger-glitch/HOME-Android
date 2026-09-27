@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "17.4caa53c3dd3e",
-  "minNative": 17,
+  "version": "18.983e0b0be0f7",
+  "minNative": 18,
   "file": "live-app.html",
-  "sha256": "4caa53c3dd3e05f18137325cf816b3bfaaaafd61b993d28b55b955389987670b",
-  "bytes": 7856
+  "sha256": "983e0b0be0f753b7ce35f8938488c3d72163d901704393f0cda77fdbcde60c51",
+  "bytes": 289226
 }
