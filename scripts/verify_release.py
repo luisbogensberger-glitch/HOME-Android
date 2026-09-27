@@ -6,6 +6,10 @@ html=(root/'home-runtime/live-app.html').read_text()
 manifest=json.loads((root/'home-runtime/live-release.json').read_text())
 assert hashlib.sha256(html.encode()).hexdigest()==manifest['sha256']
 assert len(html.encode())==manifest['bytes']
+assert manifest['minNative']==18
+assert manifest['version'].startswith('18.')
+assert 'name="vbrain-host" content="18"' in html
+assert 'data-source="vbrain-remote-ui-v18.js"' in html
 assert 'data-source="remote-extension-loader.js"' not in html
 assert 'data-source="behavior-v3.js"' not in html
 assert 'data-source="vbrain-sense-v13.js"' not in html
@@ -23,4 +27,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, host 18 remote renderer, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
