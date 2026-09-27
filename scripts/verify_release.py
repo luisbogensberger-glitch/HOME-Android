@@ -26,15 +26,19 @@ assert "dataset.vbrainHydrated='24'" in html
 assert html.index('data-source="vbrain-core-v24.js"') < html.index('data-source="vbrain-shell-v24.js"')
 assert html.index('data-source="vbrain-shell-v24.js"') < html.index('data-source="vbrain-safe-shell-v3.js"')
 
-# These old layout owners caused resume/re-hydration UI churn and must not ship.
+# These old layout owners / repair loops caused resume churn and must never ship again.
 for retired in [
  'adaptive-runtime.js','runtime.js','vbrain-patch-v10.js','vbrain-autonomy-v11.js',
- 'vbrain-personalizer-v21.js','vbrain-personalizer-hook-v21.js','vbrain-ui-performance-v23.js'
+ 'vbrain-personalizer-v21.js','vbrain-personalizer-hook-v21.js','vbrain-ui-performance-v23.js',
+ 'vbrain-hot-loader-v19.js','vbrain-runtime-v19.js','vbrain-context-v12.js',
+ 'vbrain-compat-restore-v1.js','vbrain-backup-retirement-v22.js'
 ]:
  assert f'data-source="{retired}"' not in html, retired
 assert 'Build momentum that matters.' not in html
 assert "TODAY'S QUEST" not in html
 assert '__HOME_QUEST_LEARN_V7__' not in html
+assert '__VBRAIN_HOT_LOADER_V19__' not in html
+assert 'vbrainCompatReminderV1' not in html
 
 # Required capabilities remain, but hydrate outside first paint.
 assert 'data-source="vbrain-safe-shell-v3.js"' in html
@@ -44,8 +48,7 @@ assert 'data-source="vbrain-sense-v20.js"' in html
 assert 'data-source="vbrain-context-compat-v21.js"' in html
 assert 'vbrainPrivatePatch' in html and 'brainContext' in html and 'brain_context_compat_synced' in html
 assert 'data-source="vbrain-sync-reconnect-v21.js"' in html
-assert 'Reconnect HOME' in html and 'Native.configureVeqrya' in html and 'Native.configureNotion' in html and 'AdaptiveNative?.checkDeviceCommands?.()' in html
-assert 'data-source="vbrain-runtime-v19.js"' in html
+assert 'Native.configureVeqrya' in html and 'Native.configureNotion' in html and 'AdaptiveNative?.checkDeviceCommands?.()' in html
 assert "document.getElementById('vBrainV19')" in html
 assert "closest('#vBrainV8')" in html
 assert 'data-source="remote-extension-loader.js"' in html
@@ -55,9 +58,6 @@ assert "mode:'bundled-live-release'" in html
 assert 'homeRemoteJsV2' in html and 'homeBehaviorJsV3' in html and 'purgeLegacy' in html
 assert "new Function(js+'\\n//# sourceURL='+name)" not in html
 assert "{name:'behavior-v3.js'" not in html
-assert 'data-source="vbrain-backup-retirement-v22.js"' in html
-assert '__VBRAIN_BACKUP_RETIREMENT_V22__' in html
-assert "'vbRestoreInline'" in html and "'vBackupCard'" in html and "'homeRecoveryLauncher'" in html
 assert 'data-source="behavior-v3.js"' not in html
 assert 'data-source="vbrain-sense-v13.js"' not in html
 assert 'backdrop-filter:none!important' in html
@@ -79,4 +79,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, single-owner v24 + fast headless config + idle hydration + remote declarative UI + Sense v20 + context compat + Veqrya/HOME reconnect + V19 brain/runtime + lean HOME loader + backup retirement + complete release hash'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, single-owner v24 + 2.5s declarative config + idle capability hydration + remote full-UI renderer + Sense v20 + context compat + event-driven Veqrya/HOME reconnect + V19 brain/graph + lean HOME loader + complete release hash'+(' and APK bytes' if len(sys.argv)>1 else ''))
