@@ -135,6 +135,7 @@ jobs:
             adb shell svc wifi disable || true
             adb shell svc data disable || true
             adb shell am instrument -w com.luis.home.test/com.luis.home.RuntimeSmoke | tee android-smoke.txt
+            adb logcat -d -s chromium AndroidRuntime System.err | tail -n 160
             grep -q VBRAIN_SMOKE_OK android-smoke.txt
 
       - name: Re-sign and verify APK
@@ -168,4 +169,3 @@ jobs:
           name: V-Brain-STABLE-apk
           path: V-Brain-STABLE.apk
           if-no-files-found: error
-

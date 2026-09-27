@@ -20,7 +20,7 @@ public class RuntimeSmoke extends Instrumentation {
     private String eval(String js)throws Exception{
         CountDownLatch done=new CountDownLatch(1);AtomicReference<String> result=new AtomicReference<>("");
         runOnMainSync(()->web.evaluateJavascript(js,v->{result.set(v);done.countDown();}));
-        if(!done.await(8,TimeUnit.SECONDS))throw new Exception("WebView JS callback timed out");return result.get();
+        if(!done.await(8,TimeUnit.SECONDS))throw new Exception("WebView JS callback timed out during "+phase+"; probe="+js);return result.get();
     }
     private void waitFor(String js,int seconds)throws Exception{
         long end=System.currentTimeMillis()+seconds*1000L;
