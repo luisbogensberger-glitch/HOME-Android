@@ -44,6 +44,9 @@ jobs:
       - name: Harden V-Brain 18 private sync
         run: python3 scripts/patch_worker_sync_v18.py src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java
 
+      - name: Harden V-Brain 19 live rollback watchdog
+        run: python3 scripts/patch_runtime_watchdog_v19.py src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
+
       - name: Build and validate complete live release
         run: |
           python3 scripts/build_live_release.py
@@ -67,6 +70,7 @@ jobs:
         run: |
           npm install --prefix tests --no-package-lock --no-save playwright@1.56.1
           node tests/runtime.e2e.cjs
+          node tests/vbrain-v19.e2e.cjs
 
       - name: Upload UI screenshots
         if: always()

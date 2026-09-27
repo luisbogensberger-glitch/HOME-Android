@@ -13,7 +13,8 @@ JS = ['home-ui-v2.js', 'adaptive-runtime.js', 'todo-premium.js', 'runtime.js',
       'vbrain-autonomy-v11.js', 'vbrain-context-v12.js',
       'learning-engine-v10.js', 'learning-resilience-v11.js',
       'vbrain-android-back-v14.js', 'vbrain-live-core-v17.js',
-      'vbrain-remote-ui-v18.js', 'vbrain-sync-repair-v18.js']
+      'vbrain-remote-ui-v18.js', 'vbrain-todo-core-v19.js',
+      'vbrain-graph-v19.js', 'vbrain-hot-loader-v19.js', 'vbrain-runtime-v19.js']
 
 def source(name):
     path = ASSETS / name
