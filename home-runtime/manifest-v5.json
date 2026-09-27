@@ -1,65 +1,21 @@
 {
-  "version": 8,
-  "updatedAt": "2026-09-27-behaviour-v7",
+  "version": 9,
+  "updatedAt": "2026-09-27-vbrain-score-traits-restore",
   "modules": [
-    {
-      "name": "runtime.css",
-      "kind": "css",
-      "id": "homeRemoteExtensionCss"
-    },
-    {
-      "name": "runtime.js",
-      "kind": "js"
-    },
-    {
-      "name": "behavior-v3.css",
-      "kind": "css",
-      "id": "homeBehaviourExtensionCss"
-    },
-    {
-      "name": "behavior-v3.js",
-      "kind": "js"
-    },
-    {
-      "name": "learning-resilience-v11.js",
-      "kind": "js"
-    },
-    {
-      "name": "state-resilience-v2.js",
-      "kind": "js"
-    },
-    {
-      "name": "post-install-resilience-v1.js",
-      "kind": "js"
-    },
-    {
-      "name": "learning-engine-v10.js",
-      "kind": "js"
-    },
-    {
-      "name": "living-brain-v6.js",
-      "kind": "js"
-    },
-    {
-      "name": "behaviour-engine-v7.js",
-      "kind": "js"
-    },
-    {
-      "name": "habit-adaptation-v1.js",
-      "kind": "js"
-    },
-    {
-      "name": "todo-premium.css",
-      "kind": "css",
-      "id": "homeTodoPremiumCss"
-    },
-    {
-      "name": "todo-pressure-v1.js",
-      "kind": "js"
-    },
-    {
-      "name": "sync-observability-v16.js",
-      "kind": "js"
-    }
+    {"name":"runtime.css","kind":"css","id":"homeRemoteExtensionCss"},
+    {"name":"runtime.js","kind":"js"},
+    {"name":"behavior-v3.css","kind":"css","id":"homeBehaviourExtensionCss"},
+    {"name":"behavior-v3.js","kind":"js"},
+    {"name":"vbrain-compat-restore-v1.js","kind":"js"},
+    {"name":"learning-resilience-v11.js","kind":"js"},
+    {"name":"state-resilience-v2.js","kind":"js"},
+    {"name":"post-install-resilience-v1.js","kind":"js"},
+    {"name":"learning-engine-v10.js","kind":"js"},
+    {"name":"living-brain-v6.js","kind":"js"},
+    {"name":"behaviour-engine-v7.js","kind":"js"},
+    {"name":"habit-adaptation-v1.js","kind":"js"},
+    {"name":"todo-premium.css","kind":"css","id":"homeTodoPremiumCss"},
+    {"name":"todo-pressure-v1.js","kind":"js"},
+    {"name":"sync-observability-v16.js","kind":"js"}
   ]
 }
