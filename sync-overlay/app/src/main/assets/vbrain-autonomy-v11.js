@@ -77,5 +77,5 @@
   function repair(){ensureStyle();dedupeGym();renderModules();document.documentElement.classList.add('vbrainHomeSettled');setTimeout(homeImpression,120)}
 
   window.VBrainAutonomy={version:11,repair,planNotifications,flushPrivate};
-  ensureStyle();installTracking();installPrivateContext();setTimeout(()=>document.documentElement.classList.add('vbrainHomeSettled'),900);repair();setTimeout(repair,700);setTimeout(()=>{repair();planNotifications()},2200);setInterval(()=>{if(!document.hidden){repair();planNotifications()}},180000);
+  ensureStyle();installTracking();setTimeout(()=>document.documentElement.classList.add('vbrainHomeSettled'),900);repair();setTimeout(repair,700);setTimeout(()=>{repair()},2200);setInterval(()=>{if(!document.hidden){repair()}},180000);
 })();

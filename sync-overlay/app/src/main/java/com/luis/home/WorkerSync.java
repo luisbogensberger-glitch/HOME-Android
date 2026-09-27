@@ -32,8 +32,8 @@ final class WorkerSync {
     private static final String KEY_ALIAS = "home_worker_token_v1";
     private final Context context;
     private final File outboxFile;
-    private final Object outboxLock = new Object();
-    private final AtomicBoolean flushing = new AtomicBoolean(false);
+    private static final Object outboxLock = new Object();
+    private static final AtomicBoolean flushing = new AtomicBoolean(false);
 
     WorkerSync(Context context) {
         this.context = context.getApplicationContext();
@@ -188,8 +188,11 @@ final class WorkerSync {
     private JSONArray readOutbox() {
         synchronized (outboxLock) {
             if (!outboxFile.exists()) return new JSONArray();
-            try (FileInputStream in = new FileInputStream(outboxFile)) {
-                String raw = readAll(in);
+            try (FileInputStream in = new android.util.AtomicFile(outboxFile).openRead()) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                for (int n; (n=in.read(buffer))!=-1;) bytes.write(buffer,0,n);
+                String raw = bytes.toString("UTF-8");
                 return raw.trim().isEmpty() ? new JSONArray() : new JSONArray(raw);
             } catch (Exception ignored) { return new JSONArray(); }
         }
@@ -197,17 +200,14 @@ final class WorkerSync {
 
     private void writeOutbox(JSONArray rows) throws Exception {
         synchronized (outboxLock) {
-            File tmp = new File(outboxFile.getParentFile(), outboxFile.getName() + ".tmp");
-            try (FileOutputStream out = new FileOutputStream(tmp)) {
-                out.write(rows.toString().getBytes(StandardCharsets.UTF_8));
-                out.getFD().sync();
-            }
-            if (outboxFile.exists() && !outboxFile.delete()) throw new IllegalStateException("Could not rotate HOME outbox.");
-            if (!tmp.renameTo(outboxFile)) throw new IllegalStateException("Could not commit HOME outbox.");
+            android.util.AtomicFile target = new android.util.AtomicFile(outboxFile);
+            FileOutputStream out = target.startWrite();
+            try { out.write(rows.toString().getBytes(StandardCharsets.UTF_8)); target.finishWrite(out); }
+            catch (Exception e) { target.failWrite(out); throw e; }
         }
     }
 
-    private String enqueue(String type, JSONObject payload) throws Exception {
+    String enqueue(String type, JSONObject payload) throws Exception {
         JSONObject row = new JSONObject()
                 .put("queueId", java.util.UUID.randomUUID().toString())
                 .put("type", type)
@@ -215,8 +215,17 @@ final class WorkerSync {
                 .put("payload", new JSONObject(payload.toString()));
         synchronized (outboxLock) {
             JSONArray rows = readOutbox();
-            rows.put(row);
-            writeOutbox(rows);
+            JSONArray merged = new JSONArray();
+            String id = payload.optString("id", "");
+            for (int i=0;i<rows.length();i++) {
+                JSONObject old=rows.optJSONObject(i);
+                if (old == null) continue;
+                JSONObject previous=old.optJSONObject("payload");
+                if (!id.isEmpty() && type.equals(old.optString("type")) && previous!=null && id.equals(previous.optString("id"))) continue;
+                merged.put(old);
+            }
+            merged.put(row);
+            writeOutbox(merged);
         }
         return row.getString("queueId");
     }
@@ -234,22 +243,90 @@ final class WorkerSync {
 
     int pendingOutboxCount() { return readOutbox().length(); }
 
+    JSONObject syncStatus() {
+        JSONObject out=new JSONObject();
+        try {
+            android.content.SharedPreferences p=context.getSharedPreferences("vbrain_sync",Context.MODE_PRIVATE);
+            out.put("configured",isConfigured()).put("pending",pendingOutboxCount())
+               .put("lastSyncedAt",p.getLong("lastSyncedAt",0)).put("lastError",p.getString("lastError",""));
+        } catch(Exception ignored) { }
+        return out;
+    }
+
     void flushOutbox() {
         if (!isConfigured() || !flushing.compareAndSet(false, true)) return;
+        long deadline=System.currentTimeMillis()+40000;
         try {
             JSONArray rows = readOutbox();
-            for (int i=0;i<rows.length();i++) {
+            int failures=0;
+            for (int i=0;i<rows.length() && System.currentTimeMillis()<deadline;i++) {
                 JSONObject row=rows.optJSONObject(i); if(row==null) continue;
-                String q=row.optString("queueId"); JSONObject p=row.optJSONObject("payload");
-                if(p==null) { try { removeQueued(q); } catch(Exception ignored){} continue; }
+                String q=row.optString("queueId"), type=row.optString("type"); JSONObject p=row.optJSONObject("payload");
+                if(p==null) continue;
                 try {
-                    if ("attempt".equals(row.optString("type"))) sendAttemptNow(p);
-                    else if ("private_activity".equals(row.optString("type"))) sendPrivateActivityNow(p);
+                    if ("attempt".equals(type)) sendAttemptNow(p);
+                    else if ("private_activity".equals(type) || "activity".equals(type)) sendPrivateActivityNow(p);
+                    else if ("task".equals(type)) sendTaskNow(p);
+                    else if ("command_ack".equals(type)) acknowledgeCommand(p.getString("id"));
                     else continue;
                     removeQueued(q);
-                } catch (Exception ignored) { break; }
+                    context.getSharedPreferences("vbrain_sync",Context.MODE_PRIVATE).edit()
+                        .putLong("lastSyncedAt",System.currentTimeMillis()).putString("lastError", "").apply();
+                } catch (Exception e) {
+                    context.getSharedPreferences("vbrain_sync",Context.MODE_PRIVATE).edit()
+                        .putString("lastError",e.getMessage()==null?"Waiting for connection":e.getMessage()).apply();
+                    if(++failures>=2) break;
+                }
             }
         } finally { flushing.set(false); }
+    }
+
+    JSONObject deviceCommands() throws Exception {
+        return new JSONObject(requestAbsolute("GET", "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/vbrain-device-commands", null, 10000));
+    }
+
+    void acknowledgeCommand(String id) throws Exception {
+        requestAbsolute("POST", "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/vbrain-device-commands",
+            new JSONObject().put("ack",new JSONArray().put(id)),10000);
+    }
+
+    void stageTodoState() {
+        try {
+            JSONObject state=new JSONObject(context.getSharedPreferences("home_state",Context.MODE_PRIVATE).getString("todoState","{}"));
+            for(String name:new String[]{"active","archive"}) {
+                JSONArray tasks=state.optJSONArray(name); if(tasks==null)continue;
+                for(int i=0;i<tasks.length();i++) {
+                    JSONObject task=tasks.optJSONObject(i); if(task==null)continue;
+                    JSONObject copy=new JSONObject(task.toString()).put("done","archive".equals(name));
+                    copy.remove("notionId"); enqueue("task",copy);
+                }
+            }
+        } catch(Exception ignored) { }
+    }
+
+    void stageChangedTodos(String before, String after) {
+        try {
+            JSONObject old=new JSONObject(before==null||before.isEmpty()?"{}":before), next=new JSONObject(after);
+            java.util.Map<String,String> previous=new java.util.HashMap<>();
+            for(String name:new String[]{"active","archive"}) {
+                JSONArray items=old.optJSONArray(name);if(items==null)continue;
+                for(int i=0;i<items.length();i++){JSONObject t=items.getJSONObject(i);previous.put(t.optString("id"),name+":"+t.toString());}
+            }
+            for(String name:new String[]{"active","archive"}) {
+                JSONArray items=next.optJSONArray(name);if(items==null)continue;
+                for(int i=0;i<items.length();i++){
+                    JSONObject t=items.getJSONObject(i);String id=t.optString("id");
+                    if((name+":"+t.toString()).equals(previous.get(id)))continue;
+                    JSONObject copy=new JSONObject(t.toString()).put("done","archive".equals(name));copy.remove("notionId");enqueue("task",copy);
+                }
+            }
+        } catch(Exception ignored) { }
+    }
+
+    JSONArray pendingTaskIds() {
+        JSONArray ids=new JSONArray(),rows=readOutbox();
+        for(int i=0;i<rows.length();i++){JSONObject r=rows.optJSONObject(i);if(r!=null&&"task".equals(r.optString("type")))ids.put(r.optJSONObject("payload").optString("id"));}
+        return ids;
     }
 
     JSONObject snapshot() throws Exception {
@@ -261,9 +338,21 @@ final class WorkerSync {
     }
 
     JSONObject upsertTask(JSONObject task) throws Exception {
+        String q=enqueue("task",task);
+        JSONObject saved=sendTaskNow(task);
+        removeQueued(q);
+        return saved;
+    }
+
+    private JSONObject sendTaskNow(JSONObject task) throws Exception {
         String id = task.optString("id", "").trim();
         if (id.isEmpty()) return requestObject("POST", "/api/tasks", new JSONObject(task.toString()));
-        return requestObject("PATCH", "/api/tasks/" + encodePath(id), new JSONObject(task.toString()));
+        try { return requestObject("PATCH", "/api/tasks/" + encodePath(id), new JSONObject(task.toString())); }
+        catch (IllegalStateException e) {
+            if (e.getMessage()!=null && e.getMessage().contains("HTTP 404"))
+                return requestObject("POST", "/api/tasks", new JSONObject(task.toString()));
+            throw e;
+        }
     }
 
     void deleteTask(String id) throws Exception {
@@ -303,7 +392,7 @@ final class WorkerSync {
     }
 
     JSONObject saveActivity(JSONObject activity) throws Exception {
-        return requestObject("POST", "/api/activity", new JSONObject(activity.toString()));
+        return savePrivateActivity(activity);
     }
 
     private JSONObject sendPrivateActivityNow(JSONObject activity) throws Exception {

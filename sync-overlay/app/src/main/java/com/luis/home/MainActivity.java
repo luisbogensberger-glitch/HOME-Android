@@ -38,6 +38,11 @@ public class MainActivity extends Activity {
     private WebView webView;
     private SharedPreferences prefs;
     private WorkerSync worker;
+    private LiveRuntime liveRuntime;
+    private final ExecutorService liveQueue = Executors.newSingleThreadExecutor();
+    private final java.util.concurrent.atomic.AtomicBoolean liveChecking = new java.util.concurrent.atomic.AtomicBoolean(false);
+    private volatile boolean runtimeHealthy = false;
+    private int runtimeGeneration=0;
     private final ExecutorService syncQueue = Executors.newSingleThreadExecutor();
     private volatile boolean syncReady = false;
     private volatile long todoSyncGeneration = 0L;
@@ -47,6 +52,12 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences("home_state", MODE_PRIVATE);
         worker = new WorkerSync(this);
+        liveRuntime = new LiveRuntime(this);
+        if (!prefs.getBoolean("vbrainOutboxMigrated17",false)) {
+            worker.stageTodoState();prefs.edit().putBoolean("vbrainOutboxMigrated17",true).commit();
+        }
+        HomeSyncJob.schedule(this);
+        HomeNotificationReceiver.restore(this);
 
         getWindow().setStatusBarColor(0xFF111214);
         getWindow().setNavigationBarColor(0xFF111214);
@@ -64,8 +75,8 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
-        settings.setAllowFileAccessFromFileURLs(false);
-        settings.setAllowUniversalAccessFromFileURLs(false);
+        settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setAllowContentAccess(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setTextZoom(100);
@@ -74,7 +85,7 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                if ("file".equals(uri.getScheme()) && "android_asset".equals(uri.getHost())) return false;
+                if (uri.toString().equals("file:///android_asset/index.html")) return false;
                 if ("https".equals(uri.getScheme())) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (Exception ignored) { }
                 }
@@ -89,9 +100,43 @@ public class MainActivity extends Activity {
         });
         webView.setWebChromeClient(new WebChromeClient());
         webView.addJavascriptInterface(new NativeBridge(), "Native");
+        webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");
+        webView.addJavascriptInterface(new VBrainSettingsBridge(this), "VBrainNative");
 
         setContentView(webView);
-        webView.loadUrl("file:///android_asset/index.html");
+        loadLiveDocument();
+    }
+
+    private void loadLiveDocument() {
+        final int generation=++runtimeGeneration;
+        runtimeHealthy=false;
+        try {
+            String document=liveRuntime.document();
+            webView.loadDataWithBaseURL("file:///android_asset/index.html",document,"text/html","UTF-8",null);
+            webView.postDelayed(()->{
+                if(generation==runtimeGeneration&&!runtimeHealthy&&liveRuntime.rollback())loadLiveDocument();
+            },15000);
+        } catch(Exception e) { webView.loadUrl("file:///android_asset/index.html"); }
+    }
+
+    private void deliverReminderRoute() {
+        Intent intent=getIntent(); if(intent==null||!intent.hasExtra("vbrainTarget"))return;
+        try {
+            JSONObject route=new JSONObject().put("target",intent.getStringExtra("vbrainTarget"))
+                .put("taskId",intent.getStringExtra("vbrainTaskId"));
+            webView.evaluateJavascript("window.VBrainLive && window.VBrainLive.openReminder("+route+")",null);
+            HomeNotificationReceiver.event(this,"notification_opened",new JSONObject().put("id",intent.getStringExtra("vbrainReminderId")));
+            intent.removeExtra("vbrainTarget");
+        } catch(Exception ignored) { }
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);setIntent(intent);if(runtimeHealthy)deliverReminderRoute();
+    }
+
+    @Override protected void onPause() {
+        if(webView!=null)webView.evaluateJavascript("window.VBrainLive && window.VBrainLive.pause()",null);
+        super.onPause();
     }
 
     private void injectHomeSyncLabels() {
@@ -124,7 +169,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        syncQueue.shutdownNow();
+        syncQueue.shutdown();
+        liveQueue.shutdown();
         super.onDestroy();
     }
 
@@ -182,7 +228,7 @@ public class MainActivity extends Activity {
         webView.postDelayed(() -> {
             if (generation != todoSyncGeneration || !worker.isConfigured()) return;
             syncQueue.execute(() -> {
-                try { pushLocalTodoState(); } catch (Exception ignored) { }
+                worker.flushOutbox();
             });
         }, 1200L);
     }
@@ -252,7 +298,7 @@ public class MainActivity extends Activity {
                 if (task.optBoolean("done", false)) completed.put(ui); else open.put(ui);
             }
         }
-        return new JSONObject().put("open", open).put("completed", completed);
+        return new JSONObject().put("open", open).put("completed", completed).put("pendingTaskIds",worker.pendingTaskIds());
     }
 
     private JSONObject findWorkerTask(String id) throws Exception {
@@ -308,6 +354,23 @@ public class MainActivity extends Activity {
     }
 
     public class NativeBridge {
+        @JavascriptInterface public String liveRuntimeStatus() { return liveRuntime.status().toString(); }
+        @JavascriptInterface public void markRuntimeHealthy() {
+            runtimeHealthy=true;liveRuntime.healthy();runOnUiThread(()->deliverReminderRoute());
+        }
+        @JavascriptInterface public void checkLiveUpdate() {
+            if(!liveChecking.compareAndSet(false,true))return;
+            liveQueue.execute(()->{try{callback("onVBrainLiveUpdate",liveRuntime.check());}finally{liveChecking.set(false);}});
+        }
+        @JavascriptInterface public void applyLiveUpdate() {
+            runOnUiThread(()->{if(liveRuntime.activate())loadLiveDocument();});
+        }
+
+        @JavascriptInterface
+        public void acceptRemoteTodoState(String value) {
+            try { new JSONObject(value);prefs.edit().putString("todoState",value).commit(); } catch(Exception ignored) { }
+        }
+
         @JavascriptInterface
         public String loadState(String key) {
             return prefs.getString(key, "");
@@ -316,9 +379,13 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void saveState(String key, String value) {
             String clean = value == null ? "" : value;
-            prefs.edit().putString(key, clean).apply();
+            String before=prefs.getString(key, "");
+            prefs.edit().putString(key, clean).commit();
+            if ("todoState".equals(key)) worker.stageChangedTodos(before,clean);
             if ("tubeState".equals(key)) syncNewTubeAttempts(clean);
-            if ("todoState".equals(key)) scheduleTodoStateSync();
+            if ("todoState".equals(key)) {
+                scheduleTodoStateSync();
+            }
         }
 
         @JavascriptInterface
@@ -367,7 +434,7 @@ public class MainActivity extends Activity {
         public void requestNotionSync() {
             syncQueue.execute(() -> {
                 try {
-                    pushLocalTodoState();
+                    worker.flushOutbox();
                     JSONObject snapshot = worker.snapshot();
                     callback("onNotionSnapshot", snapshotForUi(snapshot));
                     syncReady = true;
