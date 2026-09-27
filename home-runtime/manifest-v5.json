@@ -1,6 +1,6 @@
 {
-  "version": 7,
-  "updatedAt": "2026-09-27-live-interface-test",
+  "version": 8,
+  "updatedAt": "2026-09-27-behaviour-v7",
   "modules": [
     {
       "name": "runtime.css",
@@ -33,15 +33,15 @@
       "kind": "js"
     },
     {
-      "name": "interface-policy-v10.js",
-      "kind": "js"
-    },
-    {
       "name": "learning-engine-v10.js",
       "kind": "js"
     },
     {
       "name": "living-brain-v6.js",
+      "kind": "js"
+    },
+    {
+      "name": "behaviour-engine-v7.js",
       "kind": "js"
     },
     {
@@ -60,11 +60,6 @@
     {
       "name": "sync-observability-v16.js",
       "kind": "js"
-    },
-    {
-      "name": "interface-test-v1.css",
-      "kind": "css",
-      "id": "homeInterfaceTestV1"
     }
   ]
 }
