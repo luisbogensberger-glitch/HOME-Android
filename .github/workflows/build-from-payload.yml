@@ -72,6 +72,7 @@ jobs:
           node tests/runtime.e2e.cjs
           node tests/vbrain-v19.e2e.cjs
           node tests/vbrain-sense-v20.e2e.cjs
+          node tests/vbrain-personalizer-v21.e2e.cjs
 
       - name: Upload UI screenshots
         if: always()
@@ -129,8 +130,6 @@ jobs:
             adb install -r src/luis-home-app/app/build/outputs/apk/debug/app-debug.apk
             adb install -r src/luis-home-app/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell pm grant com.luis.home android.permission.POST_NOTIFICATIONS
-            # Keep the smoke test on the just-built bundled UI. Otherwise the app can
-            # download the previously published live release before the candidate is tested.
             adb shell cmd connectivity airplane-mode enable || true
             adb shell svc wifi disable || true
             adb shell svc data disable || true

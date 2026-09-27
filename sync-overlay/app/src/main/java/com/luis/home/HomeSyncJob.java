@@ -30,7 +30,11 @@ public class HomeSyncJob extends JobService {
                     if("notification".equals(kind)||"notify".equals(kind)||"schedule_notification".equals(kind)){
                         payload.put("id","command-"+id);HomeNotificationReceiver.schedule(c,payload);
                     }else if("ui_patch".equals(kind)){
-                        c.getSharedPreferences("home_state",Context.MODE_PRIVATE).edit().putString("vbrainPrivatePatch",payload.toString()).commit();
+                        String raw=payload.toString();if(raw.length()>120000)continue;
+                        c.getSharedPreferences("home_state",Context.MODE_PRIVATE).edit().putString("vbrainPrivatePatch",raw).commit();
+                    }else if("brain_context".equals(kind)){
+                        String raw=payload.toString();if(raw.length()>120000)continue;
+                        c.getSharedPreferences("home_state",Context.MODE_PRIVATE).edit().putString("vbrainBrainContext",raw).commit();
                     }else continue;
                     seen.edit().putBoolean(id,true).commit();
                     HomeNotificationReceiver.event(c,"device_command_applied",new JSONObject().put("id",id).put("kind",kind));
