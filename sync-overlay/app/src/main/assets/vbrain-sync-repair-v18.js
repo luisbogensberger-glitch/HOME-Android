@@ -26,7 +26,6 @@
   function localAll(){try{return [...(todoState?.active||[]),...(todoState?.archive||[])]}catch(_){return[]}}
   function prepareRemote(t,local,dirty){
     const prior=local.find(x=>String(x.id)===String(t.id))||local.find(x=>key(x)===key(t));
-    // If this exact task still has an unsent local write, local state wins until it is acknowledged.
     const base=dirty?.has(String(t.id))&&prior?{...t,...prior,id:t.id,notionId:t.notionId||prior.notionId||t.id}:{...t,details:t.details||prior?.details||{outcome:'',info:[],tips:[],links:[],personalNote:''}};
     try{return typeof enrichTodo==='function'?enrichTodo(base):base}catch(_){return base}
   }
@@ -46,7 +45,6 @@
       let archive=dedupe((data?.completed||[]).map(t=>prepareRemote(t,local,dirty)));
       const serverIds=new Set([...active,...archive].map(x=>String(x.id||'')));
       const serverKeys=new Set([...active,...archive].map(key));
-      // Preserve genuinely unsent local writes, but never resurrect a duplicate or a task the server already knows.
       for(const t of (todoState?.active||[])){
         if(!dirty.has(String(t.id)))continue;
         if(serverIds.has(String(t.id))||serverKeys.has(key(t)))continue;
@@ -81,16 +79,20 @@
 
   function syncState(){try{return typeof AdaptiveNative!=='undefined'?JSON.parse(AdaptiveNative.homeSyncStatus()):{}}catch(_){return{}}}
   const fmt=t=>t?new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'}).format(t):'not yet';
+  function setText(el,value){if(el&&el.textContent!==value)el.textContent=value}
   function repairPanel(){
     const panel=document.querySelector('#vbrainControl17 .vb17Panel');if(!panel)return;
     const s=syncState(),dts=[...panel.querySelectorAll('dt')],dt=dts.find(x=>/private sync|data sync/i.test(x.textContent||''));
-    if(dt){dt.textContent='Data sync';const dd=dt.nextElementSibling;if(dd){
+    if(dt){setText(dt,'Data sync');const dd=dt.nextElementSibling;if(dd){
       const user=Number(s.pendingUser??s.pending??0),tele=Number(s.pendingTelemetry??0);
-      dd.textContent=!s.configured?'Connect HOME Sync to send your app data':user?`${user} data change${user===1?'':'s'} waiting · last sent ${fmt(s.lastSyncedAt)}`:tele?`User data synced · ${tele} background signals queued`:`Up to date · last sent ${fmt(s.lastSyncedAt)}`;
+      const msg=!s.configured?'Connect HOME Sync to send your app data':user?`${user} data change${user===1?'':'s'} waiting · last sent ${fmt(s.lastSyncedAt)}`:tele?`User data synced · ${tele} background signals queued`:`Up to date · last sent ${fmt(s.lastSyncedAt)}`;
+      setText(dd,msg);
     }}
-    const check=panel.querySelector('#vb17Check');if(check&&/check for updates/i.test(check.textContent||''))check.textContent='Check UI update';
-    const foot=panel.querySelector('.vb17Foot');if(foot)foot.textContent='To-dos, learning and notes are saved locally first, then synced privately in the background.';
+    const check=panel.querySelector('#vb17Check');if(check&&/check for updates/i.test(check.textContent||''))setText(check,'Check UI update');
+    const foot=panel.querySelector('.vb17Foot');setText(foot,'To-dos, learning and notes are saved locally first, then synced privately in the background.');
   }
-  const observer=new MutationObserver(repairPanel);observer.observe(document.documentElement,{childList:true,subtree:true});
+  // Avoid observing our own text mutations: Android WebView can otherwise spin on a self-triggering MutationObserver.
+  setInterval(()=>{if(!document.hidden)repairPanel()},1500);
+  document.addEventListener('click',e=>{if(e.target?.id==='vbrainLiveStatus17')setTimeout(repairPanel,30)},true);
   setTimeout(()=>{try{if(todoState){todoState.active=dedupe(todoState.active);todoState.archive=dedupe(todoState.archive);persistLocal();render()}}catch(_){}repairPanel()},900);
 })();
