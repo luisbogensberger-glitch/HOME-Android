@@ -3,14 +3,14 @@
   'use strict';
   if(window.__VBRAIN_SHELL_V24__)return;window.__VBRAIN_SHELL_V24__=true;
   const VERSION=24;
-  const NOISE_IDS=['homeDayScoreV4','homeDayScoreV3','homeDayScoreV2','homeMomentum','homeTubeLayoutBar','homeBehaviourOverlayV4','vbrainLiveBanner','vbrainLiveStatus17','homeFlexEdit','homeFlexSheet','vbRestoreInline','vBackupCard','homeRecoveryLauncher','homeMigrationTools','legacyBackupCenter','homeRecoveryFlexEntry','vbrainDataButton','vbrainDataModal'];
+  const NOISE_IDS=['homeDayScoreV4','homeDayScoreV3','homeDayScoreV2','homeMomentum','homeTubeLayoutBar','homeBehaviourOverlayV4','vbrainLiveBanner','vbrainLiveStatus17','homeFlexEdit','homeFlexSheet','vbRestoreInline','vBackupCard','homeRecoveryLauncher','homeMigrationTools','legacyBackupCenter','homeRecoveryFlexEntry','vbrainDataButton','vbrainDataModal','vbrainCompatReminderV1'];
   let observer=null,cleanQueued=false,healthy=false,liveTimer=0;
   function style(){
     if(document.getElementById('vbrainShellV24Style'))return;
     const s=document.createElement('style');s.id='vbrainShellV24Style';s.textContent=`
       :root{--v24-bg:#080a0e;--v24-panel:#11151c;--v24-line:rgba(255,255,255,.10);--v24-gold:#f0c95d;--v24-gold-line:rgba(240,201,93,.27);--v24-muted:rgba(255,255,255,.60)}
       html,body{background:var(--v24-bg)!important;scroll-behavior:auto!important}
-      #homeDayScoreV4,#homeDayScoreV3,#homeDayScoreV2,#homeMomentum,.homeQuestV7,#homeTubeLayoutBar,#homeBehaviourOverlayV4,#vbrainLiveBanner,#vbrainLiveStatus17,#homeFlexEdit,#homeFlexSheet,.vb11Module{display:none!important;visibility:hidden!important;pointer-events:none!important}
+      #homeDayScoreV4,#homeDayScoreV3,#homeDayScoreV2,#homeMomentum,.homeQuestV7,#homeTubeLayoutBar,#homeBehaviourOverlayV4,#vbrainLiveBanner,#vbrainLiveStatus17,#homeFlexEdit,#homeFlexSheet,#vbrainCompatReminderV1,.vb11Module{display:none!important;visibility:hidden!important;pointer-events:none!important}
       #homeScreen .homeCard{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;animation:none!important;transition:transform .08s ease,filter .08s ease,border-color .08s ease!important;contain:layout paint style}
       #homeScreen .homeCard:active{transform:scale(.994)!important;filter:brightness(.96)!important}
       #calendarScreen,#todosScreen,#tubeScreen,#todoDetailScreen,#gymScreen{background:radial-gradient(circle at 88% 4%,rgba(240,201,93,.07),transparent 27%),linear-gradient(180deg,#090b10,#080a0e 68%)!important;color:#f7f8fb!important}
@@ -53,7 +53,7 @@
   }
   function renderRemote(){try{window.VBrainRemoteUI?.render?.()}catch(_){} }
   function fastLive(){
-    if(liveTimer)return;const tick=()=>{if(document.hidden)return;try{Native?.checkLiveUpdate?.()}catch(_){}try{window.VBrainHotLoader?.refresh?.()}catch(_){} };
+    if(liveTimer)return;const tick=()=>{if(document.hidden)return;try{Native?.checkLiveUpdate?.()}catch(_){} };
     setTimeout(tick,700);liveTimer=setInterval(tick,4000);
   }
   function install(){clean();watch();markHealthy();fastLive();renderRemote()}
