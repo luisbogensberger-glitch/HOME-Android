@@ -33,7 +33,11 @@ def build():
 
     html = html.replace('\\n</body>', '\n</body>').replace('<title>HOME</title>', '<title>V-Brain</title>')
     styles = '\n'.join('<style data-source="'+name+'">\n'+source(name)+'\n</style>' for name in CSS)
-    scripts = '\n'.join('<script data-source="'+name+'">\n'+source(name).replace('</script', '<\\/script')+'\n</script>' for name in JS)
+    feed = json.loads((ROOT / 'tube-feed.json').read_text())
+    if not isinstance(feed.get('cards'), list) or len(feed['cards']) < 5:
+        raise ValueError('Tube release needs at least five bundled learning cards')
+    bundled_feed = json.dumps(feed, ensure_ascii=False, separators=(',', ':')).replace('<', '\\u003c')
+    scripts = '\n'.join('<script data-source="'+name+'">\nwindow.__vbrainBundledTubeFeed='+bundled_feed+';\n'+source(name).replace('</script', '<\\/script')+'\n</script>' for name in JS)
     html = html.replace('</head>', styles+'\n<meta name="vbrain-host" content="18">\n</head>')
     html = html.replace('</body>', scripts+'\n</body>')
     payload = html.encode()

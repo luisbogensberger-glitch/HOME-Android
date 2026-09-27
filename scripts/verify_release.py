@@ -13,6 +13,7 @@ root=Path(__file__).resolve().parents[1]
 html=(root/'home-runtime/live-app.html').read_text()
 manifest=json.loads((root/'home-runtime/live-release.json').read_text())
 ui=json.loads((root/'home-runtime/ui-live-v25.json').read_text())
+feed=json.loads((root/'tube-feed.json').read_text())
 
 assert hashlib.sha256(html.encode()).hexdigest()==manifest['sha256']
 assert len(html.encode())==manifest['bytes']
@@ -24,7 +25,7 @@ assert 'name="vbrain-host" content="18"' in html
 assert html.count('data-source="')==1, 'v25 must ship exactly one injected runtime'
 assert 'data-source="vbrain-one-ui-v25.js"' in html
 assert '__VBRAIN_ONE_UI_V25__' in html
-assert manifest['bytes'] < 150000, f'one-ui release regressed to {manifest["bytes"]} bytes'
+assert manifest['bytes'] < 180000, f'one-ui release regressed to {manifest["bytes"]} bytes'
 assert not re.search(r'<script\b[^>]*\bsrc=',html,re.I), 'no external script may execute at boot'
 assert not re.search(r'<link\b[^>]*\brel=["\']stylesheet',html,re.I), 'no external stylesheet may execute at boot'
 
@@ -53,6 +54,12 @@ assert 'window.VBrainLive=' in html and 'window.VBrain=' in html
 assert 'vbrainPrivatePatch' in html and 'vbrainBrainContext' in html
 assert 'Your signal today' in html and 'Behaviour intelligence' in html
 assert 'Tube Learning' in html and 'Easy · 15 min' in html
+assert 'window.__vbrainBundledTubeFeed=' in html and 'ICARUS' in html
+assert len(feed['cards']) >= 12 and len(feed['featuredIds']) == 5
+assert all(any(c['id']==id for c in feed['cards']) for id in feed['featuredIds'])
+assert any('The Culture Map' in c['topic'] for c in feed['cards'])
+assert 'vbrainOlderTasksV27' in html and 'vbrainTodoBackupV27' in html
+assert 'photo-1513635269975-59663e0ac1ad' in html
 assert 'v25BrainCanvas' in html and 'Established signal' in html
 assert 'vbrainGraphV26' in html and 'vbrainBranchesV26' in html
 assert 'vbrainGraphV19' in html and 'homeLivingGraphV8' in html
