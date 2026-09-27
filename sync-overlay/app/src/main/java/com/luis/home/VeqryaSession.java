@@ -52,18 +52,25 @@ final class VeqryaSession {
     }
 
     synchronized void signIn(String email, String password) throws Exception {
-        String cleanEmail = email == null ? "" : email.trim();
-        String cleanPassword = password == null ? "" : password;
-        if (cleanEmail.isEmpty() || cleanEmail.length() > 320 || !cleanEmail.contains("@")) {
-            throw new IllegalArgumentException("Enter your Veqrya email.");
-        }
-        if (cleanPassword.length() < 6 || cleanPassword.length() > 512) {
-            throw new IllegalArgumentException("Enter your Veqrya password.");
-        }
-        JSONObject response = authRequest("password", new JSONObject()
-                .put("email", cleanEmail)
-                .put("password", cleanPassword));
+        String[] credentials = validateCredentials(email, password);
+        JSONObject response = tokenRequest("password", new JSONObject()
+                .put("email", credentials[0])
+                .put("password", credentials[1]));
         saveResponse(response);
+    }
+
+    /** Returns true when signup also produced a session; false when email confirmation is pending. */
+    synchronized boolean signUp(String email, String password) throws Exception {
+        String[] credentials = validateCredentials(email, password);
+        JSONObject response = postAuth("/auth/v1/signup", new JSONObject()
+                .put("email", credentials[0])
+                .put("password", credentials[1]));
+        if (!response.optString("access_token", "").isEmpty()
+                && !response.optString("refresh_token", "").isEmpty()) {
+            saveResponse(response);
+            return true;
+        }
+        return false;
     }
 
     synchronized String accessToken() throws Exception {
@@ -83,7 +90,7 @@ final class VeqryaSession {
             throw new IllegalStateException("Veqrya session expired. Sign in again.");
         }
         try {
-            JSONObject response = authRequest("refresh_token", new JSONObject().put("refresh_token", refresh));
+            JSONObject response = tokenRequest("refresh_token", new JSONObject().put("refresh_token", refresh));
             saveResponse(response);
             JSONObject updated = readSession();
             String access = updated == null ? "" : updated.optString("accessToken", "");
@@ -95,9 +102,24 @@ final class VeqryaSession {
         }
     }
 
-    private JSONObject authRequest(String grantType, JSONObject body) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(
-                SUPABASE_URL + "/auth/v1/token?grant_type=" + grantType).openConnection();
+    private String[] validateCredentials(String email, String password) {
+        String cleanEmail = email == null ? "" : email.trim();
+        String cleanPassword = password == null ? "" : password;
+        if (cleanEmail.isEmpty() || cleanEmail.length() > 320 || !cleanEmail.contains("@")) {
+            throw new IllegalArgumentException("Enter your Veqrya email.");
+        }
+        if (cleanPassword.length() < 6 || cleanPassword.length() > 512) {
+            throw new IllegalArgumentException("Enter a password with at least 6 characters.");
+        }
+        return new String[]{cleanEmail, cleanPassword};
+    }
+
+    private JSONObject tokenRequest(String grantType, JSONObject body) throws Exception {
+        return postAuth("/auth/v1/token?grant_type=" + grantType, body);
+    }
+
+    private JSONObject postAuth(String path, JSONObject body) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(SUPABASE_URL + path).openConnection();
         try {
             connection.setRequestMethod("POST");
             connection.setConnectTimeout(10000);
@@ -119,7 +141,7 @@ final class VeqryaSession {
             catch (Exception ignored) { payload = new JSONObject(); }
             if (status < 200 || status >= 300) {
                 String message = payload.optString("error_description",
-                        payload.optString("msg", payload.optString("error", "Veqrya sign-in failed.")));
+                        payload.optString("msg", payload.optString("error", "Veqrya authentication failed.")));
                 throw new IllegalStateException(message);
             }
             return payload;
