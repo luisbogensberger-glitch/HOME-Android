@@ -1,6 +1,6 @@
 {
-  "version": 9,
-  "updatedAt": "2026-09-27-vbrain-score-traits-restore",
+  "version": 10,
+  "updatedAt": "2026-09-27-vbrain-score-v2",
   "modules": [
     {"name":"runtime.css","kind":"css","id":"homeRemoteExtensionCss"},
     {"name":"runtime.js","kind":"js"},
