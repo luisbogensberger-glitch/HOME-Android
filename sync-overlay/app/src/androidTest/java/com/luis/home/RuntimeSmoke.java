@@ -75,7 +75,7 @@ public class RuntimeSmoke extends Instrumentation {
         try{
             phase="dirty upgrade boot";
             seedDirtyUpgradeState();startTarget();
-            waitFor("window.VBrainLean?.version===25 && window.VBrainLive?.version===25 && window.VBrain?.version===25 && document.querySelectorAll('.v25HomeCard').length===3 && document.getElementById('vbrainScoreV8')?.innerText.includes('Your signal today')",15);
+            waitFor("window.VBrainLean?.version===25 && window.VBrainLive?.version===25 && window.VBrain?.version===25 && document.querySelectorAll('.v25HomeCard').length===4 && document.getElementById('vbrainScoreV8')?.innerText.includes('Your signal today')",15);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).rescueEpoch===20 && JSON.parse(Native.liveRuntimeStatus()).source==='bundled'",8);
             waitFor("!window.__OLD_LIVE_POISON__ && Native.loadState('vbrainUpgradeSentinel')==='KEEP_ME'",5);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",5);
@@ -88,11 +88,11 @@ public class RuntimeSmoke extends Instrumentation {
 
             phase="deterministic repeated resume";
             eval("window.onAppResume?.();window.onAppResume?.();window.onAppResume?.();true");
-            waitFor("document.querySelectorAll('.v25HomeCard').length===3 && [...document.querySelectorAll('.v25HomeCard')].map(x=>x.dataset.route).join(',')==='gym,tube,todos' && document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#vbRestoreInline,#v24BrainOverlay').length===0",5);
+            waitFor("document.querySelectorAll('.v25HomeCard').length===4 && [...document.querySelectorAll('.v25HomeCard')].map(x=>x.dataset.route).join(',')==='gym,tube,todos,calendar' && document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#vbRestoreInline,#v24BrainOverlay').length===0",5);
 
-            phase="bounded todos without sync chrome";
+            phase="bounded todos with HOME Sync";
             eval("showScreen('todos');true");
-            waitFor("document.getElementById('todosScreen').classList.contains('show') && document.querySelectorAll('#todoList .todo').length<=18 && !document.querySelector('.syncBar')",5);
+            waitFor("document.getElementById('todosScreen').classList.contains('show') && document.querySelectorAll('#todoList .todo').length<=18 && !!document.querySelector('.syncBar')",5);
             eval("showScreen('home');true");
 
             phase="tube stack";
@@ -126,7 +126,7 @@ public class RuntimeSmoke extends Instrumentation {
             waitFor("!!document.getElementById('broken')",8);
 
             phase="rollback to healthy One UI document";
-            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && window.VBrainLean?.version===25 && document.querySelectorAll('.v25HomeCard').length===3",20);
+            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && window.VBrainLean?.version===25 && document.querySelectorAll('.v25HomeCard').length===4",20);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",8);
 
             result.putString("stream","VBRAIN_SMOKE_OK: single One UI v25 runtime, screenshot-2 Home preserved across repeated resume, dirty legacy release quarantined, user state preserved, old JS caches purged, bounded To-Dos, stack Tube, living Brain/native Back, live activation and failed-release rollback\n");

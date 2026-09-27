@@ -53,11 +53,18 @@ assert 'window.VBrainLive=' in html and 'window.VBrain=' in html
 assert 'vbrainPrivatePatch' in html and 'vbrainBrainContext' in html
 assert 'Your signal today' in html and 'Behaviour intelligence' in html
 assert 'Tube Learning' in html and 'Easy · 15 min' in html
-assert 'v25BrainCanvas' in html
+assert 'v25BrainCanvas' in html and 'Established signal' in html
+assert 'vbrainGraphV26' in html and 'vbrainBranchesV26' in html
+assert 'vbrainGraphV19' in html and 'homeLivingGraphV8' in html
+assert 'GRAPH_VIEW_LIMIT=90' in html and 'v25BrainSearch' in html
+assert 'items.slice(0,100)' not in html and 'items||[]).slice(0,10)' not in html
 assert 'queuePrivateActivity' in html and "kind:'learning_attempt'" in html
 assert 'detailPersonalNote' in html
 assert 'todoLimit=18' in html, 'large task lists must be windowed'
-assert '.syncBar{display:none!important}' in html
+assert 'Connect HOME Sync' in html and 'function refreshTasks' in html
+assert 'window.onNotionSnapshot=data=>' in html and 'window.completeTodo=id=>' in html
+assert 'window.onHomeSentenceReview=result=>' in html and 'reviewSentence?.(' in html
+assert 'data-route="calendar"' in html
 assert "if(name==='todos'){renderTodos();refreshNotion()}" not in html
 assert "window.onAppResume=()=>{if(notionConnected())refreshNotion()};" not in html
 assert "renderTodos();updateHome();updateSyncUI();if(notionConnected())refreshNotion();" not in html
@@ -69,7 +76,7 @@ assert ui['schema']==1
 assert 1500 <= int(ui['pollMs']) <= 10000
 assert isinstance(ui.get('home',{}).get('components',[]),list)
 assert isinstance(ui.get('slots',{}),dict)
-for slot in ('gym','todos','tube','todoDetail'):
+for slot in ('gym','calendar','todos','tube','todoDetail'):
  assert isinstance(ui['slots'].get(slot,[]),list)
 assert 'ui-live-v25.json' in html
 assert "new Function(" not in html and 'eval(' not in html
@@ -94,4 +101,4 @@ if len(sys.argv)>1:
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
 
-print(f'PASS: One UI v25, {len(scripts)} total inline scripts / 1 injected runtime, {manifest["bytes"]} bytes, screenshot-2 Home + living Brain + bounded To-Dos + private notes/Tube + 2s declarative UI + Host-18 rollback'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: One UI v25, {len(scripts)} total inline scripts / 1 injected runtime, {manifest["bytes"]} bytes, original Behaviour network + persistent graph + local-first To-Dos + semantic Tube review + calendar + live UI + Host-18 rollback'+(' and APK bytes' if len(sys.argv)>1 else ''))
