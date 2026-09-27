@@ -50,7 +50,7 @@ assert 'data-source="vbrain-context-compat-v21.js"' in html
 assert 'vbrainPrivatePatch' in html and 'brainContext' in html and 'brain_context_compat_synced' in html
 assert 'data-source="vbrain-sync-reconnect-v21.js"' in html
 assert 'Native.configureVeqrya' in html and 'Native.configureNotion' in html and 'AdaptiveNative?.checkDeviceCommands?.()' in html
-assert "document.getElementById('vBrainV19')" in html
+assert 'data-source="vbrain-graph-v19.js"' in html and '__VBRAIN_GRAPH_V19__' in html and '#vBrainV19' in html
 assert "closest('#vBrainV8')" in html
 assert 'data-source="remote-extension-loader.js"' in html
 assert '__HOME_REMOTE_LOADER_V4__' in html
