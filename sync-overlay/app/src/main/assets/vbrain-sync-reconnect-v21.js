@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   if(window.__VBRAIN_SYNC_RECONNECT_V21__)return;window.__VBRAIN_SYNC_RECONNECT_V21__=true;
-  const rejected=s=>/HOME token rejected|Reconnect HOME Sync/i.test(String(s?.lastError||''));
+  const rejected=s=>s?.authMode!=='veqrya'&&/HOME token rejected|Reconnect HOME Sync/i.test(String(s?.lastError||''));
   const state=()=>{try{return typeof AdaptiveNative!=='undefined'&&AdaptiveNative.homeSyncStatus?JSON.parse(AdaptiveNative.homeSyncStatus()):{}}catch(_){return{}}};
   function paint(){
     const s=state();if(!rejected(s))return false;
@@ -18,8 +18,11 @@
     const button=e.target?.closest?.('#vb17Sync');if(!button)return;
     if(!rejected(state()))return;
     e.preventDefault();e.stopImmediatePropagation();
-    try{if(typeof Native!=='undefined'&&Native.configureNotion)Native.configureNotion()}catch(_){}
-    button.textContent='Reconnect opened';
+    try{
+      if(typeof Native!=='undefined'&&Native.configureVeqrya)Native.configureVeqrya();
+      else if(typeof Native!=='undefined'&&Native.configureNotion)Native.configureNotion();
+    }catch(_){}
+    button.textContent=(typeof Native!=='undefined'&&Native.configureVeqrya)?'Veqrya sign-in opened':'Reconnect opened';
   },true);
   const previousConnected=window.onNotionConnected;
   window.onNotionConnected=function(){

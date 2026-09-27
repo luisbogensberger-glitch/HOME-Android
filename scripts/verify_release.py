@@ -16,7 +16,7 @@ assert 'vbrainPrivatePatch' in html and 'brainContext' in html and 'brain_contex
 assert 'data-source="vbrain-personalizer-v21.js"' in html
 assert 'data-source="vbrain-personalizer-hook-v21.js"' in html
 assert 'data-source="vbrain-sync-reconnect-v21.js"' in html
-assert 'Reconnect HOME' in html and 'Native.configureNotion' in html and 'AdaptiveNative?.checkDeviceCommands?.()' in html
+assert 'Reconnect HOME' in html and 'Native.configureVeqrya' in html and 'Native.configureNotion' in html and 'AdaptiveNative?.checkDeviceCommands?.()' in html
 assert "document.getElementById('vBrainV19')" in html
 assert "closest('#vBrainV8')" in html
 assert 'data-source="remote-extension-loader.js"' in html
@@ -28,6 +28,7 @@ assert 'data-source="behavior-v3.js"' not in html
 assert 'data-source="vbrain-sense-v13.js"' not in html
 assert 'brain_context' in (root/'sync-overlay/app/src/main/java/com/luis/home/HomeSyncJob.java').read_text()
 assert 'vbrainBrainContext' in (root/'sync-overlay/app/src/main/java/com/luis/home/HomeSyncJob.java').read_text()
+assert (root/'sync-overlay/app/src/main/java/com/luis/home/VeqryaSession.java').exists()
 scripts=re.findall(r'<script\b[^>]*>(.*?)</script>',html,re.S|re.I)
 with tempfile.TemporaryDirectory() as tmp:
  for i,script in enumerate(scripts):
@@ -42,4 +43,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + live context compat + Personalizer v21 + HOME token reconnect + V19 private brain context + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + live context compat + Personalizer v21 + Veqrya/HOME reconnect fallback + V19 private brain context + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))

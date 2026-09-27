@@ -44,6 +44,15 @@ jobs:
       - name: Harden V-Brain 18 private sync
         run: python3 scripts/patch_worker_sync_v18.py src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java
 
+      - name: Add Veqrya session auth
+        run: |
+          python3 scripts/patch_veqrya_auth_v22.py \
+            src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java \
+            src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
+          python3 scripts/verify_native_auth_v22.py \
+            src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java \
+            src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
+
       - name: Harden V-Brain 19 live rollback watchdog
         run: python3 scripts/patch_runtime_watchdog_v19.py src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
 
