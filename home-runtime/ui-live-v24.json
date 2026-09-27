@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "version": "24.0.0",
+  "pollMs": 2000,
+  "theme": {
+    "accent": "#f0c95d",
+    "background": "#080a0e",
+    "panel": "#11151c",
+    "muted": "rgba(255,255,255,.60)"
+  },
+  "home": {
+    "mode": "append",
+    "columns": 1,
+    "components": []
+  },
+  "slots": {
+    "calendar": [],
+    "todos": [],
+    "tube": [],
+    "todoDetail": []
+  }
+}
