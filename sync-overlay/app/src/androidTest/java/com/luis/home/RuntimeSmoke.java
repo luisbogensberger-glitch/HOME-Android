@@ -11,7 +11,7 @@ import java.security.MessageDigest;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Tests the real WebView/native update boundary without an account or private user data. */
+/** Tests the real WebView/native update boundary, including dirty upgrade state, without private user data. */
 public class RuntimeSmoke extends Instrumentation {
     private Activity activity;
     private WebView web;
@@ -25,22 +25,57 @@ public class RuntimeSmoke extends Instrumentation {
     private void waitFor(String js,int seconds)throws Exception{
         long end=System.currentTimeMillis()+seconds*1000L;
         while(System.currentTimeMillis()<end){if("true".equals(eval(js)))return;Thread.sleep(250);}
-        throw new Exception("Condition failed in "+phase+": "+js+" result="+eval(js)+" status="+eval("typeof Native!=='undefined'?Native.liveRuntimeStatus():'no bridge'")+" DOM="+eval("document.body.innerText.slice(-400)"));
+        throw new Exception("Condition failed in "+phase+": "+js+" result="+eval(js)+" status="+eval("typeof Native!=='undefined'?Native.liveRuntimeStatus():'no bridge'")+" DOM="+eval("document.body.innerText.slice(-500)"));
+    }
+    private String sha(byte[] bytes)throws Exception{
+        StringBuilder digest=new StringBuilder();for(byte b:MessageDigest.getInstance("SHA-256").digest(bytes))digest.append(String.format("%02x",b&255));return digest.toString();
     }
     private String stage(String html)throws Exception{
-        byte[] bytes=html.getBytes(StandardCharsets.UTF_8);StringBuilder digest=new StringBuilder();
-        for(byte b:MessageDigest.getInstance("SHA-256").digest(bytes))digest.append(String.format("%02x",b&255));
-        String sha=digest.toString();File dir=new File(getTargetContext().getNoBackupFilesDir(),"vbrain-live");dir.mkdirs();
-        try(FileOutputStream out=new FileOutputStream(new File(dir,sha+".html"))){out.write(bytes);out.getFD().sync();}
-        getTargetContext().getSharedPreferences("vbrain_live_runtime",Context.MODE_PRIVATE).edit().putString("ready",sha).putString("readyVersion","18."+sha.substring(0,12)).commit();
-        return sha;
+        byte[] bytes=html.getBytes(StandardCharsets.UTF_8);String hash=sha(bytes);File dir=new File(getTargetContext().getNoBackupFilesDir(),"vbrain-live");dir.mkdirs();
+        try(FileOutputStream out=new FileOutputStream(new File(dir,hash+".html"))){out.write(bytes);out.getFD().sync();}
+        getTargetContext().getSharedPreferences("vbrain_live_runtime",Context.MODE_PRIVATE).edit().putString("ready",hash).putString("readyVersion","18."+hash.substring(0,12)).commit();
+        return hash;
+    }
+    private void seedDirtyUpgradeState()throws Exception{
+        String poison="<!doctype html><meta name=\"vbrain-host\" content=\"18\"><script>window.__OLD_LIVE_POISON__=true</script><p>old poisoned live</p>";
+        byte[] bytes=poison.getBytes(StandardCharsets.UTF_8);String hash=sha(bytes);File dir=new File(getTargetContext().getNoBackupFilesDir(),"vbrain-live");dir.mkdirs();
+        try(FileOutputStream out=new FileOutputStream(new File(dir,hash+".html"))){out.write(bytes);out.getFD().sync();}
+        getTargetContext().getSharedPreferences("vbrain_live_runtime",Context.MODE_PRIVATE).edit()
+            .putInt("host",18).putInt("rescueEpoch",19).putString("active",hash).putString("previous",hash)
+            .putString("ready",hash).putBoolean("bootPending",true).putString("error","legacy state").commit();
+        getTargetContext().getSharedPreferences("home_state",Context.MODE_PRIVATE).edit()
+            .putString("vbrainUpgradeSentinel","KEEP_ME").commit();
+    }
+    private void startTarget(){
+        Intent start=new Intent(Intent.ACTION_MAIN).setClassName(getTargetContext(),"com.luis.home.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        activity=startActivitySync(start);web=(WebView)((FrameLayout)activity.findViewById(android.R.id.content)).getChildAt(0);
+    }
+    private void restartTarget()throws Exception{
+        runOnMainSync(()->activity.finish());Thread.sleep(900);startTarget();
     }
     @Override public void onStart(){
         Bundle result=new Bundle();
         try{
-            Intent start=new Intent(Intent.ACTION_MAIN).setClassName(getTargetContext(),"com.luis.home.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            activity=startActivitySync(start);web=(WebView)((FrameLayout)activity.findViewById(android.R.id.content)).getChildAt(0);
+            phase="dirty upgrade boot";seedDirtyUpgradeState();startTarget();
             waitFor("!!window.VBrainLive && !!window.VBrain && !!window.VBrainRemoteUI && !!window.VBrainGraph && !!window.VBrainTodos && !!window.VBrainRuntime && !!window.VBrainHotLoader && !!document.getElementById('vbrainLiveStatus17')",25);
+            waitFor("JSON.parse(Native.liveRuntimeStatus()).rescueEpoch===20 && JSON.parse(Native.liveRuntimeStatus()).source==='bundled'",8);
+            waitFor("!window.__OLD_LIVE_POISON__ && Native.loadState('vbrainUpgradeSentinel')==='KEEP_ME'",5);
+            phase="legacy HOME cache quarantine";
+            eval("localStorage.setItem('homeRemoteCacheSchema','host17-v3');localStorage.setItem('homeRemoteJsV2','window.__LEGACY_REMOTE_POISON__=true');localStorage.setItem('homeBehaviorJsV3','window.__LEGACY_BEHAVIOR_POISON__=true');true");
+            restartTarget();
+            waitFor("!!window.VBrainRuntime && !!window.HOMERemoteExtension",25);
+            waitFor("HOMERemoteExtension.version===4 && !window.__LEGACY_REMOTE_POISON__ && !window.__LEGACY_BEHAVIOR_POISON__",8);
+            waitFor("localStorage.getItem('homeRemoteJsV2')===null && localStorage.getItem('homeBehaviorJsV3')===null",5);
+            phase="home essentials";
+            waitFor("!!document.getElementById('vbrainScoreV8') && !!document.getElementById('vbrainCompatReminderV1')",12);
+            waitFor("Number(document.querySelector('#vbrainScoreV8 .vb8Orb strong')?.textContent||0)>0",8);
+            waitFor("document.querySelector('#vbrainScoreV8 .vb8Open')?.textContent.includes('traits')",5);
+            phase="safe status control";
+            waitFor("document.getElementById('vbrainLiveStatus17')?.dataset.safeStatus==='3'",8);
+            eval("document.getElementById('vbrainLiveStatus17').click();true");
+            waitFor("document.getElementById('vbrainControl17')?.classList.contains('show') && document.body.innerText.includes('Live and recoverable.') && document.body.innerText.includes('HOME LOADER') && document.body.innerText.includes('rescue 20')",5);
+            eval("document.querySelector('#vbrainControl17 .vb17Close')?.click();true");
+            waitFor("!document.getElementById('vbrainControl17')?.classList.contains('show')",5);
             phase="native back";
             eval("VBrain.openBrain();true");waitFor("document.getElementById('vBrainV19').classList.contains('show')",5);
             runOnMainSync(()->activity.onBackPressed());waitFor("!document.getElementById('vBrainV19').classList.contains('show')",5);
@@ -51,7 +86,7 @@ public class RuntimeSmoke extends Instrumentation {
                 byte[] b=new byte[8192];for(int n;(n=in.read(b))!=-1;)out.write(b,0,n);html=out.toString("UTF-8");
             }
             phase="activate live document";
-            String sha=stage(html.replace("</head>","<meta name=\"vbrain-smoke\" content=\"live-test\"></head>"));
+            stage(html.replace("</head>","<meta name=\"vbrain-smoke\" content=\"live-test\"></head>"));
             eval("Native.applyLiveUpdate();true");
             waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive && !!window.VBrainRemoteUI && !!window.VBrainGraph && !!window.VBrainTodos && !!window.VBrainRuntime && !!window.VBrainHotLoader",25);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).source==='live'",5);
@@ -63,10 +98,9 @@ public class RuntimeSmoke extends Instrumentation {
             phase="rollback to healthy document";
             waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive && !!window.VBrainRemoteUI && !!window.VBrainGraph && !!window.VBrainTodos",30);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",10);
-            result.putString("stream","VBRAIN_SMOKE_OK: real Android boot, persistent V19 brain, unified To-Dos, verified hot loader, runtime evidence, native Back, full live UI activation, storage continuity, failed-release rollback\n");
-            runOnMainSync(()->activity.finish());
-            finish(Activity.RESULT_OK,result);
-        }catch(Throwable e){result.putString("stream","VBRAIN_SMOKE_FAILED: "+e.toString()+"\n");
+            result.putString("stream","VBRAIN_SMOKE_OK: dirty Host17-style state quarantined, user state preserved, HOME loader v4 ignores legacy JS cache, V-Score nonzero, reminder present, status button non-blocking, persistent V19 brain, unified To-Dos, native Back, live activation and failed-release rollback\n");
+            runOnMainSync(()->activity.finish());finish(Activity.RESULT_OK,result);
+        }catch(Throwable e){result.putString("stream","VBRAIN_SMOKE_FAILED: "+phase+": "+e.toString()+"\n");
             try { if(activity!=null) runOnMainSync(()->activity.finish()); } catch(Throwable ignored) { }
             finish(Activity.RESULT_CANCELED,result);}
     }

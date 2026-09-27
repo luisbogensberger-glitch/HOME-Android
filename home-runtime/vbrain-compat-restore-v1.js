@@ -1,13 +1,14 @@
-/* V-Brain compatibility restore v2 — restores V8 score/UI, persistent traits and a non-zero evidence-aware V-Score on older live documents. */
+/* V-Brain compatibility restore v3 — persistent traits, evidence-aware V-Score, reminder and safe status UI. */
 (function(){
   'use strict';
-  if(window.__VBRAIN_COMPAT_RESTORE_V2__)return;window.__VBRAIN_COMPAT_RESTORE_V2__=true;
-  const VERSION=2;
+  if(window.__VBRAIN_COMPAT_RESTORE_V3__)return;window.__VBRAIN_COMPAT_RESTORE_V3__=true;
+  const VERSION=3;
   const ASSET='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/sync-overlay/app/src/main/assets/';
   const log=(kind,data)=>{try{window.homeAdaptiveLog?.(kind,data||{})}catch(_){}};
   const load=(k,f)=>{try{return JSON.parse(localStorage.getItem(k)||'')??f}catch(_){return f}};
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
   const dayKey=t=>{const d=new Date(t||Date.now());return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   async function runAsset(name){
     const r=await fetch(ASSET+name+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(name+' HTTP '+r.status);
     new Function((await r.text())+'\n//# sourceURL='+name)();
@@ -39,9 +40,28 @@
       localStorage.setItem('vbrainGraphV19',JSON.stringify(g19));try{Native?.saveState?.('vbrainGraphV19',JSON.stringify(g19))}catch(_){}
     }catch(_){}
   }
+  function runtimeStatus(){
+    try{return JSON.parse(Native?.liveRuntimeStatus?.()||'{}')}catch(_){return{}}
+  }
+  function loaderStatus(){
+    try{return window.HOMERemoteExtension?.status?.()||{version:window.HOMERemoteExtension?.version||0}}catch(_){return{}}
+  }
+  function closeSafeStatus(){const box=document.getElementById('vbrainControl17');if(box)box.classList.remove('show');document.body.style.overflow=''}
+  function openSafeStatus(){
+    const live=runtimeStatus(),loader=loaderStatus();let box=document.getElementById('vbrainControl17');
+    if(!box){box=document.createElement('section');box.id='vbrainControl17';document.body.appendChild(box)}
+    box.setAttribute('role','dialog');box.setAttribute('aria-label','V-Brain status');
+    const checked=Number(live.checkedAt||0)?new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(Number(live.checkedAt)):'Not checked yet';
+    const health=live.healthy===false?'Recovering':'Healthy';
+    box.innerHTML=`<div class="vb17Panel"><button class="vb17Close" aria-label="Close">×</button><small>V BRAIN · SYSTEM STATUS</small><h2>Live and recoverable.</h2><p class="vb17Sub">This panel never waits for private sync. It only reads the local runtime.</p><dl><dt>Interface</dt><dd>${esc(live.version||'bundled')}</dd><dt>Native host</dt><dd>${esc(live.nativeVersion||'?')} · rescue ${esc(live.rescueEpoch||'—')}</dd><dt>HOME loader</dt><dd>v${esc(loader.version||'?')} · ${esc(loader.schema||'direct')}</dd><dt>Runtime</dt><dd>${esc(health)}${live.recovered?' · recovered':''}</dd><dt>Update checked</dt><dd>${esc(checked)}</dd></dl><div class="vb17Actions"><button id="vb17SafeCheck">Check UI update</button><button id="vb17SafeClose">Close</button></div><p class="vb17Foot">To-dos, learning, notes and brain state remain local-first. Sync continues separately in the background.</p></div>`;
+    box.classList.add('show');document.body.style.overflow='hidden';
+    box.querySelector('.vb17Close').onclick=closeSafeStatus;box.querySelector('#vb17SafeClose').onclick=closeSafeStatus;
+    box.querySelector('#vb17SafeCheck').onclick=e=>{const btn=e.currentTarget;btn.textContent='Checking…';try{Native?.checkLiveUpdate?.()}catch(_){}setTimeout(()=>{if(document.getElementById('vbrainControl17')?.classList.contains('show'))openSafeStatus()},1200)};
+  }
   function fixVersionButton(){
-    const b=document.getElementById('vbrainLiveStatus17');if(!b)return;
-    b.textContent='V BRAIN · HOME LIVE';b.style.pointerEvents='none';b.onclick=null;
+    const b=document.getElementById('vbrainLiveStatus17');if(!b)return false;
+    b.textContent='V BRAIN · HOME LIVE';b.style.pointerEvents='auto';b.disabled=false;b.dataset.safeStatus='3';
+    b.onclick=e=>{e.preventDefault();e.stopPropagation();openSafeStatus()};return true;
   }
   function eventType(x){return String(x?.type||x?.kind||x?.event||'').toLowerCase().replace(/_v\d+$/,'')}
   function currentScore(model){
@@ -81,8 +101,8 @@
     try{if(!window.VBrainGraph)await runAsset('vbrain-graph-v19.js')}catch(e){log('vbrain_compat_error',{stage:'graph19',error:String(e?.message||e)})}
     const sc=refreshScore();ensureReminder();fixVersionButton();
     const s=(()=>{try{return window.VBrainGraph?.stats?.()||{}}catch(_){return{}}})();
-    log('vbrain_compat_ready',{version:VERSION,v8:!!window.VBrain,graph19:!!window.VBrainGraph,score:sc?.value??null,reminder:!!document.getElementById('vbrainCompatReminderV1'),traits:Number(s.nodes||0),edges:Number(s.edges||0)});
+    log('vbrain_compat_ready',{version:VERSION,v8:!!window.VBrain,graph19:!!window.VBrainGraph,score:sc?.value??null,reminder:!!document.getElementById('vbrainCompatReminderV1'),safeStatus:document.getElementById('vbrainLiveStatus17')?.dataset.safeStatus||'',traits:Number(s.nodes||0),edges:Number(s.edges||0)});
   }
-  window.VBrainCompatRestore={version:VERSION,repair:()=>{restoreHistoricalTraits();const sc=refreshScore();ensureReminder();fixVersionButton();return sc}};
+  window.VBrainCompatRestore={version:VERSION,repair:()=>{restoreHistoricalTraits();const sc=refreshScore();ensureReminder();fixVersionButton();return sc},openStatus:openSafeStatus,closeStatus:closeSafeStatus};
   boot();setTimeout(()=>window.VBrainCompatRestore.repair(),500);setTimeout(()=>window.VBrainCompatRestore.repair(),1600);setInterval(()=>{if(!document.hidden)window.VBrainCompatRestore.repair()},4000);
 })();

@@ -13,6 +13,8 @@ import java.security.MessageDigest;
 /** A complete UI is staged and verified before use. The previous healthy UI remains available. */
 final class LiveRuntime {
     static final int HOST = 18;
+    /** Increment only when an APK must deliberately quarantine old UI caches without touching user data. */
+    static final int RESCUE_EPOCH = 20;
     private static final String BASE = "https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/";
     private final Context context;
     private final SharedPreferences state;
@@ -26,12 +28,31 @@ final class LiveRuntime {
         this.root = new File(context.getNoBackupFilesDir(), "vbrain-live");
         root.mkdirs();
         int storedHost = state.getInt("host", 0);
-        if (storedHost != HOST) {
-            // A native-host upgrade invalidates only cached UI releases. App data lives elsewhere.
-            state.edit().putInt("host", HOST).remove("active").remove("previous").remove("ready")
-                    .remove("readyVersion").remove("rejected").remove("version").remove("error")
-                    .putBoolean("bootPending", false).commit();
-        } else if (state.getBoolean("bootPending", false)) rollback();
+        int storedEpoch = state.getInt("rescueEpoch", 0);
+        if (storedHost != HOST || storedEpoch != RESCUE_EPOCH) {
+            // Native host/rescue upgrades invalidate ONLY cached UI releases. User data is stored elsewhere.
+            quarantineUiCache("native upgrade");
+            state.edit().putInt("host", HOST).putInt("rescueEpoch", RESCUE_EPOCH).commit();
+            recovered = storedHost != 0 || storedEpoch != 0;
+        } else if (state.getBoolean("bootPending", false)) {
+            rollback();
+        }
+    }
+
+    private void quarantineUiCache(String reason) {
+        state.edit().remove("active").remove("previous").remove("ready").remove("readyVersion")
+                .remove("rejected").remove("version").remove("error")
+                .putBoolean("bootPending", false).putString("recoveryReason", reason).commit();
+        // Cached UI files are disposable; user data never lives in this directory.
+        File[] files = root.listFiles();
+        if (files != null) for (File file : files) {
+            try { if (file.isFile()) file.delete(); } catch (Exception ignored) { }
+        }
+    }
+
+    synchronized void forceBundled(String reason) {
+        quarantineUiCache(reason == null ? "forced bundled boot" : reason);
+        recovered = true;
     }
 
     private byte[] read(InputStream input, int limit) throws Exception {
@@ -84,11 +105,12 @@ final class LiveRuntime {
                 catch (Exception e) { target.failWrite(stream); throw e; }
             }
             synchronized (this) {
-                // Downloads never hold the UI/status lock. Activation may have changed while offline.
                 if (!sha.equals(state.getString("rejected", "")) && !sha.equals(state.getString("active", "")))
                     state.edit().putString("ready", sha).putString("readyVersion", manifest.getString("version")).commit();
             }
-        } catch (Exception e) { state.edit().putString("error", e.getMessage() == null ? "Update unavailable" : e.getMessage()).apply(); }
+        } catch (Exception e) {
+            state.edit().putString("error", e.getMessage() == null ? "Update unavailable" : e.getMessage()).apply();
+        }
         return status();
     }
 
@@ -113,16 +135,23 @@ final class LiveRuntime {
                 if (!hash(bytes).equals(loading)) throw new IOException("Stored UI hash mismatch");
                 state.edit().putBoolean("bootPending", true).commit();
                 return new String(bytes, StandardCharsets.UTF_8);
-            } catch (Exception e) { rollback(); return document(); }
+            } catch (Exception e) {
+                rollback(); return document();
+            }
         }
         return new String(read(context.getAssets().open("live-app.html"), 3_000_000), StandardCharsets.UTF_8);
     }
 
-    synchronized void healthy() { state.edit().putBoolean("bootPending", false).commit(); }
+    synchronized void healthy() {
+        state.edit().putBoolean("bootPending", false).remove("recoveryReason").commit();
+    }
 
     synchronized boolean rollback() {
         String active = state.getString("active", "");
-        if (active.isEmpty()) return false;
+        if (active.isEmpty()) {
+            state.edit().putBoolean("bootPending", false).commit();
+            return false;
+        }
         String previous = state.getString("previous", "");
         if (previous.equals(active)) previous = "";
         state.edit().putString("rejected", active).putString("active", previous).remove("previous")
@@ -136,11 +165,13 @@ final class LiveRuntime {
         try {
             String active = state.getString("active", "");
             String sha = active.isEmpty() ? bundledHash() : active;
-            out.put("nativeVersion", HOST).put("version", "18."+sha.substring(0, 12))
+            out.put("nativeVersion", HOST).put("rescueEpoch", RESCUE_EPOCH)
+                    .put("version", "18."+sha.substring(0, 12))
                     .put("source", active.isEmpty() ? "bundled" : "live")
                     .put("ready", !state.getString("ready", "").isEmpty())
                     .put("checkedAt", state.getLong("checkedAt", 0)).put("recovered", recovered)
                     .put("healthy", !state.getBoolean("bootPending", false))
+                    .put("recoveryReason", state.getString("recoveryReason", ""))
                     .put("error", state.getString("error", ""));
         } catch (Exception ignored) { }
         return out;
