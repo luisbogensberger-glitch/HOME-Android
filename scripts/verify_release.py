@@ -13,6 +13,8 @@ assert 'data-source="vbrain-remote-ui-v18.js"' in html
 assert 'data-source="vbrain-sense-v20.js"' in html
 assert 'data-source="vbrain-context-compat-v21.js"' in html
 assert 'vbrainPrivatePatch' in html and 'brainContext' in html and 'brain_context_compat_synced' in html
+assert 'data-source="vbrain-context-sensors-v22.js"' in html
+assert 'context_signal_summary' in html and 'APK UPDATE' in html
 assert 'data-source="vbrain-personalizer-v21.js"' in html
 assert 'data-source="vbrain-personalizer-hook-v21.js"' in html
 assert "document.getElementById('vBrainV19')" in html
@@ -26,6 +28,13 @@ assert 'data-source="behavior-v3.js"' not in html
 assert 'data-source="vbrain-sense-v13.js"' not in html
 assert 'brain_context' in (root/'sync-overlay/app/src/main/java/com/luis/home/HomeSyncJob.java').read_text()
 assert 'vbrainBrainContext' in (root/'sync-overlay/app/src/main/java/com/luis/home/HomeSyncJob.java').read_text()
+context_sensor=(root/'sync-overlay/app/src/main/java/com/luis/home/ContextSensor.java').read_text()
+assert 'private_location_sample' in context_sensor
+assert '.put("lat", location.getLatitude())' in context_sensor and '.put("lon", location.getLongitude())' in context_sensor
+assert 'background sensing and calendar punctuality are separate' in context_sensor.lower()
+context_patch=(root/'scripts/patch_context_sensor_v22.py').read_text()
+assert 'contextSensorStatus()' in context_patch and 'captureContextSignals()' in context_patch
+assert 'worker.enqueue("private_activity", sample.privateActivity)' in context_patch
 scripts=re.findall(r'<script\b[^>]*>(.*?)</script>',html,re.S|re.I)
 with tempfile.TemporaryDirectory() as tmp:
  for i,script in enumerate(scripts):
@@ -33,6 +42,10 @@ with tempfile.TemporaryDirectory() as tmp:
   subprocess.run(['node','--check',str(path)],check=True,capture_output=True)
 android=ET.parse(root/'sync-overlay/app/src/main/AndroidManifest.xml').getroot()
 attr='{http://schemas.android.com/apk/res/android}name'
+permissions={x.get(attr) for x in android.findall('./uses-permission')}
+assert 'android.permission.ACCESS_COARSE_LOCATION' in permissions
+assert 'android.permission.ACCESS_FINE_LOCATION' in permissions
+assert 'android.permission.ACCESS_BACKGROUND_LOCATION' not in permissions
 assert any(x.get(attr)=='.HomeNotificationReceiver' for x in android.findall('.//receiver'))
 assert any(x.get(attr)=='.HomeSyncJob' for x in android.findall('.//service'))
 if len(sys.argv)>1:
@@ -40,4 +53,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + live context compat + Personalizer v21 + V19 private brain context + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + live context compat + context sensors v22 foreground-only + Personalizer v21 + V19 private brain context + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
