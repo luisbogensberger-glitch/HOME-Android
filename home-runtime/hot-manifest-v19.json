@@ -1,6 +1,13 @@
 {
   "schema": 1,
-  "version": "19.0.0",
+  "version": "19.0.1",
   "minHost": 18,
-  "modules": []
+  "modules": [
+    {
+      "name": "hot-reminder-card-v1.js",
+      "kind": "js",
+      "mode": "managed",
+      "sha256": "04ede181bef85378e23f625cc94bf519b98a227dd04d240b6ed5562556deecce"
+    }
+  ]
 }
