@@ -36,8 +36,15 @@
     }
     return true;
   }
-  function mount(){refresh();if(mountV19())return true;return !!document.getElementById('vBrainV8')}
-  if(mount())return;
-  const observer=new MutationObserver(()=>{if(mount())observer.disconnect()});
+  function mountWhenReady(){
+    const v19=document.getElementById('vBrainV19');
+    const v8=document.getElementById('vBrainV8');
+    if(!v19&&!v8)return false;
+    refresh();
+    if(v19)return mountV19();
+    return !!v8;
+  }
+  if(mountWhenReady())return;
+  const observer=new MutationObserver(()=>{if(mountWhenReady())observer.disconnect()});
   observer.observe(document.documentElement,{childList:true,subtree:true});
 })();
