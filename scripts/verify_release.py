@@ -10,7 +10,9 @@ assert manifest['minNative']==18
 assert manifest['version'].startswith('18.')
 assert 'name="vbrain-host" content="18"' in html
 assert 'data-source="vbrain-remote-ui-v18.js"' in html
-assert 'data-source="remote-extension-loader.js"' not in html
+assert 'data-source="remote-extension-loader.js"' in html
+assert '__HOME_REMOTE_LOADER_V3__' in html
+assert "new Function(js+'\\n//# sourceURL='+name)()" in html
 assert 'data-source="behavior-v3.js"' not in html
 assert 'data-source="vbrain-sense-v13.js"' not in html
 scripts=re.findall(r'<script\b[^>]*>(.*?)</script>',html,re.S|re.I)
@@ -27,4 +29,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, host 18 remote renderer, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, host 18 renderer + original HOME v3 direct loader, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
