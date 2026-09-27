@@ -11,6 +11,7 @@ const path = require('path');
   const browser=await chromium.launch({headless:true,executablePath:process.env.BROWSER_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
   const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Europe/London'});
   await context.addInitScript(()=>{
+    window.__HOME_REMOTE_LOADER_V3__=true;
     const seed={active:[{id:'v19-test-task',notionId:'v19-test-task',title:'V19 persistence test',area:'Learning',details:{outcome:'',info:[],tips:[],links:[],personalNote:''}}],archive:[]};
     if(!localStorage.getItem('native:todoState'))localStorage.setItem('native:todoState',JSON.stringify(seed));
     window.Native={
