@@ -2375,104 +2375,255 @@ renderTodos();updateHome();updateSyncUI();if(notionConnected())refreshNotion();
 })();
 
 </script>
-<script data-source="vbrain-sync-repair-v18.js">
-/* V-Brain 18 sync repair — optimistic To-Dos, semantic de-duplication and clearer status. */
+<script data-source="vbrain-todo-core-v19.js">
+/* V-Brain To-Do Core v19 — one local-first writer, deterministic remote merge, no UI-blocking sync. */
 (function(){
   'use strict';
-  if(window.__VBRAIN_SYNC_REPAIR_V18__)return;window.__VBRAIN_SYNC_REPAIR_V18__=true;
+  if(window.__VBRAIN_TODO_CORE_V19__)return;window.__VBRAIN_TODO_CORE_V19__=true;
+  const VERSION=19, KEY='todoState', REV='vbrainTodoRevisionV19';
+  const norm=s=>String(s??'').normalize('NFKC').toLowerCase().replace(/[“”„‟]/g,'"').replace(/[‘’‚‛]/g,"'").replace(/[^a-z0-9äöüß]+/gi,' ').trim().replace(/\s+/g,' ');
+  const semanticKey=t=>norm(t?.title)+'|'+norm(t?.area||'');
+  const clone=v=>{try{return JSON.parse(JSON.stringify(v))}catch(_){return v}};
+  const now=()=>Date.now();
+  let rendering=false,noteTimer=0,lastRaw='';
+  const log=(kind,data)=>{try{window.homeAdaptiveLog?.(kind,data||{})}catch(_){}};
 
-  const clean=s=>String(s??'').normalize('NFKC').toLowerCase().replace(/[“”„‟]/g,'"').replace(/[‘’‚‛]/g,"'").replace(/[^a-z0-9äöüß]+/gi,' ').trim().replace(/\s+/g,' ');
-  const key=t=>clean(t?.title)+'|'+clean(t?.area||'');
-  const richer=(a,b)=>{
+  function ensureDetails(t){
+    const d=t&&typeof t.details==='object'&&t.details?t.details:{};
+    return {...t,details:{outcome:String(d.outcome||''),info:Array.isArray(d.info)?d.info:[],tips:Array.isArray(d.tips)?d.tips:[],links:Array.isArray(d.links)?d.links:[],personalNote:String(d.personalNote||'')}};
+  }
+  function mergeDuplicate(a,b){
     const score=x=>(x?.notionId?8:0)+(String(x?.id||'').startsWith('legacy-')?0:4)+(x?.details?.personalNote?3:0)+(x?.details?.info?.length||0)+(x?.details?.links?.length||0);
-    return score(b)>score(a)?b:a;
-  };
+    const rich=score(b)>score(a)?b:a,other=rich===b?a:b;
+    return ensureDetails({...other,...rich,details:{...other.details,...rich.details,personalNote:rich.details?.personalNote||other.details?.personalNote||''}});
+  }
   function dedupe(list){
-    const byId=new Map(), bySemantic=new Map();
+    const out=[],byId=new Map(),bySemantic=new Map();
     for(const raw of Array.isArray(list)?list:[]){
-      if(!raw||!raw.title)continue;
-      const id=String(raw.id||raw.notionId||'').trim(),k=key(raw);
-      if(id&&byId.has(id)){
-        const keep=richer(byId.get(id),raw);byId.set(id,keep);if(k)bySemantic.set(k,keep);continue;
-      }
-      if(k&&bySemantic.has(k)){
-        const keep=richer(bySemantic.get(k),raw);bySemantic.set(k,keep);if(id)byId.set(id,keep);
-      }else{if(k)bySemantic.set(k,raw);if(id)byId.set(id,raw)}
+      const t=ensureDetails(raw||{}),id=String(t.id||t.notionId||'').trim(),sem=semanticKey(t);if(!id&&!norm(t.title))continue;
+      let i=id&&byId.has(id)?byId.get(id):(sem&&bySemantic.has(sem)?bySemantic.get(sem):-1);
+      if(i>=0){out[i]=mergeDuplicate(out[i],t)}else{i=out.length;out.push(t)}
+      const keep=out[i],keepId=String(keep.id||keep.notionId||'').trim(),keepSem=semanticKey(keep);if(keepId)byId.set(keepId,i);if(id)byId.set(id,i);if(keepSem)bySemantic.set(keepSem,i);if(sem)bySemantic.set(sem,i);
     }
-    return [...new Set(bySemantic.size?[...bySemantic.values()]:[...byId.values()])];
+    return out;
   }
-  function localAll(){try{return [...(todoState?.active||[]),...(todoState?.archive||[])]}catch(_){return[]}}
-  function prepareRemote(t,local,dirty){
-    const prior=local.find(x=>String(x.id)===String(t.id))||local.find(x=>key(x)===key(t));
-    const base=dirty?.has(String(t.id))&&prior?{...t,...prior,id:t.id,notionId:t.notionId||prior.notionId||t.id}:{...t,details:t.details||prior?.details||{outcome:'',info:[],tips:[],links:[],personalNote:''}};
-    try{return typeof enrichTodo==='function'?enrichTodo(base):base}catch(_){return base}
+  function ensureState(){
+    if(typeof todoState==='undefined'||!todoState||typeof todoState!=='object')window.todoState={active:[],archive:[]};
+    if(!Array.isArray(todoState.active))todoState.active=[];
+    if(!Array.isArray(todoState.archive))todoState.archive=[];
+    todoState.active=dedupe(todoState.active.map(ensureDetails));
+    todoState.archive=dedupe(todoState.archive.map(ensureDetails));
+    const archivedIds=new Set(todoState.archive.map(t=>String(t.id||''))),archivedSem=new Set(todoState.archive.map(semanticKey));
+    todoState.active=todoState.active.filter(t=>!archivedIds.has(String(t.id||''))&&!archivedSem.has(semanticKey(t)));
+    return todoState;
   }
-  function persistLocal(){
+  function stateRaw(){ensureState();return JSON.stringify(todoState)}
+  function write(raw,{stage=true,reason='state'}={}){
+    if(!raw||raw===lastRaw&&reason==='render')return;lastRaw=raw;
+    try{localStorage.setItem(KEY,raw);localStorage.setItem(REV,String(Number(localStorage.getItem(REV)||0)+1))}catch(_){}
     try{
-      const raw=JSON.stringify(todoState);localStorage.setItem('todoState',raw);
-      Native?.saveState?.('todoState',raw);
-      AdaptiveNative?.saveTodoState?.(raw);
-    }catch(_){ }
+      if(typeof Native!=='undefined'){
+        if(stage&&typeof Native.saveState==='function')Native.saveState(KEY,raw);
+        else if(!stage&&typeof Native.acceptRemoteTodoState==='function')Native.acceptRemoteTodoState(raw);
+      }
+    }catch(_){}
+    log('todo_state_v19',{reason,active:todoState.active.length,archive:todoState.archive.length,staged:!!stage});
   }
-  function render(){try{renderTodos();updateHome();if((window.currentScreen||'')==='todoDetail'&&typeof findTodo==='function'&&findTodo(currentTodoDetailId))renderTodoDetail()}catch(_){}}
-
-  window.onNotionSnapshot=function(data){
-    try{
-      const local=localAll(),dirty=new Set((data?.pendingTaskIds||[]).map(String));
-      let active=dedupe((data?.open||[]).map(t=>prepareRemote(t,local,dirty)));
-      let archive=dedupe((data?.completed||[]).map(t=>prepareRemote(t,local,dirty)));
-      const serverIds=new Set([...active,...archive].map(x=>String(x.id||'')));
-      const serverKeys=new Set([...active,...archive].map(key));
-      for(const t of (todoState?.active||[])){
-        if(!dirty.has(String(t.id)))continue;
-        if(serverIds.has(String(t.id))||serverKeys.has(key(t)))continue;
-        active.push(t);
-      }
-      for(const t of (todoState?.archive||[])){
-        if(!dirty.has(String(t.id)))continue;
-        if(serverIds.has(String(t.id))||serverKeys.has(key(t)))continue;
-        archive.push(t);
-      }
-      active=dedupe(active);archive=dedupe(archive);
-      const archivedIds=new Set(archive.map(x=>String(x.id||''))), archivedKeys=new Set(archive.map(key));
-      active=active.filter(t=>!archivedIds.has(String(t.id||''))&&!archivedKeys.has(key(t)));
-      todoState.active=active;todoState.archive=archive;
-      const raw=JSON.stringify(todoState);localStorage.setItem('todoState',raw);Native?.acceptRemoteTodoState?.(raw);
-      render();setSyncStatus?.('Synced');VBrainLive?.planReminders?.();
-    }catch(e){try{setSyncStatus?.('Sync repair waiting for next snapshot')}catch(_){}}
-    finally{try{syncingNotion=false}catch(_){}}
-  };
+  function detailId(){try{return typeof currentTodoDetailId!=='undefined'?currentTodoDetailId:window.currentTodoDetailId}catch(_){return window.currentTodoDetailId}}
+  function screen(){try{return typeof currentScreen!=='undefined'?currentScreen:window.currentScreen}catch(_){return window.currentScreen}}
+  function render(){
+    if(rendering)return;rendering=true;requestAnimationFrame(()=>{try{window.renderTodos?.();window.updateHome?.();const id=detailId();if(screen()==='todoDetail'&&id&&window.findTodo?.(id))window.renderTodoDetail?.()}catch(_){}finally{rendering=false}})
+  }
+  function persist(reason='edit',stage=true){const raw=stateRaw();write(raw,{stage,reason});render();return raw}
+  function find(list,id){return list.findIndex(t=>String(t.id)===String(id)||String(t.notionId||'')===String(id))}
 
   window.completeTodo=function(id){
-    const i=todoState?.active?.findIndex(x=>String(x.id)===String(id));if(i<0)return;
-    const [t]=todoState.active.splice(i,1);t.completedAt=Date.now();todoState.archive.push(t);todoState.archive=dedupe(todoState.archive);persistLocal();render();
-    try{window.homeAdaptiveLog?.('todo_complete',{id:String(t.id),title:String(t.title||'').slice(0,160)})}catch(_){ }
-    try{if(t.notionId&&typeof Native!=='undefined'&&Native.hasNotionConnection?.())Native.setNotionTaskDone(String(t.notionId),true)}catch(_){ }
+    ensureState();const i=find(todoState.active,id);if(i<0)return false;const [t]=todoState.active.splice(i,1);t.completedAt=now();todoState.archive.push(t);todoState.archive=dedupe(todoState.archive);persist('complete',true);log('todo_complete',{id:String(t.id||''),title:String(t.title||'').slice(0,160),source:'v19-local-first'});return true;
   };
   window.restoreTodo=function(id){
-    const i=todoState?.archive?.findIndex(x=>String(x.id)===String(id));if(i<0)return;
-    const [t]=todoState.archive.splice(i,1);delete t.completedAt;todoState.active.push(t);todoState.active=dedupe(todoState.active);persistLocal();render();
-    try{if(t.notionId&&typeof Native!=='undefined'&&Native.hasNotionConnection?.())Native.setNotionTaskDone(String(t.notionId),false)}catch(_){ }
+    ensureState();const i=find(todoState.archive,id);if(i<0)return false;const [t]=todoState.archive.splice(i,1);delete t.completedAt;todoState.active.push(t);todoState.active=dedupe(todoState.active);persist('restore',true);log('todo_restore',{id:String(t.id||''),source:'v19-local-first'});return true;
+  };
+  window.addTodo=function(){
+    ensureState();const input=document.getElementById('newTodo'),title=String(input?.value||'').trim();if(!title)return false;
+    const id='local-'+now().toString(36)+'-'+Math.random().toString(36).slice(2,8);todoState.active.unshift(ensureDetails({id,title,minutes:0,area:'Personal',note:'',source:'vbrain-local'}));if(input)input.value='';persist('add',true);log('todo_add',{id,title:title.slice(0,160)});return true;
   };
 
-  function syncState(){try{return typeof AdaptiveNative!=='undefined'?JSON.parse(AdaptiveNative.homeSyncStatus()):{}}catch(_){return{}}}
-  const fmt=t=>t?new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'}).format(t):'not yet';
-  function setText(el,value){if(el&&el.textContent!==value)el.textContent=value}
-  function repairPanel(){
-    const panel=document.querySelector('#vbrainControl17 .vb17Panel');if(!panel)return;
-    const s=syncState(),dts=[...panel.querySelectorAll('dt')],dt=dts.find(x=>/private sync|data sync/i.test(x.textContent||''));
-    if(dt){setText(dt,'Data sync');const dd=dt.nextElementSibling;if(dd){
-      const user=Number(s.pendingUser??s.pending??0),tele=Number(s.pendingTelemetry??0);
-      const msg=!s.configured?'Connect HOME Sync to send your app data':user?`${user} data change${user===1?'':'s'} waiting · last sent ${fmt(s.lastSyncedAt)}`:tele?`User data synced · ${tele} background signals queued`:`Up to date · last sent ${fmt(s.lastSyncedAt)}`;
-      setText(dd,msg);
-    }}
-    const check=panel.querySelector('#vb17Check');if(check&&/check for updates/i.test(check.textContent||''))setText(check,'Check UI update');
-    const foot=panel.querySelector('.vb17Foot');setText(foot,'To-dos, learning and notes are saved locally first, then synced privately in the background.');
+  function mergeTask(remote,local,preserveLocal=false){
+    const raw=clone(remote||{}),hasRemoteNote=!!(raw&&raw.details&&Object.prototype.hasOwnProperty.call(raw.details,'personalNote'));
+    const r=ensureDetails(raw),l=local?ensureDetails(local):null;if(!l)return r;
+    const rd=r.details||{},ld=l.details||{},personalNote=preserveLocal?(ld.personalNote||rd.personalNote||''):(hasRemoteNote?String(rd.personalNote||''):(ld.personalNote||''));
+    return ensureDetails({...l,...r,details:{...ld,...rd,personalNote}});
   }
-  // Avoid observing our own text mutations: Android WebView can otherwise spin on a self-triggering MutationObserver.
-  setInterval(()=>{if(!document.hidden)repairPanel()},1500);
-  document.addEventListener('click',e=>{if(e.target?.id==='vbrainLiveStatus17')setTimeout(repairPanel,30)},true);
-  setTimeout(()=>{try{if(todoState){todoState.active=dedupe(todoState.active);todoState.archive=dedupe(todoState.archive);persistLocal();render()}}catch(_){}repairPanel()},900);
+  function semanticMap(items){const m=new Map();for(const t of items){const k=semanticKey(t);if(k&&!m.has(k))m.set(k,t)}return m}
+  function remoteSnapshot(data){
+    ensureState();const local=[...todoState.active,...todoState.archive],byId=new Map(local.map(t=>[String(t.id||''),t])),bySemantic=semanticMap(local),dirty=new Set((data?.pendingTaskIds||[]).map(String));
+    const pair=r=>{const l=byId.get(String(r?.id||''))||bySemantic.get(semanticKey(r)),keep=dirty.has(String(r?.id||''))||dirty.has(String(l?.id||''));return mergeTask(r,l,keep)};
+    let active=dedupe((data?.open||[]).map(pair));
+    let archive=dedupe((data?.completed||[]).map(r=>{const t=pair(r);if(!t.completedAt)t.completedAt=now();return t}));
+    const remoteIds=new Set([...active,...archive].map(t=>String(t.id||''))),remoteSem=new Set([...active,...archive].map(semanticKey).filter(Boolean));
+    for(const t of todoState.active){const id=String(t.id||''),sem=semanticKey(t);if(dirty.has(id)||id.startsWith('local-')||(!remoteIds.has(id)&&!remoteSem.has(sem)&&t.source!=='home-sync'))active.push(t)}
+    for(const t of todoState.archive){const id=String(t.id||''),sem=semanticKey(t);if(dirty.has(id)||id.startsWith('local-')||(!remoteIds.has(id)&&!remoteSem.has(sem)&&t.source!=='home-sync'))archive.push(t)}
+    active=dedupe(active);archive=dedupe(archive);const archivedIds=new Set(archive.map(t=>String(t.id||''))),archivedSem=new Set(archive.map(semanticKey));active=active.filter(t=>!archivedIds.has(String(t.id||''))&&!archivedSem.has(semanticKey(t)));
+    todoState.active=active;todoState.archive=archive;write(stateRaw(),{stage:false,reason:'remote_snapshot'});render();try{window.setSyncStatus?.('Synced')}catch(_){}try{window.VBrainLive?.planReminders?.()}catch(_){}finally{try{syncingNotion=false}catch(_){}}
+  }
+  window.onNotionSnapshot=remoteSnapshot;
+  window.onNotionTaskCreated=function(t){
+    ensureState();if(t){const existing=[...todoState.active,...todoState.archive].find(x=>String(x.id)===String(t.id)||semanticKey(x)===semanticKey(t));if(!existing)todoState.active.unshift(ensureDetails(t));else Object.assign(existing,mergeTask(t,existing,false));write(stateRaw(),{stage:false,reason:'remote_created'});render()}try{syncingNotion=false}catch(_){}
+  };
+  window.onNotionTaskChanged=function(result){
+    ensureState();const id=result?.id;if(!id)return;if(result.done){const i=find(todoState.active,id);if(i>=0){const [t]=todoState.active.splice(i,1);t.completedAt=now();todoState.archive.push(t)}}else{const i=find(todoState.archive,id);if(i>=0){const [t]=todoState.archive.splice(i,1);delete t.completedAt;todoState.active.push(t)}}write(stateRaw(),{stage:false,reason:'remote_changed'});render();try{syncingNotion=false}catch(_){}
+  };
+
+  const baseDetail=window.renderTodoDetail;
+  if(typeof baseDetail==='function')window.renderTodoDetail=function(){
+    const out=baseDetail.apply(this,arguments),note=document.getElementById('detailPersonalNote');if(!note)return out;
+    note.oninput=()=>{const id=detailId(),live=window.findTodo?.(id);if(!live)return;live.details=ensureDetails(live).details;live.details.personalNote=note.value;clearTimeout(noteTimer);noteTimer=setTimeout(()=>persist('note',true),450)};
+    note.onblur=()=>{clearTimeout(noteTimer);noteTimer=0;persist('note_blur',true)};return out;
+  };
+
+  function install(){ensureState();write(stateRaw(),{stage:false,reason:'boot'});render();document.documentElement.dataset.vbrainTodoCore=String(VERSION);log('todo_core_ready',{version:VERSION,active:todoState.active.length,archive:todoState.archive.length})}
+  window.VBrainTodos={version:VERSION,persist:()=>persist('api',true),snapshot:()=>clone(ensureState())};
+  install();setTimeout(install,700);
+})();
+
+</script>
+<script data-source="vbrain-graph-v19.js">
+/* V-Brain Graph v19 — append-only persistent 3D brain. Branches never disappear automatically. */
+(function(){
+  'use strict';
+  if(window.__VBRAIN_GRAPH_V19__)return;window.__VBRAIN_GRAPH_V19__=true;
+  const VERSION=19,GRAPH='vbrainGraphV19',BRANCH='vbrainBranchesV19',LEGACY=['homeLivingGraphV8','homeLivingGraphV6'];
+  const baseModel=typeof window.VBrain?.model==='function'?window.VBrain.model.bind(window.VBrain):()=>({nodes:[],edges:[],e:{}});
+  const load=(k,f)=>{
+    let raw='';
+    try{raw=localStorage.getItem(k)||'';if(raw)return JSON.parse(raw)??f}catch(_){}
+    try{raw=Native?.loadState?.(k)||'';if(raw){try{localStorage.setItem(k,raw)}catch(_){}return JSON.parse(raw)??f}}catch(_){}
+    return f;
+  };
+  const save=(k,v)=>{const raw=JSON.stringify(v);try{localStorage.setItem(k,raw)}catch(_){}try{Native?.saveState?.(k,raw)}catch(_){}};
+  const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const edgeKey=(a,b)=>[String(a),String(b)].sort().join('::');
+  const log=(kind,data)=>{try{window.homeAdaptiveLog?.(kind,data||{})}catch(_){}};
+  let shell,canvas,ctx,detail,current,positionsCache={},raf=0,lastFrame=0,lastInput=0,rotX=.20,rotY=-.45,targetX=.20,targetY=-.45,zoom=1,targetZoom=1,pinch=null;
+  const pointers=new Map(),starts=new Map();
+  const palette={action:'#f1ca62',attention:'#8fb2ff',growth:'#bba0ff',health:'#79d2ac',stability:'#83a6c8',structure:'#8bd0df',rhythm:'#e6a66e',friction:'#df8d80',custom:'#9fd0ff'};
+
+  function branchStore(){const s=load(BRANCH,{nodes:{},edges:{}});if(!s.nodes)s.nodes={};if(!s.edges)s.edges={};return s}
+  function registerBranch(parent,node){
+    const s=branchStore(),parents=(Array.isArray(parent)?parent:[parent]).filter(Boolean).map(String),raw=node&&typeof node==='object'?node:{label:String(node||'New branch')};
+    const id=String(raw.id||('branch-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8))),old=s.nodes[id]||{};
+    s.nodes[id]={...old,...raw,id,label:String(raw.label||old.label||id),group:String(raw.group||old.group||'custom'),value:clamp(raw.value??old.value??50),confidence:clamp(raw.confidence??old.confidence??25),evidenceCount:Number(raw.evidenceCount??old.evidenceCount??0),description:String(raw.description||old.description||'A persistent V-Brain branch.'),reasons:Array.isArray(raw.reasons)?raw.reasons:(old.reasons||[]),emergent:true,pinned:true,parentIds:[...new Set([...(old.parentIds||[]),...parents])],firstSeen:old.firstSeen||Date.now(),lastSeen:Date.now()};
+    for(const p of parents){const k=edgeKey(p,id);s.edges[k]={a:p,b:id,w:clamp(raw.weight??55,8,100),why:String(raw.why||'Persistent branch connection.'),pinned:true,firstSeen:s.edges[k]?.firstSeen||Date.now(),lastSeen:Date.now()}}
+    save(BRANCH,s);log('brain_branch_added',{id,parents});return id;
+  }
+  function registerEdge(a,b,w=50,why='Persistent connection.'){
+    if(!a||!b||String(a)===String(b))return false;const s=branchStore(),k=edgeKey(a,b);s.edges[k]={...(s.edges[k]||{}),a:String(a),b:String(b),w:clamp(w,8,100),why:String(why||''),pinned:true,firstSeen:s.edges[k]?.firstSeen||Date.now(),lastSeen:Date.now()};save(BRANCH,s);return true;
+  }
+  function importLegacy(store){
+    if(store.legacyImported)return store;for(const k of LEGACY){const g=load(k,null);if(!g)continue;for(const [id,n] of Object.entries(g.nodes||{})){if(!store.nodes[id])store.nodes[id]={...n,id,active:false,historical:true,source:k}}
+      for(const e of Array.isArray(g.edges)?g.edges:[]){if(!e?.a||!e?.b)continue;const ek=edgeKey(e.a,e.b);if(!store.edges[ek])store.edges[ek]={...e,active:false,historical:true,source:k}}
+    }store.legacyImported=true;return store;
+  }
+  function persistentModel(){
+    let base={nodes:[],edges:[],e:{}};try{base=baseModel()||base}catch(_){}const custom=branchStore(),now=Date.now();let store=importLegacy(load(GRAPH,{schema:VERSION,nodes:{},edges:{},history:[]}));store.nodes=store.nodes||{};store.edges=store.edges||{};
+    const active=new Set();for(const n of [...(base.nodes||[]),...Object.values(custom.nodes||{})]){if(!n?.id)continue;const id=String(n.id),prev=store.nodes[id]||{};active.add(id);store.nodes[id]={...prev,...n,id,active:true,historical:false,firstSeen:prev.firstSeen||n.firstSeen||now,lastSeen:now,maxValue:Math.max(Number(prev.maxValue||0),Number(n.value||0)),maxConfidence:Math.max(Number(prev.maxConfidence||0),Number(n.confidence||0))}}
+    for(const [id,n] of Object.entries(store.nodes)){if(!active.has(id)&&!n.pinned)store.nodes[id]={...n,active:false,historical:true}}
+    const activeEdges=new Set();for(const e of [...(base.edges||[]),...Object.values(custom.edges||{})]){if(!e?.a||!e?.b||e.a===e.b)continue;const k=edgeKey(e.a,e.b),prev=store.edges[k]||{};activeEdges.add(k);store.edges[k]={...prev,...e,active:true,historical:false,firstSeen:prev.firstSeen||e.firstSeen||now,lastSeen:now}}
+    for(const [k,e] of Object.entries(store.edges)){if(!activeEdges.has(k)&&!e.pinned)store.edges[k]={...e,active:false,historical:true}}
+    const nodes=Object.values(store.nodes).sort((a,b)=>(b.active===true)-(a.active===true)||(Number(a.firstSeen||0)-Number(b.firstSeen||0))),ids=new Set(nodes.map(n=>String(n.id)));
+    const edges=Object.values(store.edges).filter(e=>ids.has(String(e.a))&&ids.has(String(e.b)));
+    const h=Array.isArray(store.history)?store.history:[];if(!h.length||now-Number(h[h.length-1]?.at||0)>21600000)h.push({at:now,nodes:nodes.length,active:[...active].length,edges:edges.length});while(h.length>365)h.shift();
+    store={...store,schema:VERSION,updatedAt:now,nodes:Object.fromEntries(nodes.map(n=>[String(n.id),n])),edges:Object.fromEntries(edges.map(e=>[edgeKey(e.a,e.b),e])),history:h};save(GRAPH,store);return{e:base.e||{},nodes,edges,graph:store};
+  }
+
+  function style(){if(document.getElementById('vBrainGraphV19Style'))return;const s=document.createElement('style');s.id='vBrainGraphV19Style';s.textContent=`
+    #vBrainV19{position:fixed;inset:0;z-index:2147483450;background:linear-gradient(180deg,#07090d,#0a0d13 62%,#080a0e);color:#fff;display:none;overflow:hidden;pointer-events:none}#vBrainV19.show{display:block;pointer-events:auto}#vBrainV19 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+    .vb19Top{position:absolute;z-index:6;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;padding:max(15px,env(safe-area-inset-top)) 18px 12px;background:linear-gradient(180deg,rgba(7,9,13,.97),rgba(7,9,13,.55),transparent)}.vb19Back{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.11);background:#151922;color:#fff;font-size:28px}.vb19Top small{display:block;font-size:9px;letter-spacing:.18em;color:rgba(255,255,255,.46);font-weight:900}.vb19Top h1{margin:1px 0 0;font-size:21px}.vb19Meta{margin-left:auto;text-align:right;font-size:9px;color:rgba(255,255,255,.48);line-height:1.45}.vb19Hint{position:absolute;z-index:5;left:50%;top:max(83px,calc(env(safe-area-inset-top) + 70px));transform:translateX(-50%);font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.38);white-space:nowrap}
+    .vb19Detail{position:absolute;z-index:6;left:14px;right:14px;bottom:max(14px,env(safe-area-inset-bottom));padding:15px 16px 16px;border-radius:24px;border:1px solid rgba(255,255,255,.10);background:rgba(15,18,25,.90);backdrop-filter:blur(24px);max-height:35vh;overflow:auto}.vb19Tag{font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#f0c95d;font-weight:900}.vb19Title{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.vb19Title h2{font-size:21px;margin:4px 0}.vb19Title b{font-size:28px}.vb19Detail p{font-size:11px;line-height:1.48;color:rgba(255,255,255,.64);margin:5px 0}.vb19Reason{display:inline-block;padding:6px 8px;margin:4px 4px 0 0;border:1px solid rgba(255,255,255,.08);border-radius:999px;font-size:9px;color:rgba(255,255,255,.58)}
+  `;document.head.appendChild(s)}
+  function seeded(id){let h=2166136261;for(const ch of String(id)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return()=>((h=Math.imul(h^h>>>15,2246822519))>>>0)/4294967295}
+  function pos(nodes){const sig=nodes.map(n=>n.id).join('|');if(positionsCache.sig===sig)return positionsCache.map;const out={},N=Math.max(1,nodes.length);nodes.forEach((n,i)=>{const r=seeded(n.id),phi=Math.acos(1-2*(i+.5)/N),theta=Math.PI*(1+Math.sqrt(5))*i+(r()-.5)*.55,rad=.70+(r()-.5)*.22;out[n.id]={x:Math.sin(phi)*Math.cos(theta)*rad,y:Math.cos(phi)*rad,z:Math.sin(phi)*Math.sin(theta)*rad}});positionsCache={sig,map:out};return out}
+  function rotate(p){const cy=Math.cos(rotY),sy=Math.sin(rotY),cx=Math.cos(rotX),sx=Math.sin(rotX),x1=p.x*cy-p.z*sy,z1=p.x*sy+p.z*cy,y1=p.y*cx-z1*sx,z2=p.y*sx+z1*cx;return{x:x1,y:y1,z:z2}}
+  let projected=[];
+  function draw(ts){
+    if(!shell?.classList.contains('show'))return;const t=Number(ts)||performance.now(),step=lastFrame?Math.max(.25,Math.min(2.4,(t-lastFrame)/16.667)):1;lastFrame=t;if(!pointers.size&&t-lastInput>2600)targetY+=.00020*step;rotX+=(targetX-rotX)*.18;rotY+=(targetY-rotY)*.18;zoom+=(targetZoom-zoom)*.16;
+    const dpr=Math.min(2,devicePixelRatio||1),w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h){raf=requestAnimationFrame(draw);return}const W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    const P=pos(current.nodes),cx=w/2,cy=h*.46,scale=Math.min(w,h)*.40*zoom;projected=current.nodes.map(n=>{const p=rotate(P[n.id]||{x:0,y:0,z:0}),pers=1/(1.55-p.z*.58);return{n,p,x:cx+p.x*scale*pers,y:cy+p.y*scale*pers,r:(8+Number(n.confidence||0)*.075)*pers}});const by=Object.fromEntries(projected.map(q=>[q.n.id,q]));
+    for(const e of current.edges){const a=by[e.a],b=by[e.b];if(!a||!b)continue;ctx.globalAlpha=e.active===false?.15:.55;ctx.strokeStyle='rgba(145,165,235,.8)';ctx.lineWidth=.55+Number(e.w||40)/90;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}ctx.globalAlpha=1;
+    const ordered=projected.slice().sort((a,b)=>a.p.z-b.p.z);
+    for(const q of ordered){const n=q.n,col=palette[n.group]||palette.custom,active=n.active!==false;ctx.globalAlpha=active?.92:.28;ctx.shadowBlur=active&&n.emergent?15:active?7:0;ctx.shadowColor=col;ctx.fillStyle='#101620';ctx.strokeStyle=col;ctx.lineWidth=n.emergent?1.8:1.15;ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1}
+    const occupied=[];
+    for(const q of ordered.slice().reverse()){
+      const n=q.n;if(n.active===false)continue;const text=String(n.label||n.id),fontSize=Math.max(8,Math.min(11,q.r*.62));ctx.font=`${fontSize}px system-ui`;const width=Math.min(w*.42,ctx.measureText(text).width+10),x=q.x,y=q.y-q.r-7,box={l:x-width/2,r:x+width/2,t:y-fontSize-2,b:y+3};
+      if(box.l<4||box.r>w-4||box.t<72||box.b>h*.69)continue;
+      if(occupied.some(o=>!(box.r+5<o.l||box.l-5>o.r||box.b+3<o.t||box.t-3>o.b)))continue;
+      occupied.push(box);ctx.globalAlpha=n.emergent?1:.88;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(text,x,y);ctx.globalAlpha=1;
+    }
+    raf=requestAnimationFrame(draw);
+  }
+  function show(n){if(!n||!detail)return;const linked=current.edges.filter(e=>e.a===n.id||e.b===n.id).map(e=>current.nodes.find(x=>x.id===(e.a===n.id?e.b:e.a))?.label).filter(Boolean),state=n.active===false?'Historical branch':n.emergent?'Discovered branch':'Active signal';detail.innerHTML=`<div class="vb19Tag">${esc(state)} · ${Math.round(Number(n.confidence||0))}% confidence · ${Number(n.evidenceCount||0)} signals</div><div class="vb19Title"><h2>${esc(n.label||n.id)}</h2><b>${Math.round(Number(n.value||0))}</b></div><p>${esc(n.description||'Persistent V-Brain branch.')}</p>${n.active===false?'<p>This branch is currently quiet, but it remains part of your history and will not be deleted automatically.</p>':''}${linked.length?`<p><b>Connected with:</b> ${esc(linked.slice(0,8).join(', '))}</p>`:''}<div>${(n.reasons||[]).map(x=>`<span class="vb19Reason">${esc(x)}</span>`).join('')}</div>`}
+  function ensureShell(){if(shell)return;style();shell=document.createElement('section');shell.id='vBrainV19';shell.innerHTML=`<div class="vb19Top"><button class="vb19Back" type="button">‹</button><div><small>V-BRAIN · PERSISTENT MODEL</small><h1>Living brain</h1></div><div class="vb19Meta"></div></div><div class="vb19Hint">drag to rotate · pinch to zoom · every branch persists</div><canvas></canvas><div class="vb19Detail"><div class="vb19Tag">Persistent graph</div><div class="vb19Title"><h2>Explore your network</h2></div><p>New branches and links can keep growing. Earlier branches remain available even when a signal becomes quiet.</p></div>`;document.body.appendChild(shell);canvas=shell.querySelector('canvas');ctx=canvas.getContext('2d',{alpha:true});detail=shell.querySelector('.vb19Detail');shell.querySelector('.vb19Back').onclick=close;
+    canvas.addEventListener('pointerdown',e=>{try{canvas.setPointerCapture(e.pointerId)}catch(_){}const p={x:e.clientX,y:e.clientY};pointers.set(e.pointerId,p);starts.set(e.pointerId,{...p,t:Date.now(),moved:false,multi:pointers.size>1});lastInput=performance.now();if(pointers.size===2){const a=[...pointers.values()];pinch={d:Math.max(1,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)),z:targetZoom}}});
+    canvas.addEventListener('pointermove',e=>{const prev=pointers.get(e.pointerId),st=starts.get(e.pointerId);if(!prev)return;const next={x:e.clientX,y:e.clientY};pointers.set(e.pointerId,next);if(st&&Math.hypot(next.x-st.x,next.y-st.y)>10)st.moved=true;lastInput=performance.now();if(pointers.size===1&&!pinch){targetY+=(next.x-prev.x)*.0045;targetX=Math.max(-1.18,Math.min(1.18,targetX+(next.y-prev.y)*.0045))}else if(pointers.size>=2){for(const s of starts.values())s.multi=true;const a=[...pointers.values()],d=Math.max(1,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y));if(!pinch)pinch={d,z:targetZoom};targetZoom=Math.max(.62,Math.min(2.5,pinch.z*d/pinch.d))}});
+    const up=e=>{const st=starts.get(e.pointerId),tap=st&&!st.moved&&!st.multi&&Date.now()-st.t<330;pointers.delete(e.pointerId);starts.delete(e.pointerId);if(pointers.size<2)pinch=null;if(tap){const q=projected.map(x=>({...x,d:Math.hypot(x.x-e.clientX,x.y-e.clientY)})).sort((a,b)=>a.d-b.d)[0];if(q&&q.d<Math.max(30,q.r*1.9))show(q.n)}};canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+  }
+  function open(){ensureShell();try{document.getElementById('vBrainV8')?.classList.remove('show')}catch(_){}current=persistentModel();shell.querySelector('.vb19Meta').innerHTML=`${current.nodes.length} branches<br>${current.edges.length} connections`;shell.classList.add('show');document.body.style.overflow='hidden';lastFrame=0;lastInput=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(draw);const best=current.nodes.filter(n=>n.active!==false).sort((a,b)=>Number(b.confidence||0)*Number(b.value||0)-Number(a.confidence||0)*Number(a.value||0))[0]||current.nodes[0];if(best)show(best);log('brain_open_v19',{nodes:current.nodes.length,edges:current.edges.length})}
+  function close(){shell?.classList.remove('show');document.body.style.overflow='';pointers.clear();starts.clear();pinch=null;cancelAnimationFrame(raf);raf=0}
+  function intercept(){if(window.__VBRAIN_GRAPH_CAPTURE_V19__)return;window.__VBRAIN_GRAPH_CAPTURE_V19__=true;document.addEventListener('click',e=>{if(!e.target?.closest?.('#vbrainScoreV8'))return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();open()},true)}
+  const oldBack=window.handleAndroidBack;window.handleAndroidBack=function(){if(shell?.classList.contains('show')){close();return'handled'}return oldBack?oldBack():'home'};
+  intercept();
+  if(window.VBrain){window.VBrain.model=persistentModel;window.VBrain.openBrain=open;window.VBrain.branch=registerBranch;window.VBrain.link=registerEdge;window.VBrain.graphVersion=VERSION}
+  window.VBrainGraph={version:VERSION,model:persistentModel,branch:registerBranch,link:registerEdge,open,close};
+  persistentModel();document.documentElement.dataset.vbrainGraph=String(VERSION);log('brain_graph_ready',{version:VERSION});
+})();
+
+</script>
+<script data-source="vbrain-hot-loader-v19.js">
+/* V-Brain Hot Loader v19 — atomic, verified JS/CSS hot patches above the stable Host-18 release. */
+(function(){
+  'use strict';
+  if(window.__VBRAIN_HOT_LOADER_V19__)return;window.__VBRAIN_HOT_LOADER_V19__=true;
+  const VERSION=19,BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/',MANIFEST='hot-manifest-v19.json',GOOD='vbrainHotGoodV19',REJECT='vbrainHotRejectedV19';
+  const MAX_MODULES=40,MAX_BYTES=1600000,REFRESH=45000;let applying=false,lastCheck=0,status={loader:VERSION,version:'none',source:'stable',modules:0,healthy:true,lastCheck:0,error:''};
+  const log=(kind,data)=>{try{window.homeAdaptiveLog?.(kind,data||{});AdaptiveNative?.queuePrivateActivity?.(JSON.stringify({id:'hot-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),kind,at:Date.now(),source:'vbrain-hot-v19',data:data||{}}))}catch(_){}};
+  const safeName=n=>/^[a-zA-Z0-9._/-]+\.(?:js|css)$/.test(String(n||''))&&!String(n).includes('..')&&String(n).length<160;
+  async function text(url){const r=await fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return r.text()}
+  function rotr(n,x){return(x>>>n)|(x<<(32-n))}
+  function sha256Fallback(ascii){const mathPow=Math.pow,maxWord=mathPow(2,32),lengthProperty='length',words=[],asciiBitLength=ascii[lengthProperty]*8,hash=sha256Fallback.h=sha256Fallback.h||[],k=sha256Fallback.k=sha256Fallback.k||[],primeCounter=k[lengthProperty],isComposite={};for(let candidate=2;primeCounter<64;candidate++){if(!isComposite[candidate]){for(let i=0;i<313;i+=candidate)isComposite[i]=candidate;hash[primeCounter]=(mathPow(candidate,.5)*maxWord)|0;k[primeCounter++]=(mathPow(candidate,1/3)*maxWord)|0}}ascii+='\x80';while(ascii[lengthProperty]%64-56)ascii+='\x00';for(let i=0;i<ascii[lengthProperty];i++){const j=ascii.charCodeAt(i);if(j>>8)throw Error('sha256 fallback expects utf8');words[i>>2]|=j<<((3-i)%4)*8}words[words[lengthProperty]]=((asciiBitLength/maxWord)|0);words[words[lengthProperty]]=asciiBitLength;for(let j=0;j<words[lengthProperty];){const w=words.slice(j,j+=16),oldHash=hash.slice(0);hash=hash.slice(0,8);for(let i=0;i<64;i++){const w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4],temp1=hash[7]+(rotr(6,e)^rotr(11,e)^rotr(25,e))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rotr(7,w15)^rotr(18,w15)^(w15>>>3))+w[i-7]+(rotr(17,w2)^rotr(19,w2)^(w2>>>10)))|0),temp2=(rotr(2,a)^rotr(13,a)^rotr(22,a))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(temp1+temp2)|0,a,hash[1],hash[2],(hash[3]+temp1)|0,hash[4],hash[5],hash[6]]}for(let i=0;i<8;i++)hash[i]=(hash[i]+oldHash[i])|0}let result='';for(let i=0;i<8;i++)for(let j=3;j+1;j--){const b=(hash[i]>>(j*8))&255;result+=(b<16?'0':'')+b.toString(16)}return result}
+  function utf8(s){return unescape(encodeURIComponent(s))}
+  async function sha256(s){try{if(crypto?.subtle){const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('')}}catch(_){}return sha256Fallback(utf8(s))}
+  function nativeHost(){try{return Number(JSON.parse(Native.liveRuntimeStatus()).nativeVersion||0)}catch(_){return 0}}
+  function validate(m){if(!m||m.schema!==1)throw Error('Invalid hot manifest');if(Number(m.minHost||18)>nativeHost())throw Error('Hot patch requires newer host');const mods=Array.isArray(m.modules)?m.modules:[];if(mods.length>MAX_MODULES)throw Error('Too many hot modules');for(const p of mods){if(!safeName(p.name)||!['js','css'].includes(p.kind)||!/^[a-f0-9]{64}$/i.test(String(p.sha256||'')))throw Error('Invalid hot module '+String(p.name||''))}return mods}
+  async function downloadBundle(m){const mods=validate(m),parts=[];let bytes=0;for(const p of mods){const body=await text(BASE+p.name);bytes+=body.length;if(bytes>MAX_BYTES)throw Error('Hot patch too large');const digest=await sha256(body);if(digest.toLowerCase()!==String(p.sha256).toLowerCase())throw Error('Hash mismatch '+p.name);parts.push({...p,body})}return{manifest:m,parts,downloadedAt:Date.now()}}
+  function cache(bundle){try{localStorage.setItem(GOOD,JSON.stringify(bundle))}catch(_){} }
+  function cached(){try{return JSON.parse(localStorage.getItem(GOOD)||'null')}catch(_){return null}}
+  function rejected(v){try{return JSON.parse(localStorage.getItem(REJECT)||'[]').includes(String(v))}catch(_){return false}}
+  function reject(v){try{const a=JSON.parse(localStorage.getItem(REJECT)||'[]');if(!a.includes(String(v)))a.push(String(v));while(a.length>12)a.shift();localStorage.setItem(REJECT,JSON.stringify(a))}catch(_){} }
+  function cleanupStyles(){document.querySelectorAll('style[data-vbrain-hot]').forEach(x=>x.remove())}
+  function apply(bundle,source){if(!bundle?.manifest)return false;const v=String(bundle.manifest.version||'unknown');if(rejected(v))return false;cleanupStyles();try{for(const p of bundle.parts||[]){if(p.kind==='css'){const s=document.createElement('style');s.dataset.vbrainHot=v;s.dataset.source=p.name;s.textContent=p.body;document.head.appendChild(s)}else{new Function(p.body+'\n//# sourceURL=vbrain-hot/'+p.name)()}}status={...status,version:v,source,modules:(bundle.parts||[]).length,healthy:true,error:''};document.documentElement.dataset.vbrainHot=v;log('hot_patch_applied',{version:v,source,modules:status.modules});return true}catch(e){reject(v);status={...status,version:v,source,healthy:false,error:String(e?.message||e)};cleanupStyles();log('hot_patch_rejected',{version:v,error:status.error});return false}}
+  async function refresh(force=false){if(applying)return status;if(!force&&Date.now()-lastCheck<12000)return status;applying=true;lastCheck=Date.now();status.lastCheck=lastCheck;try{const m=JSON.parse(await text(BASE+MANIFEST)),v=String(m.version||'');if(rejected(v))return status;if(v&&v===status.version)return status;const bundle=await downloadBundle(m);if(apply(bundle,'network'))cache(bundle)}catch(e){status.error=String(e?.message||e);status.healthy=status.version!=='none';log('hot_patch_check_failed',{error:status.error})}finally{applying=false}return status}
+  function boot(){const c=cached();if(c)apply(c,'cache');refresh(true)}
+  window.VBrainHotLoader={version:VERSION,refresh:()=>refresh(true),status:()=>({...status})};
+  const old=window.onAppResume;window.onAppResume=function(){try{old?.()}catch(_){}refresh(true)};
+  boot();setInterval(()=>{if(!document.hidden)refresh(false)},REFRESH);
+})();
+
+</script>
+<script data-source="vbrain-runtime-v19.js">
+/* V-Brain Runtime v19 — authoritative private ready/heartbeat evidence for the installed phone runtime. */
+(function(){
+  'use strict';
+  if(window.__VBRAIN_RUNTIME_V19__)return;window.__VBRAIN_RUNTIME_V19__=true;
+  const VERSION=19;let last=0;
+  function snapshot(){let live={},sync={},hot={};try{live=JSON.parse(Native?.liveRuntimeStatus?.()||'{}')}catch(_){}try{sync=JSON.parse(AdaptiveNative?.homeSyncStatus?.()||'{}')}catch(_){}try{hot=window.VBrainHotLoader?.status?.()||{}}catch(_){}return{runtimeVersion:VERSION,nativeVersion:Number(live.nativeVersion||0),liveVersion:String(live.version||''),liveSource:String(live.source||''),liveHealthy:live.healthy!==false,hotPatchVersion:String(hot.version||'none'),hotHealthy:hot.healthy!==false,pendingSync:Number(sync.pending??sync.pendingUser??0),screen:document.querySelector('.screen.show')?.id?.replace(/Screen$/,'')||'home'}}
+  function updateBadge(){const s=snapshot(),b=document.getElementById('vbrainLiveStatus17');if(b)b.textContent=`V BRAIN ${VERSION} · ${s.nativeVersion?`HOST ${s.nativeVersion}`:'LIVE'}`;const meta=document.querySelector('#vbrainControl17 small');if(meta&&/V BRAIN/i.test(meta.textContent||''))meta.textContent=`V BRAIN ${VERSION} · CONNECTION`;return s}
+  function emit(kind,force=false){if(!force&&Date.now()-last<55000)return;last=Date.now();const data=updateBadge(),row={id:'runtime19-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),kind,at:Date.now(),source:'vbrain-runtime-v19',data};try{AdaptiveNative?.queuePrivateActivity?.(JSON.stringify(row));AdaptiveNative?.flushPrivateSync?.()}catch(_){}try{window.homeAdaptiveLog?.(kind,row.data)}catch(_){}return row}
+  function ready(){const row=emit('runtime_ready',true);document.documentElement.dataset.vbrainRuntime=String(VERSION);updateBadge();return row}
+  const old=window.onAppResume;window.onAppResume=function(){try{old?.()}catch(_){}emit('runtime_heartbeat',true)};
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)emit('runtime_heartbeat',true)});
+  window.VBrainRuntime={version:VERSION,snapshot,emit,updateBadge};
+  setTimeout(ready,2200);setInterval(()=>{if(!document.hidden)emit('runtime_heartbeat')},60000);setInterval(()=>{if(!document.hidden)updateBadge()},5000);
 })();
 
 </script>
