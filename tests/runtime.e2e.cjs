@@ -11,6 +11,7 @@ const root=path.resolve(__dirname,'..');
  await context.route('**/adaptive-ui.json*',route=>route.fulfill({json:config}));
  await context.route('**/tube-feed.json*',route=>route.fulfill({body:feed,contentType:'application/json'}));
  await context.addInitScript(()=>{
+  window.__HOME_REMOTE_LOADER_V3__=true;
   window.__events=[];window.__private=[];window.__attempts=[];window.__reminders=[];window.__healthy=false;window.__applied=false;
   const seed={active:[{id:'test-task',notionId:'test-task',title:'Prepare seminar notes',area:'Learning',details:{outcome:'Be ready for class',info:[],tips:[],links:[],personalNote:''}}],archive:[]};
   if(!localStorage.getItem('native:todoState'))localStorage.setItem('native:todoState',JSON.stringify(seed));
@@ -22,7 +23,6 @@ const root=path.resolve(__dirname,'..');
  await page.goto('http://127.0.0.1:8765');await page.waitForFunction(()=>window.__healthy);
  assert.equal(await page.locator('#homeScreen .homeCard').count(),4,'one card for each core area');
  await page.screenshot({path:path.join(root,'home-screen-test.png'),fullPage:true});
- // Generic host-18 renderer: arbitrary shapes, bindings and routing without replacing native code.
  await page.evaluate(()=>{HOMEAdaptive.config.remoteUI={enabled:true,replaceHome:true,scene:{layout:'grid',columns:2,mobileColumns:2,gap:8,padding:8},components:[
   {type:'button',id:'shape-circle',shape:'circle',size:'sm',title:'Circle',metric:'{{todoActive}}',action:{type:'route',target:'todos'}},
   {type:'button',id:'shape-pill',shape:'pill',size:'wide',title:'Pill',action:{type:'route',target:'tube'}},
@@ -45,7 +45,6 @@ const root=path.resolve(__dirname,'..');
  await page.locator('#detailPersonalNote').fill('My private note stays saved after restart.');
  await page.waitForTimeout(1200);
  assert.ok(await page.evaluate(()=>__private.some(x=>x.text==='My private note stays saved after restart.')));
- // A candidate UI must wait while someone is writing.
  await page.evaluate(()=>{window.__updateReady=true;onVBrainLiveUpdate(JSON.parse(Native.liveRuntimeStatus()))});assert.equal(await page.evaluate(()=>__applied),false);
  await page.evaluate(()=>{window.__updateReady=false;onVBrainLiveUpdate(JSON.parse(Native.liveRuntimeStatus()))});
  await page.evaluate(()=>handleAndroidBack());await page.evaluate(()=>handleAndroidBack());
@@ -63,7 +62,6 @@ const root=path.resolve(__dirname,'..');
  assert.ok(await page.evaluate(()=>JSON.parse(Native.loadState('todoState')).active[0].details.personalNote.includes('private note')));
  assert.ok(await page.evaluate(()=>JSON.parse(Native.loadState('tubeState')).completed.some(x=>x.sentence.includes('central assumption'))));
  await page.evaluate(()=>VBrainLive.planReminders());assert.ok(await page.evaluate(()=>__reminders.length>=2));
- // Fresh server details take effect; unsent local edits win until acknowledged.
  await page.evaluate(()=>onNotionSnapshot({open:[{id:'test-task',title:'Updated remotely',details:{personalNote:'Remote note'}}],completed:[],pendingTaskIds:[]}));
  assert.equal(await page.evaluate(()=>todoState.active[0].details.personalNote),'Remote note');
  await page.evaluate(()=>onNotionSnapshot({open:[{id:'test-task',title:'Old remote',details:{personalNote:'Stale'}}],completed:[],pendingTaskIds:['test-task']}));
