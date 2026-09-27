@@ -36,7 +36,7 @@ const root=path.resolve(__dirname,'..');
  assert.ok(!bindingText.includes('{{')&&/\d+ tasks/.test(bindingText),'live binding resolved');
  await page.locator('[data-vbri-id="shape-diamond"]').click();await page.waitForSelector('#vBrainV8.show');
  assert.equal(await page.evaluate(()=>handleAndroidBack()),'handled');assert.equal(await page.locator('#vBrainV8.show').count(),0);
- await page.evaluate(()=>{HOMEAdaptive.config.remoteUI={enabled:false};VBrainRemoteUI.restore()});
+ await page.evaluate(()=>{HOMEAdaptive.config.remoteUI={enabled:false};VBrainRemoteUI.restore();const v=HOMEAdaptive.config.vbrainPatch?.home?.visible;if(v){v.calendar=true;v.todos=true;v.tube=true;v.gym=true}VBrainPatch?.apply?.()});
  await page.locator('#vbrainScoreV8').click();await page.waitForSelector('#vBrainV8.show');
  await page.screenshot({path:path.join(root,'brain-screen-test.png')});
  assert.equal(await page.evaluate(()=>handleAndroidBack()),'handled');assert.equal(await page.locator('#vBrainV8.show').count(),0);
