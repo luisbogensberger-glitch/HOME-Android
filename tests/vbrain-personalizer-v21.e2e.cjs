@@ -20,13 +20,15 @@ const path = require('path');
     rows.push({id:'todo-open',type:'todo_open',at:now-1000,screen:'todos',data:{}});
     localStorage.setItem('homeAdaptiveActivityV1',JSON.stringify(rows));
     window.__p21logs=[];
-    window.__p21PrivatePatch={};
     window.__p21Context={schema:1,generatedAt:new Date(now).toISOString(),items:[
       {key:'goal.learning_growth',kind:'goal',statement:'Wissen aufbauen und messbare Fortschritte machen.',confidence:1,evidence_count:1,value:{priority:'high'}},
       {key:'preference.brain_ui',kind:'preference',statement:'<img id="context-xss" src=x onerror=alert(1)> Gehirnansicht erhalten.',confidence:1,evidence_count:1,value:{preserve:true}}
     ]};
+    // Simulate an already-installed Host-18 APK: it understands ui_patch and generic Native.saveState,
+    // but it does not yet have the new native brain_context command handler.
+    window.__p21PrivatePatch={brainContext:window.__p21Context};
     window.Native={
-      loadState:k=>k==='vbrainBrainContext'?JSON.stringify(window.__p21Context):k==='vbrainPrivatePatch'?JSON.stringify(window.__p21PrivatePatch):(localStorage.getItem('native:'+k)||''),
+      loadState:k=>k==='vbrainBrainContext'?(localStorage.getItem('native:'+k)||''):k==='vbrainPrivatePatch'?JSON.stringify(window.__p21PrivatePatch):(localStorage.getItem('native:'+k)||''),
       saveState:(k,v)=>localStorage.setItem('native:'+k,v),
       liveRuntimeStatus:()=>JSON.stringify({nativeVersion:18,version:'18.test',source:'bundled',healthy:true,ready:false}),
       markRuntimeHealthy:()=>{},checkLiveUpdate:()=>{},applyLiveUpdate:()=>{},hasNotionConnection:()=>false,requestNotionSync:()=>{},getCalendarEvents:()=> '[]',hasCalendarPermission:()=>false,openUrl:()=>{}
@@ -38,10 +40,12 @@ const path = require('path');
   });
   const page=await context.newPage();
   await page.goto('http://127.0.0.1:8768',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.VBrainPersonalizer?.version===21&&window.VBrainPatch?.version);
-  await page.evaluate(()=>window.VBrainPersonalizer.refresh());
+  await page.waitForFunction(()=>window.VBrainContextCompat?.version===21&&window.VBrainPersonalizer?.version===21&&window.VBrainPatch?.version);
+  await page.evaluate(()=>{window.VBrainContextCompat.sync();window.VBrainPersonalizer.refresh()});
 
-  const first=await page.evaluate(()=>({decision:window.VBrainPersonalizer.decision(),patch:window.HOMEAdaptive?.config?.vbrainPatch,logs:window.__p21logs}));
+  const first=await page.evaluate(()=>({decision:window.VBrainPersonalizer.decision(),patch:window.HOMEAdaptive?.config?.vbrainPatch,logs:window.__p21logs,compat:JSON.parse(localStorage.getItem('native:vbrainBrainContext')||'{}')}));
+  if(first.compat?.items?.length!==2)throw new Error('Existing Host-18 ui_patch context was not persisted through compat bridge '+JSON.stringify(first.compat));
+  if(first.decision?.contextCount!==2)throw new Error('Personalizer did not consume compat context '+JSON.stringify(first.decision));
   if(first.decision?.order?.[0]!=='tube')throw new Error('Expected learning evidence to prioritize Tube '+JSON.stringify(first.decision));
   if(first.patch?.home?.order?.[0]!=='tube'||first.patch?.home?.visible?.todos!==true)throw new Error('Bounded home patch failed '+JSON.stringify(first.patch));
   if(!first.logs.some(x=>x.kind==='behavior_ui_decision'&&x.source==='vbrain-personalizer-v21'))throw new Error('Decision audit event missing');
@@ -57,12 +61,13 @@ const path = require('path');
   if(await page.$('#context-xss'))throw new Error('Context statement was rendered as HTML');
 
   const remote=await page.evaluate(()=>{
-    window.__p21PrivatePatch={vbrainPatch:{home:{orderMode:'fixed',order:['calendar','todos','gym','tube']}}};
+    window.__p21PrivatePatch={brainContext:window.__p21Context,vbrainPatch:{home:{orderMode:'fixed',order:['calendar','todos','gym','tube']}}};
     window.HOMEAdaptive.config.vbrainPatch={};
+    window.VBrainContextCompat.sync();
     return window.VBrainPersonalizer.refresh().decision;
   });
   if(remote.remoteLayoutDeferred!==true||remote.patch?.home)throw new Error('Explicit remote UI layout must win over local personalizer '+JSON.stringify(remote));
 
-  console.log('VBRAIN_PERSONALIZER_V21_OK',JSON.stringify({first:first.decision,remoteDeferred:remote.remoteLayoutDeferred,panel:true,brain:'v19'}));
+  console.log('VBRAIN_PERSONALIZER_V21_OK',JSON.stringify({first:first.decision,compatItems:first.compat.items.length,remoteDeferred:remote.remoteLayoutDeferred,panel:true,brain:'v19'}));
   await browser.close();server.close();
 })().catch(e=>{console.error(e);process.exit(1)});
