@@ -25,7 +25,13 @@ final class LiveRuntime {
         this.state = context.getSharedPreferences("vbrain_live_runtime", Context.MODE_PRIVATE);
         this.root = new File(context.getNoBackupFilesDir(), "vbrain-live");
         root.mkdirs();
-        if (state.getBoolean("bootPending", false)) rollback();
+        int storedHost = state.getInt("host", 0);
+        if (storedHost != HOST) {
+            // A native-host upgrade invalidates only cached UI releases. App data lives elsewhere.
+            state.edit().putInt("host", HOST).remove("active").remove("previous").remove("ready")
+                    .remove("readyVersion").remove("rejected").remove("version").remove("error")
+                    .putBoolean("bootPending", false).commit();
+        } else if (state.getBoolean("bootPending", false)) rollback();
     }
 
     private byte[] read(InputStream input, int limit) throws Exception {
