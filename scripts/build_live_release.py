@@ -17,17 +17,7 @@ def source(name):
     path = ASSETS / name
     if not path.exists():
         path = ROOT / 'home-runtime' / name
-    text = path.read_text()
-    if name == 'vbrain-one-ui-v25.js':
-        # Tube's own onclick handler creates the completion and disables the button.
-        # Our document click hook then runs in bubble phase and enriches that row
-        # synchronously. The click could only start while submit was enabled, so the
-        # post-handler disabled state must not suppress persistence.
-        text = text.replace("if(!submit||submit.disabled)return;", "if(!submit)return;")
-        text = text.replace("if(last&&(!title||last.title===title)){", "if(last){")
-        text = text.replace("}catch(_){}setTimeout(()=>{try{const list=tubeState?.completed||[]", "}catch(_){}try{const list=tubeState?.completed||[]")
-        text = text.replace("}catch(_){}updateHome()},0)},true);", "}catch(_){}updateHome()});")
-    return text
+    return path.read_text()
 
 def build():
     html = (ASSETS / 'index.html').read_text()

@@ -21,11 +21,11 @@ const root=path.resolve(__dirname,'..');
       liveRuntimeStatus:()=>JSON.stringify({nativeVersion:18,version:'18.test',source:'bundled',healthy:true,checkedAt:Date.now(),ready:false}),
       markRuntimeHealthy:()=>{window.__healthy=true},checkLiveUpdate:()=>{window.__checks++},applyLiveUpdate:()=>{window.__applied++},
       hasNotionConnection:()=>true,configureNotion:()=>{},configureVeqrya:()=>{},disconnectNotion:()=>{},requestNotionSync:()=>{window.__notionSync++},setNotionTaskDone:()=>{},createNotionTask:()=>{},
-      hasCalendarPermission:()=>false,getCalendarEvents:()=>'[]',requestCalendarPermission:()=>{},openUrl:()=>{}
+      hasCalendarPermission:()=>true,getCalendarEvents:()=>JSON.stringify([{id:1,title:'UCL seminar',start:Date.now(),end:Date.now()+3600000,location:'Bloomsbury',allDay:false}]),requestCalendarPermission:()=>{},openUrl:()=>{}
     };
     window.AdaptiveNative={
       logActivity:r=>window.__events.push(JSON.parse(r)),queuePrivateActivity:r=>{window.__private.push(JSON.parse(r));return true},
-      flushPrivateSync:()=>{window.__flushes++},checkDeviceCommands:()=>{window.__commands++}
+      flushPrivateSync:()=>{window.__flushes++},checkDeviceCommands:()=>{window.__commands++},reviewSentence:r=>{const request=JSON.parse(r);setTimeout(()=>window.onHomeSentenceReview?.({requestId:request.requestId,review:{verdict:'Clear application',overall:84,feedback:'You applied the concept to a concrete decision.',nextFocus:'precision'}}),100)}
     };
   });
 
@@ -44,30 +44,42 @@ const root=path.resolve(__dirname,'..');
     sync:document.querySelectorAll('.syncBar').length,
     legacy:document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#vbRestoreInline,#v24BrainOverlay').length,
     poison:!!window.__POISON__||!!window.__BEHAVIOR_POISON__,
-    oldJs:localStorage.getItem('homeRemoteJsV2'),oldBehaviour:localStorage.getItem('homeBehaviorJsV3'),notionSync:window.__notionSync
+    oldJs:localStorage.getItem('homeRemoteJsV2'),oldBehaviour:localStorage.getItem('homeBehaviorJsV3')
   }));
-  assert.deepEqual(boot,{injected:1,cards:3,order:['gym','tube','todos'],signal:true,brainText:true,sync:0,legacy:0,poison:false,oldJs:null,oldBehaviour:null,notionSync:0});
+  assert.deepEqual(boot,{injected:1,cards:4,order:['gym','tube','todos','calendar'],signal:true,brainText:true,sync:1,legacy:0,poison:false,oldJs:null,oldBehaviour:null});
   assert.deepEqual(heavy,[],'no retired runtime requests');
+  await page.locator('.v25HomeCard.calendar').click();
+  await page.waitForSelector('#calendarScreen.show');
+  assert.ok((await page.locator('#calendarList').textContent()).includes('UCL seminar'),'calendar must display events synced on the phone');
+  assert.equal(await page.evaluate(()=>handleAndroidBack()),'handled');
 
   for(let i=0;i<3;i++){
     await page.evaluate(()=>window.onAppResume?.());
     await page.waitForTimeout(120);
     const state=await page.evaluate(()=>({cards:document.querySelectorAll('.v25HomeCard').length,order:[...document.querySelectorAll('.v25HomeCard')].map(x=>x.dataset.route),legacy:document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#v24BrainOverlay').length,sync:window.__notionSync}));
-    assert.deepEqual(state,{cards:3,order:['gym','tube','todos'],legacy:0,sync:0},'resume must keep exactly one Home and never auto-sync tasks');
+    assert.deepEqual({cards:state.cards,order:state.order,legacy:state.legacy},{cards:4,order:['gym','tube','todos','calendar'],legacy:0},'resume must keep exactly one Home');
+    assert.ok(state.sync<=2,'resume must throttle background task sync');
   }
 
   const routeMs=await page.evaluate(()=>{const t=performance.now();showScreen('todos');return performance.now()-t});
   assert.ok(routeMs<50,`todo route should be synchronous, got ${routeMs}ms`);
   await page.waitForSelector('#todosScreen.show');
-  const todoPerf=await page.evaluate(()=>({rows:document.querySelectorAll('#todoList .todo').length,more:!!document.querySelector('#todoList .v25More'),total:document.getElementById('todoStats').textContent,sync:window.__notionSync,backdrop:getComputedStyle(document.querySelector('#todoList .todo')).backdropFilter}));
+  const todoPerf=await page.evaluate(()=>({rows:document.querySelectorAll('#todoList .todo').length,more:!!document.querySelector('#todoList .v25More'),total:document.getElementById('todoStats').textContent,sync:window.__notionSync,syncBar:document.querySelector('#todosScreen .syncBar')?.textContent,backdrop:getComputedStyle(document.querySelector('#todoList .todo')).backdropFilter}));
   assert.ok(todoPerf.rows<=18,'193 tasks must not become 193 DOM cards');
-  assert.equal(todoPerf.more,true);assert.equal(todoPerf.total,'193 open');assert.equal(todoPerf.sync,0);assert.ok(todoPerf.backdrop===''||todoPerf.backdrop==='none');
+  assert.equal(todoPerf.more,true);assert.equal(todoPerf.total,'193 open');assert.ok(todoPerf.sync>=1);assert.ok(todoPerf.syncBar?.includes('Sync now')&&!todoPerf.syncBar.includes('Notion'),'the on-device task screen must retain its sync controls');assert.ok(todoPerf.backdrop===''||todoPerf.backdrop==='none');
 
   await page.locator('#todoList .todo').first().click();
   await page.waitForSelector('#todoDetailScreen.show #detailPersonalNote');
   await page.fill('#detailPersonalNote','Remember this private task note for the brain.');
   await page.waitForTimeout(650);
   assert.ok(await page.evaluate(()=>window.__private.some(x=>x.kind==='private_text_field'&&x.field==='detailPersonalNote'&&x.text.includes('private task note'))),'task note must be privately captured');
+  await page.evaluate(()=>showScreen('todos'));
+  await page.fill('#newTodo','Keep this task across a stale sync');await page.click('.composer button');
+  await page.locator('#todoList .todo').first().locator('.todoCheck').click();
+  const retained=await page.evaluate(()=>{const t=todoState.archive.find(x=>x.title==='Keep this task across a stale sync');onNotionSnapshot({open:[{id:t.id,title:t.title,area:'Personal',details:{personalNote:''}}],completed:[],pendingTaskIds:[t.id]});return{archived:todoState.archive.some(x=>x.id===t.id),open:todoState.active.some(x=>x.id===t.id)}});
+  assert.deepEqual(retained,{archived:true,open:false},'a stale server snapshot must not resurrect a locally completed task');
+  await page.evaluate(()=>VBrainLive.openReminder({target:'todos',taskId:'task-1'}));
+  assert.equal(await page.locator('#todoDetailScreen.show #detailTitle').textContent(),'Task 1','a reminder tap must open its task');
 
   await page.evaluate(()=>showScreen('tube'));
   await page.waitForSelector('#tubeScreen.show #grid .card');
@@ -83,6 +95,8 @@ const root=path.resolve(__dirname,'..');
   const learned=await page.evaluate(()=>({last:tubeState.completed[tubeState.completed.length-1],private:window.__private}));
   assert.equal(learned.last.sentence,sentence,'Tube sentence must survive completion');
   assert.ok(learned.private.some(x=>x.kind==='learning_attempt'&&x.sentence===sentence),'Tube sentence must enter private learning stream');
+  await page.waitForFunction(()=>tubeState.completed.at(-1)?.reviewStatus==='reviewed');
+  assert.equal(await page.locator('#feedback h3').textContent(),'Clear application · 84/100','semantic review must replace the fallback feedback');
 
   await page.evaluate(()=>showScreen('home'));
   const started=Date.now();
@@ -91,6 +105,7 @@ const root=path.resolve(__dirname,'..');
   const liveFieldMs=Date.now()-started;assert.ok(liveFieldMs<4000,`live field took ${liveFieldMs}ms`);
   await page.fill('.v25RemoteInput','A remote field can still be private.');await page.waitForTimeout(650);
   assert.ok(await page.evaluate(()=>window.__private.some(x=>x.kind==='private_text_field'&&x.text.includes('remote field'))),'remote field must use same private capture path');
+  await page.locator('.v25RemoteInput').evaluate(el=>el.blur());
 
   liveUi={schema:1,version:'25-test-c',pollMs:1500,theme:{accent:'#f2ce62'},home:{mode:'replace',columns:1,components:[{type:'button',kicker:'NEXT UI',title:'A completely different Home',text:'Still one runtime.',action:{type:'route',target:'todos'}}]},slots:{gym:[],todos:[],tube:[],todoDetail:[]}};
   await page.waitForSelector('#v25DynamicHome >> text=A completely different Home',{timeout:4000});
@@ -102,8 +117,15 @@ const root=path.resolve(__dirname,'..');
   await page.click('#vbrainScoreV8');
   await page.waitForSelector('#v25Brain.show #v25BrainCanvas');
   assert.ok(await page.evaluate(()=>document.getElementById('v25BrainCanvas').width>0),'living brain canvas must render');
+  await page.screenshot({path:path.join(root,'brain-screen-test.png'),fullPage:false});
+  const graph=await page.evaluate(()=>{for(let i=0;i<105;i++)VBrain.branch('initiative',{id:'persist-'+i,label:'Persist '+i,description:'Retained branch '+i});const m=VBrain.model(true);return{nodes:m.nodes.length,found:VBrain.search('Persist 104').length,stored:JSON.parse(Native.loadState('vbrainGraphV26')).nodes['persist-104']!==undefined}});
+  assert.ok(graph.nodes>=115&&graph.found===1&&graph.stored,'brain must retain more than 100 branches');
+  await page.evaluate(()=>VBrain.openBrain());
+  assert.equal(await page.locator('.v25BrainSearch.show').count(),1,'large network must be searchable');
   assert.equal(await page.evaluate(()=>handleAndroidBack()),'handled');
   assert.equal(await page.locator('#v25Brain.show').count(),0);
+  await page.reload();await page.waitForFunction(()=>window.VBrain?.version===25);
+  assert.ok(await page.evaluate(()=>VBrain.model(true).nodes.some(n=>n.id==='persist-104')),'branches must survive restart');
 
   await page.evaluate(()=>window.onVBrainLiveUpdate({ready:true}));
   await page.waitForFunction(()=>window.__applied===1);

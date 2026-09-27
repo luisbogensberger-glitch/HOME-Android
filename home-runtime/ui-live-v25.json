@@ -12,6 +12,7 @@
   },
   "slots": {
     "gym": [],
+    "calendar": [],
     "todos": [],
     "tube": [],
     "todoDetail": []
