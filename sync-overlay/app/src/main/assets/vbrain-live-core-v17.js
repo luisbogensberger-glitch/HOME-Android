@@ -33,7 +33,7 @@
   function status(){
     try{if(native())live=JSON.parse(Native.liveRuntimeStatus())}catch(_){}
     try{if(bridge())sync=JSON.parse(AdaptiveNative.homeSyncStatus())}catch(_){}
-    const b=document.getElementById('vbrainLiveStatus17');if(b)b.textContent='V BRAIN 17 · '+(live.ready?'Update ready':!sync.configured?'Connect sync':sync.pending?sync.pending+' pending':'Connected');
+    const b=document.getElementById('vbrainLiveStatus17');if(b)b.textContent='V BRAIN 17 · '+(live.ready?'Update ready':!sync.configured?'Connect sync':sync.pending?sync.pending+' pending':sync.lastSyncedAt?'Connected':'Sync waiting');
     return{live,sync};
   }
   function safeApply(){
@@ -87,6 +87,14 @@
       if(screen()==='todoDetail'&&!privateField(document.activeElement))renderTodoDetail();
       setSyncStatus('Synced');planReminders();
     }finally{syncingNotion=false}
+  };
+  window.renderLearningArchive=function(){
+    const el=document.getElementById('learnHistory');if(!el)return;el.innerHTML='';
+    for(const row of (tubeState.completed||[]).slice(-20).reverse()){
+      const item=document.createElement('div');item.className='learnHistoryItem';
+      const outcome=row.semanticReview?`AI review ${Number(row.semanticReview.overall)}/100`:row.sentence?'Answer saved · review pending':typeof row.quizCorrect==='boolean'?(row.quizCorrect?'Quiz correct':'Quiz completed'):'Completed';
+      item.innerHTML=`<b>${esc(row.title)}</b><span>${esc(outcome)} · ${esc(new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'}).format(row.at))}</span>`;el.appendChild(item);
+    }
   };
   function planReminders(){
     if(!bridge()||typeof AdaptiveNative.scheduleSmartReminder!=='function')return;
