@@ -7,7 +7,8 @@
     {name:'runtime.css',key:'homeRemoteCssV2',kind:'css',id:'homeRemoteExtensionCss'},
     {name:'runtime.js',key:'homeRemoteJsV2',kind:'js',label:'home-runtime-remote.js'},
     {name:'behavior-v3.css',key:'homeBehaviorCssV3',kind:'css',id:'homeBehaviourExtensionCss'},
-    {name:'behavior-v3.js',key:'homeBehaviorJsV3',kind:'js',label:'home-behaviour-remote.js'}
+    {name:'behavior-v3.js',key:'homeBehaviorJsV3',kind:'js',label:'home-behaviour-remote.js'},
+    {name:'vbrain-compat-restore-v1.js',key:'vbrainCompatRestoreV1',kind:'js',label:'vbrain-compat-restore-v1.js'}
   ];
   let refreshing=false;
   async function fetchText(name){
@@ -36,7 +37,7 @@
           if(old&&apply(part,old,'cache'))state.cache.push(part.name);else state.failed.push(part.name);
         }
       });
-      try{window.HOMELivingBrainV6?.repair?.();window.HOMEStateV2?.repair?.()}catch(e){}
+      try{window.HOMELivingBrainV6?.repair?.();window.HOMEStateV2?.repair?.();window.VBrainCompatRestore?.repair?.()}catch(e){}
       try{window.homeAdaptiveLog&&window.homeAdaptiveLog('remote_extension_loaded',{version:3,fresh:state.fresh,cache:state.cache,failed:state.failed})}catch(e){}
       return state;
     }finally{refreshing=false}
