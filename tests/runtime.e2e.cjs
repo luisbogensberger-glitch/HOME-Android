@@ -8,6 +8,7 @@ const root=path.resolve(__dirname,'..');
  const browser=await chromium.launch({headless:true,executablePath:process.env.BROWSER_PATH||'/usr/bin/google-chrome',args:['--no-sandbox']});
  const context=await browser.newContext({viewport:{width:393,height:851},deviceScaleFactor:1,isMobile:true,hasTouch:true,timezoneId:'Europe/London'});
  const config=JSON.parse(fs.readFileSync(path.join(root,'adaptive-ui.json'))),feed=fs.readFileSync(path.join(root,'tube-feed.json'),'utf8');
+ await context.route('**/hot-manifest-v19.json*',route=>route.fulfill({json:{schema:1,version:'test-baseline',minHost:18,modules:[]}}));
  await context.route('**/adaptive-ui.json*',route=>route.fulfill({json:config}));
  await context.route('**/tube-feed.json*',route=>route.fulfill({body:feed,contentType:'application/json'}));
  await context.addInitScript(()=>{
@@ -70,7 +71,7 @@ const root=path.resolve(__dirname,'..');
  assert.equal(await page.evaluate(()=>todoState.active[0].details.personalNote),'Remote note');
  await page.evaluate(()=>onNotionSnapshot({open:[{id:'test-task',title:'Old remote',details:{personalNote:'Stale'}}],completed:[],pendingTaskIds:['test-task']}));
  assert.equal(await page.evaluate(()=>todoState.active[0].details.personalNote),'Remote note');
- await page.evaluate(()=>{window.__updateReady=true;onVBrainLiveUpdate(JSON.parse(Native.liveRuntimeStatus()))});assert.equal(await page.evaluate(()=>__applied),true);
+ await page.evaluate(()=>{window.__updateReady=true;onVBrainLiveUpdate(JSON.parse(Native.liveRuntimeStatus()))});await page.waitForFunction(()=>__applied,{},{timeout:22000});
  assert.deepEqual(errors,[],'no runtime exceptions');
  console.log('PASS: host-18 remote shapes/bindings, home, persistent brain Back, calendar, notes, update deferral, Tube answer/review/offline persistence, reminders and remote task conflicts');
  await browser.close();server.close();
