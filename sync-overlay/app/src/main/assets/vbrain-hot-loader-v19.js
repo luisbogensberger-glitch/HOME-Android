@@ -32,9 +32,9 @@
   if(status.applying)return false;const v=bundle.manifest.version;if(rejected(v))return false;await verify(bundle);status.applying=true;let error=null;
   const onError=e=>{error=e.error||e.reason||Error(e.message||'Hot patch failed')};window.addEventListener('error',onError);window.addEventListener('unhandledrejection',onError);
   try{
-   write(PENDING,{version:v,at:Date.now()});removeStyles();
+   if(source!=='cache')write(PENDING,{version:v,at:Date.now()});removeStyles();
    for(const p of bundle.parts){if(p.kind==='css'){const s=document.createElement('style');s.dataset.vbrainHot=v;s.textContent=p.body;document.head.appendChild(s)}else new Function(p.body+'\n//# sourceURL=vbrain-hot/'+p.name)()}
-   await new Promise(r=>setTimeout(r,1800));if(error)throw error;
+   if(source!=='cache')await new Promise(r=>setTimeout(r,1800));if(error)throw error;
    if(!window.VBrainTodos||!window.VBrainGraph||document.querySelectorAll('#homeScreen .homeCard').length!==4)throw Error('Core interface health check failed');
    if(source!=='cache'){const old=read(GOOD);if(old&&old.manifest?.version!==v)write(PREVIOUS,old);write(GOOD,bundle)}
    localStorage.removeItem(PENDING);hasLiveJS=bundle.parts.some(p=>p.kind==='js');status={...status,version:v,source,modules:bundle.parts.length,healthy:true,error:'',pending:''};document.documentElement.dataset.vbrainHot=v;log('hot_patch_applied',{version:v,source,modules:bundle.parts.length});return true;
