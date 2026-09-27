@@ -18,16 +18,15 @@ CRITICAL_JS = [
 ]
 
 # Everything else is optional capability and is hydrated in tiny idle slices.
-# Old layout owners, repair loops, quest UI and the redundant hot-module loader are
+# Old layout owners, repair loops, quest UI and redundant update/telemetry loops are
 # deliberately absent. UI changes use the fast declarative config lane; code changes
 # use the verified native live-release lane.
 IDLE_JS = [
     'todo-premium.js', 'tube-remote.js', 'vbrain-safe-shell-v3.js',
-    'vbrain-context-v12.js', 'vbrain-sense-v20.js', 'vbrain-context-compat-v21.js',
+    'vbrain-sense-v20.js', 'vbrain-context-compat-v21.js',
     'learning-engine-v10.js', 'learning-resilience-v11.js',
     'vbrain-android-back-v14.js', 'vbrain-live-core-v17.js', 'vbrain-sync-reconnect-v21.js',
-    'vbrain-remote-ui-v18.js', 'vbrain-todo-core-v19.js',
-    'vbrain-graph-v19.js', 'vbrain-runtime-v19.js',
+    'vbrain-remote-ui-v18.js', 'vbrain-todo-core-v19.js', 'vbrain-graph-v19.js',
     'remote-extension-loader.js',
 ]
 
