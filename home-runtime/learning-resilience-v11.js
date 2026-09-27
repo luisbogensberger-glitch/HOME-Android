@@ -19,13 +19,24 @@
     try{Native?.saveState?.('rawLearningAttemptsV11',JSON.stringify(trimmed))}catch(_){}
   }
   function selection(reader){const el=reader?.querySelector('.option.selected'),n=el?Number(el.dataset.n):null;return Number.isInteger(n)?n:null}
+  function mirrorCompletion(card,sentence,selected,correct,at){
+    setTimeout(()=>{
+      try{
+        if(typeof tubeState==='undefined'||!Array.isArray(tubeState?.completed))return;
+        const row=[...tubeState.completed].reverse().find(x=>String(x?.id||'')===String(card.id||'')&&Math.abs(Number(x?.at||0)-at)<5000);
+        if(!row)return;
+        row.sentence=sentence;row.selected=selected;row.correct=correct;row.quizCorrect=Number.isInteger(selected)&&Number.isInteger(correct)?selected===correct:null;row.reviewStatus=row.reviewStatus||'pending';
+        if(typeof saveStore==='function')saveStore('tubeState',tubeState);else{const raw=JSON.stringify(tubeState);localStorage.setItem('tubeState',raw);try{Native?.saveState?.('tubeState',raw)}catch(_){}}
+      }catch(_){}
+    },0);
+  }
   function captureRawAttempt(e){
     const button=e.target?.closest?.('#submit');if(!button||button.disabled)return;
     const sentence=document.getElementById('answer')?.value?.trim()||'';if(!sentence)return;
     const card=cardForReader();if(!card)return;
     const reader=document.getElementById('reader'),selected=selection(reader),correct=Number.isInteger(card.correct)?card.correct:null,at=Date.now(),list=rows();
     list.push({id:`local-${String(card.id||'card')}-${at}`,at,cardId:String(card.id||''),title:String(card.title||''),topic:String(card.topic||''),method:String(reader?.dataset?.learningMethod||''),contentDepth:String(reader?.dataset?.learningDepth||''),prompt:String(reader?.querySelector('.promptText')?.textContent||card.prompt||card.q||''),sentence,selected,correct,quizCorrect:Number.isInteger(selected)&&Number.isInteger(correct)?selected===correct:null,reviewStatus:'pending',review:null});
-    persist(list);log('learning_raw_attempt_saved',{cardId:String(card.id||''),method:String(reader?.dataset?.learningMethod||''),hasQuiz:Number.isInteger(selected),chars:sentence.length});
+    persist(list);mirrorCompletion(card,sentence,selected,correct,at);log('learning_raw_attempt_saved',{cardId:String(card.id||''),method:String(reader?.dataset?.learningMethod||''),hasQuiz:Number.isInteger(selected),chars:sentence.length});
   }
   function latestPending(cardId,withinMs=5*60*1000){const list=rows();for(let i=list.length-1;i>=0;i--){const r=list[i];if(String(r.cardId||'')===String(cardId||'')&&r.reviewStatus==='pending'&&Date.now()-Number(r.at||0)<=withinMs)return{list,index:i,row:r}}return null}
   function markResult(result){
