@@ -26,7 +26,7 @@ IDLE_JS = [
     'learning-engine-v10.js', 'learning-resilience-v11.js',
     'vbrain-android-back-v14.js', 'vbrain-live-core-v17.js', 'vbrain-sync-reconnect-v21.js',
     'vbrain-remote-ui-v18.js', 'vbrain-todo-core-v19.js',
-    'vbrain-graph-v19.js', 'vbrain-hot-loader-v19.js',
+    'vbrain-graph-v19.js', 'vbrain-hot-loader-v19.js', 'vbrain-runtime-v19.js',
     'vbrain-compat-restore-v1.js', 'remote-extension-loader.js', 'vbrain-backup-retirement-v22.js',
 ]
 
