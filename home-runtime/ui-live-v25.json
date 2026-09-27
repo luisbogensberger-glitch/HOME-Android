@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "version": "25.0.0",
+  "pollMs": 2000,
+  "theme": {
+    "accent": "#f2ce62"
+  },
+  "home": {
+    "mode": "append",
+    "columns": 1,
+    "components": []
+  },
+  "slots": {
+    "gym": [],
+    "todos": [],
+    "tube": [],
+    "todoDetail": []
+  }
+}
