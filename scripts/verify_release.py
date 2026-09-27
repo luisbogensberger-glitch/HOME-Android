@@ -9,14 +9,43 @@ assert len(html.encode())==manifest['bytes']
 assert manifest['minNative']==18
 assert manifest['version'].startswith('18.')
 assert 'name="vbrain-host" content="18"' in html
+
+# V24 architecture: one visible UI owner, headless config/data plane and idle capabilities.
+assert 'data-source="vbrain-core-v24.js"' in html and '__VBRAIN_CORE_V24__' in html
+assert 'data-source="vbrain-shell-v24.js"' in html and '__VBRAIN_SHELL_V24__' in html
+assert 'data-source="vbrain-gym-v24.js"' in html and '__VBRAIN_GYM_V24__' in html
+assert 'data-source="vbrain-idle-bootstrap-v24"' in html
+assert '__VBRAIN_SINGLE_UI_OWNER_V24__' in html
+assert "setInterval(poll,2500)" in html
+assert "setInterval(tick,4000)" in html
+assert 'Native?.markRuntimeHealthy?.' in html
+assert 'MutationObserver' in html
+assert "localStorage.setItem('homeTubeLayoutV6','stack')" in html
+assert "window.__vbrainIdleQueue=window.__vbrainIdleQueue||[]" in html
+assert "dataset.vbrainHydrated='24'" in html
+assert html.index('data-source="vbrain-core-v24.js"') < html.index('data-source="vbrain-shell-v24.js"')
+assert html.index('data-source="vbrain-shell-v24.js"') < html.index('data-source="vbrain-safe-shell-v3.js"')
+
+# These old layout owners caused resume/re-hydration UI churn and must not ship.
+for retired in [
+ 'adaptive-runtime.js','runtime.js','vbrain-patch-v10.js','vbrain-autonomy-v11.js',
+ 'vbrain-personalizer-v21.js','vbrain-personalizer-hook-v21.js','vbrain-ui-performance-v23.js'
+]:
+ assert f'data-source="{retired}"' not in html, retired
+assert 'Build momentum that matters.' not in html
+assert "TODAY'S QUEST" not in html
+assert '__HOME_QUEST_LEARN_V7__' not in html
+
+# Required capabilities remain, but hydrate outside first paint.
+assert 'data-source="vbrain-safe-shell-v3.js"' in html
 assert 'data-source="vbrain-remote-ui-v18.js"' in html
+assert '__VBRAIN_REMOTE_UI_V18__' in html
 assert 'data-source="vbrain-sense-v20.js"' in html
 assert 'data-source="vbrain-context-compat-v21.js"' in html
 assert 'vbrainPrivatePatch' in html and 'brainContext' in html and 'brain_context_compat_synced' in html
-assert 'data-source="vbrain-personalizer-v21.js"' in html
-assert 'data-source="vbrain-personalizer-hook-v21.js"' in html
 assert 'data-source="vbrain-sync-reconnect-v21.js"' in html
 assert 'Reconnect HOME' in html and 'Native.configureVeqrya' in html and 'Native.configureNotion' in html and 'AdaptiveNative?.checkDeviceCommands?.()' in html
+assert 'data-source="vbrain-runtime-v19.js"' in html
 assert "document.getElementById('vBrainV19')" in html
 assert "closest('#vBrainV8')" in html
 assert 'data-source="remote-extension-loader.js"' in html
@@ -29,16 +58,10 @@ assert "{name:'behavior-v3.js'" not in html
 assert 'data-source="vbrain-backup-retirement-v22.js"' in html
 assert '__VBRAIN_BACKUP_RETIREMENT_V22__' in html
 assert "'vbRestoreInline'" in html and "'vBackupCard'" in html and "'homeRecoveryLauncher'" in html
-assert html.index('data-source="vbrain-backup-retirement-v22.js"') > html.index('data-source="remote-extension-loader.js"')
-assert 'data-source="vbrain-ui-performance-v23.js"' in html
-assert '__VBRAIN_UI_PERFORMANCE_V23__' in html
-assert "localStorage.setItem('homeTubeLayoutV6','stack')" in html
-assert '#homeDayScoreV4' in html and '#homeMomentum' in html and '#vbrainLiveStatus17' in html
-assert 'setInterval(tick,5000)' in html and 'VBrainHotLoader?.refresh?.()' in html and 'Native?.checkLiveUpdate?.()' in html
-assert 'backdrop-filter:none!important' in html
-assert html.index('data-source="vbrain-ui-performance-v23.js"') > html.index('data-source="vbrain-backup-retirement-v22.js"')
 assert 'data-source="behavior-v3.js"' not in html
 assert 'data-source="vbrain-sense-v13.js"' not in html
+assert 'backdrop-filter:none!important' in html
+
 assert 'brain_context' in (root/'sync-overlay/app/src/main/java/com/luis/home/HomeSyncJob.java').read_text()
 assert 'vbrainBrainContext' in (root/'sync-overlay/app/src/main/java/com/luis/home/HomeSyncJob.java').read_text()
 assert (root/'sync-overlay/app/src/main/java/com/luis/home/VeqryaSession.java').exists()
@@ -56,4 +79,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + live context compat + Personalizer v21 + Veqrya/HOME reconnect fallback + backup retirement v22 + unified fast UI v23 + V19 private brain context + lean HOME compatibility loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, single-owner v24 + fast headless config + idle hydration + remote declarative UI + Sense v20 + context compat + Veqrya/HOME reconnect + V19 brain/runtime + lean HOME loader + backup retirement + complete release hash'+(' and APK bytes' if len(sys.argv)>1 else ''))
