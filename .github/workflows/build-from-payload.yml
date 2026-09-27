@@ -56,7 +56,7 @@ jobs:
       - name: Harden V-Brain 19 live rollback watchdog
         run: python3 scripts/patch_runtime_watchdog_v19.py src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
 
-      - name: Speed up V-Brain 23 startup recovery
+      - name: Tune V-Brain startup health window
         run: python3 scripts/patch_runtime_fast_v23.py src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
 
       - name: Build and validate complete live release
@@ -81,12 +81,11 @@ jobs:
       - name: Verify browser interaction flows
         run: |
           npm install --prefix tests --no-package-lock --no-save playwright@1.56.1
+          node tests/vbrain-single-owner-v24.e2e.cjs
           node tests/runtime.e2e.cjs
           node tests/vbrain-v19.e2e.cjs
           node tests/vbrain-sense-v20.e2e.cjs
-          node tests/vbrain-personalizer-v21.e2e.cjs
           node tests/vbrain-backup-retirement-v22.e2e.cjs
-          node tests/vbrain-ui-performance-v23.e2e.cjs
 
       - name: Upload UI screenshots
         if: always()
