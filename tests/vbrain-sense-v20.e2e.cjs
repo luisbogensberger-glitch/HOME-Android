@@ -57,9 +57,11 @@ const path = require('path');
   const kinds=result.generic.map(x=>x.kind);
   if(result.status?.version!==20||result.status?.uiOnly!==true)throw new Error('Sense status failed '+JSON.stringify(result.status));
   if(!kinds.includes('vbrain_sense_ready')||!kinds.includes('ui_press_v20')||!kinds.includes('field_activity_v20'))throw new Error('Generic sensing failed '+JSON.stringify(kinds));
-  const privateText=result.privateEvents.filter(x=>x.kind==='private_text_snapshot_v20');
+  const privateText=result.privateEvents.filter(x=>x.kind==='private_text_field');
   if(privateText.length!==1)throw new Error('Private text count failed '+JSON.stringify(result.privateEvents));
-  if(privateText[0]?.payload?.text!=='I understand ideas better when I explain the causal chain in my own words.')throw new Error('Private text payload failed');
+  if(privateText[0]?.text!=='I understand ideas better when I explain the causal chain in my own words.')throw new Error('Private text payload failed');
+  if(privateText[0]?.field!=='reflectionText|Reflection'||privateText[0]?.fieldType!=='textarea')throw new Error('Supabase private-text contract failed '+JSON.stringify(privateText[0]));
+  if(privateText[0]?.data?.sensorVersion!==20)throw new Error('Sensor provenance missing '+JSON.stringify(privateText[0]));
   if(JSON.stringify(result.privateEvents).includes('must-never-enter-private-stream'))throw new Error('Sensitive field leaked into private stream');
   if(result.legacyAccessBox)throw new Error('Sense module must not inject legacy permission UI');
 
