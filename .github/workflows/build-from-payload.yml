@@ -82,6 +82,7 @@ jobs:
           node tests/vbrain-v19.e2e.cjs
           node tests/vbrain-sense-v20.e2e.cjs
           node tests/vbrain-personalizer-v21.e2e.cjs
+          node tests/vbrain-backup-retirement-v22.e2e.cjs
 
       - name: Upload UI screenshots
         if: always()
