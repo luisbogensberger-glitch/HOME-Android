@@ -67,6 +67,7 @@ jobs:
         run: |
           npm install --prefix tests --no-package-lock --no-save playwright@1.56.1
           node tests/runtime.e2e.cjs
+          node tests/vbrain-v19.e2e.cjs
 
       - name: Upload UI screenshots
         if: always()
