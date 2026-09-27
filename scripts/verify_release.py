@@ -10,6 +10,7 @@ assert manifest['minNative']==18
 assert manifest['version'].startswith('18.')
 assert 'name="vbrain-host" content="18"' in html
 assert 'data-source="vbrain-remote-ui-v18.js"' in html
+assert 'data-source="vbrain-sense-v20.js"' in html
 assert 'data-source="remote-extension-loader.js"' in html
 assert '__HOME_REMOTE_LOADER_V4__' in html
 assert "CACHE_SCHEMA='host18-v4'" in html
@@ -31,4 +32,4 @@ if len(sys.argv)>1:
   shipped=apk.read('assets/live-app.html')
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
-print(f'PASS: {len(scripts)} scripts, host 18 renderer + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: {len(scripts)} scripts, host 18 renderer + Sense v20 + HOME v4 direct loader, legacy-cache quarantine, complete release hash, notification receiver, background job'+(' and APK bytes' if len(sys.argv)>1 else ''))
