@@ -38,7 +38,8 @@ assert 'Build momentum that matters.' not in html
 assert "TODAY'S QUEST" not in html
 assert '__HOME_QUEST_LEARN_V7__' not in html
 assert '__VBRAIN_HOT_LOADER_V19__' not in html
-assert 'vbrainCompatReminderV1' not in html
+# The old reminder ID is intentionally present only in v24's quarantine list.
+assert "'vbrainCompatReminderV1'" in html
 
 # Required capabilities remain, but hydrate outside first paint.
 assert 'data-source="vbrain-safe-shell-v3.js"' in html
