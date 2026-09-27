@@ -12,6 +12,7 @@ assert 'name="vbrain-host" content="18"' in html
 assert 'data-source="vbrain-remote-ui-v18.js"' in html
 assert 'data-source="vbrain-sense-v20.js"' in html
 assert 'data-source="vbrain-personalizer-v21.js"' in html
+assert 'data-source="vbrain-personalizer-hook-v21.js"' in html
 assert 'data-source="remote-extension-loader.js"' in html
 assert '__HOME_REMOTE_LOADER_V4__' in html
 assert "CACHE_SCHEMA='host18-v4'" in html
