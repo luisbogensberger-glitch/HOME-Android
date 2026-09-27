@@ -40,7 +40,7 @@ const root=path.resolve(__dirname,'..');
     cards:document.querySelectorAll('.v25HomeCard').length,
     order:[...document.querySelectorAll('.v25HomeCard')].map(x=>x.dataset.route),
     signal:document.getElementById('vbrainScoreV8')?.innerText.includes('Your signal today'),
-    brainText:document.getElementById('vbrainScoreV8')?.innerText.includes('Behaviour intelligence'),
+    brainText:document.getElementById('vbrainScoreV8')?.textContent.includes('Behaviour intelligence'),
     sync:document.querySelectorAll('.syncBar').length,
     legacy:document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#vbRestoreInline,#v24BrainOverlay').length,
     poison:!!window.__POISON__||!!window.__BEHAVIOR_POISON__,
