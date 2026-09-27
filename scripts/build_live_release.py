@@ -8,12 +8,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'sync-overlay/app/src/main/assets'
 
-# V24 deliberately keeps the verified base document as the product core.
-# One small runtime owns telemetry, Brain, live UI and fast declarative changes.
-# Historical UI/adaptation/repair layers stay in git for migration/reference only;
-# they are NOT executed by the shipping document.
+# V25 has exactly one visible/runtime owner. The verified base document supplies
+# local data functions and native bridges only; historical adaptation layers do not execute.
 CSS = []
-JS = ['vbrain-lean-runtime-v24.js']
+JS = ['vbrain-one-ui-v25.js']
 
 def source(name):
     path = ASSETS / name
@@ -25,10 +23,17 @@ def build():
     html = (ASSETS / 'index.html').read_text()
     html = re.sub(r'<script\b[^>]*\bsrc=["\'][^"\']+["\'][^>]*>\s*</script>', '', html, flags=re.I)
     html = re.sub(r'<link\b[^>]*\brel=["\']stylesheet["\'][^>]*>', '', html, flags=re.I)
+
+    # The old base used to render every task and start HOME/Notion sync before the
+    # single UI owner had even booted. Keep action-based task sync, but remove all
+    # automatic refreshes and the heavyweight pre-render from the shipping document.
+    html = html.replace("window.onAppResume=()=>{if(notionConnected())refreshNotion()};", "window.onAppResume=()=>{};")
+    html = html.replace("if(name==='todos'){renderTodos();refreshNotion()}", "if(name==='todos'){renderTodos()}")
+    html = html.replace("renderTodos();updateHome();updateSyncUI();if(notionConnected())refreshNotion();", "")
+
     html = html.replace('\\n</body>', '\n</body>').replace('<title>HOME</title>', '<title>V-Brain</title>')
     styles = '\n'.join('<style data-source="'+name+'">\n'+source(name)+'\n</style>' for name in CSS)
     scripts = '\n'.join('<script data-source="'+name+'">\n'+source(name).replace('</script', '<\\/script')+'\n</script>' for name in JS)
-    # Pin the native host contract. LiveRuntime validates this marker before activation.
     html = html.replace('</head>', styles+'\n<meta name="vbrain-host" content="18">\n</head>')
     html = html.replace('</body>', scripts+'\n</body>')
     payload = html.encode()
