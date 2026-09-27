@@ -32,7 +32,7 @@ const path = require('path');
   });
   const page=await context.newPage();
   await page.goto('http://127.0.0.1:8767',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.VBrainSense?.version===20);
+  await page.waitForFunction(()=>window.VBrainSense?.version===20&&window.VBrainLive?.version===17);
 
   const result=await page.evaluate(async()=>{
     const button=document.createElement('button');button.id='sense-test-button';button.dataset.action='learn';button.textContent='Learn';document.body.appendChild(button);button.click();
@@ -55,16 +55,19 @@ const path = require('path');
   });
 
   const kinds=result.generic.map(x=>x.kind);
-  if(result.status?.version!==20||result.status?.uiOnly!==true)throw new Error('Sense status failed '+JSON.stringify(result.status));
+  if(result.status?.version!==20||result.status?.uiOnly!==true||result.status?.privateTextOwner!=='vbrain-v17')throw new Error('Sense status failed '+JSON.stringify(result.status));
   if(!kinds.includes('vbrain_sense_ready')||!kinds.includes('ui_press_v20')||!kinds.includes('field_activity_v20'))throw new Error('Generic sensing failed '+JSON.stringify(kinds));
-  const privateText=result.privateEvents.filter(x=>x.kind==='private_text_field');
-  if(privateText.length!==1)throw new Error('Private text count failed '+JSON.stringify(result.privateEvents));
-  if(privateText[0]?.text!=='I understand ideas better when I explain the causal chain in my own words.')throw new Error('Private text payload failed');
-  if(privateText[0]?.field!=='reflectionText|Reflection'||privateText[0]?.fieldType!=='textarea')throw new Error('Supabase private-text contract failed '+JSON.stringify(privateText[0]));
-  if(privateText[0]?.data?.sensorVersion!==20)throw new Error('Sensor provenance missing '+JSON.stringify(privateText[0]));
+
+  const sentence='I understand ideas better when I explain the causal chain in my own words.';
+  const captured=result.privateEvents.filter(x=>x.kind==='private_text_field'&&x.text===sentence);
+  if(captured.length!==1||captured[0]?.source!=='vbrain-v17')throw new Error('Private text ownership/dedup failed '+JSON.stringify(result.privateEvents));
+  if(result.privateEvents.some(x=>x.source==='vbrain-sense-v20'))throw new Error('Sense v20 must not duplicate private text '+JSON.stringify(result.privateEvents));
   if(JSON.stringify(result.privateEvents).includes('must-never-enter-private-stream'))throw new Error('Sensitive field leaked into private stream');
+
+  const passwordMeta=result.generic.filter(x=>x.kind==='field_activity_v20'&&x.data?.field==='password');
+  if(passwordMeta.length!==1||passwordMeta[0]?.data?.chars!==0)throw new Error('Sensitive field metadata must not expose length '+JSON.stringify(passwordMeta));
   if(result.legacyAccessBox)throw new Error('Sense module must not inject legacy permission UI');
 
-  console.log('VBRAIN_SENSE_V20_OK',JSON.stringify({genericKinds:[...new Set(kinds)],privateKinds:result.privateEvents.map(x=>x.kind),status:result.status}));
+  console.log('VBRAIN_SENSE_V20_OK',JSON.stringify({genericKinds:[...new Set(kinds)],privateTextOwner:captured[0]?.source,status:result.status}));
   await browser.close();server.close();
 })().catch(e=>{console.error(e);process.exit(1)});
