@@ -17,7 +17,13 @@ def source(name):
     path = ASSETS / name
     if not path.exists():
         path = ROOT / 'home-runtime' / name
-    return path.read_text()
+    text = path.read_text()
+    # The submit hook runs before the base Tube handler. Once that handler appends a
+    # completion, the last row is by construction the attempt we just captured;
+    # do not depend on display-title equality to preserve the written sentence.
+    if name == 'vbrain-one-ui-v25.js':
+        text = text.replace("if(last&&(!title||last.title===title)){", "if(last){")
+    return text
 
 def build():
     html = (ASSETS / 'index.html').read_text()
