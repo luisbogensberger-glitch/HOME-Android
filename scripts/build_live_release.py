@@ -19,9 +19,11 @@ def source(name):
         path = ROOT / 'home-runtime' / name
     text = path.read_text()
     if name == 'vbrain-one-ui-v25.js':
-        # Tube's own onclick handler creates the completion. Run our document click hook
-        # in bubble phase immediately afterwards so sentence persistence is synchronous,
-        # race-free and needs no repair timer.
+        # Tube's own onclick handler creates the completion and disables the button.
+        # Our document click hook then runs in bubble phase and enriches that row
+        # synchronously. The click could only start while submit was enabled, so the
+        # post-handler disabled state must not suppress persistence.
+        text = text.replace("if(!submit||submit.disabled)return;", "if(!submit)return;")
         text = text.replace("if(last&&(!title||last.title===title)){", "if(last){")
         text = text.replace("}catch(_){}setTimeout(()=>{try{const list=tubeState?.completed||[]", "}catch(_){}try{const list=tubeState?.completed||[]")
         text = text.replace("}catch(_){}updateHome()},0)},true);", "}catch(_){}updateHome()});")
