@@ -18,11 +18,13 @@ def source(name):
     if not path.exists():
         path = ROOT / 'home-runtime' / name
     text = path.read_text()
-    # The submit hook runs before the base Tube handler. Once that handler appends a
-    # completion, the last row is by construction the attempt we just captured;
-    # do not depend on display-title equality to preserve the written sentence.
     if name == 'vbrain-one-ui-v25.js':
+        # Tube's own onclick handler creates the completion. Run our document click hook
+        # in bubble phase immediately afterwards so sentence persistence is synchronous,
+        # race-free and needs no repair timer.
         text = text.replace("if(last&&(!title||last.title===title)){", "if(last){")
+        text = text.replace("}catch(_){}setTimeout(()=>{try{const list=tubeState?.completed||[]", "}catch(_){}try{const list=tubeState?.completed||[]")
+        text = text.replace("}catch(_){}updateHome()},0)},true);", "}catch(_){}updateHome()});")
     return text
 
 def build():
