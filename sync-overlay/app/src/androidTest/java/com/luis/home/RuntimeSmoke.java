@@ -90,6 +90,12 @@ public class RuntimeSmoke extends Instrumentation {
             eval("window.onAppResume?.();window.onAppResume?.();window.onAppResume?.();true");
             waitFor("document.querySelectorAll('.v25HomeCard').length===4 && [...document.querySelectorAll('.v25HomeCard')].map(x=>x.dataset.route).join(',')==='gym,tube,todos,calendar' && document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#vbRestoreInline,#v24BrainOverlay').length===0",5);
             waitFor("(()=>{const cards=[...document.querySelectorAll('.v25HomeCard')],heights=cards.map(x=>x.getBoundingClientRect().height);return Math.max(...heights)-Math.min(...heights)<3&&getComputedStyle(cards[3]).backgroundImage.includes('photo-1513635269975-59663e0ac1ad')})()",5);
+            waitFor("document.querySelector('.v25Mark svg path')?.getAttribute('d')==='M15 2 L52 46 L89 2' && window.VBrainScore?.version===28 && getComputedStyle(document.getElementById('v25Score')).fontSize==='27px'",5);
+            phase="daily score explanation";
+            eval("document.getElementById('v25Orb').click();true");
+            waitFor("document.getElementById('v28ScoreSheet')?.classList.contains('show') && document.getElementById('v28ScoreSheet').textContent.includes('100 is not a ceiling')",5);
+            eval("handleAndroidBack();true");
+            waitFor("!document.getElementById('v28ScoreSheet').classList.contains('show')",5);
 
             phase="three gym plans";
             eval("showScreen('gym');true");

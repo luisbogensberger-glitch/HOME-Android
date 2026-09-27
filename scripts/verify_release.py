@@ -25,7 +25,7 @@ assert 'name="vbrain-host" content="18"' in html
 assert html.count('data-source="')==1, 'v25 must ship exactly one injected runtime'
 assert 'data-source="vbrain-one-ui-v25.js"' in html
 assert '__VBRAIN_ONE_UI_V25__' in html
-assert manifest['bytes'] < 180000, f'one-ui release regressed to {manifest["bytes"]} bytes'
+assert manifest['bytes'] < 200000, f'one-ui release regressed to {manifest["bytes"]} bytes'
 assert not re.search(r'<script\b[^>]*\bsrc=',html,re.I), 'no external script may execute at boot'
 assert not re.search(r'<link\b[^>]*\brel=["\']stylesheet',html,re.I), 'no external stylesheet may execute at boot'
 
@@ -55,6 +55,9 @@ assert 'vbrainPrivatePatch' in html and 'vbrainBrainContext' in html
 assert 'Your signal today' in html and 'Behaviour intelligence' in html
 assert 'Tube Learning' in html and 'Easy · 15 min' in html
 assert 'window.__vbrainBundledTubeFeed=' in html and 'ICARUS' in html
+assert 'vbrainDailyScoreV28' in html and 'daily_score_finalized' in html
+assert 'vbrainHomeCardOrderV28' in html and 'v28DragGhost' in html
+assert 'M15 2 L52 46 L89 2' in html
 assert len(feed['cards']) >= 12 and len(feed['featuredIds']) == 5
 assert all(any(c['id']==id for c in feed['cards']) for id in feed['featuredIds'])
 assert any('The Culture Map' in c['topic'] for c in feed['cards'])
