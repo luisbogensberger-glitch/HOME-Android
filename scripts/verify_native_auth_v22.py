@@ -14,9 +14,10 @@ assert 'authMode()' in w and '"veqrya"' in w
 assert 'mobileApiSupports' in w
 assert 'veqrya.refreshAccessToken()' in w
 assert 'X-HOME-Authorization' in w
-assert 'configureVeqrya()' in m and 'worker.signInVeqrya' in m
+assert 'configureVeqrya()' in m and 'worker.signInVeqrya' in m and 'worker.signUpVeqrya' in m
+assert 'Create account' in m and 'Confirm your email' in m
 assert 'worker.clearAuth()' in m
-assert 'AndroidKeyStore' in v and 'refreshToken' in v
+assert 'AndroidKeyStore' in v and 'refreshToken' in v and '/auth/v1/signup' in v
 assert 'TYPE_TEXT_VARIATION_EMAIL_ADDRESS' in m
 assert 'setText("")' in m
-print('PASS: Veqrya session auth, Keystore refresh tokens, mobile API routing and legacy HOME fallback')
+print('PASS: Veqrya sign-in/signup, Keystore refresh tokens, mobile API routing and legacy HOME fallback')
