@@ -1,215 +1,82 @@
 {
-  "version": 20,
-  "updatedAt": "2026-09-27T05:56:00Z",
+  "version": 21,
+  "updatedAt": "2026-09-27T06:08:00Z",
   "theme": {
-    "radius": 36,
+    "radius": 22,
     "density": "comfortable",
     "motion": "smooth",
-    "accent": "#77e7ff",
-    "surfaceOpacity": 0.66
+    "accent": "#8ea8ff",
+    "surfaceOpacity": 0.78
   },
   "home": {
-    "editable": true,
+    "editable": false,
     "cards": {
-      "calendar": {"image": "", "position": "center"},
+      "calendar": {
+        "image": "https://images.unsplash.com/photo-1435527173128-983b87201f4d?auto=format&fit=crop&w=1400&q=84",
+        "position": "center 52%"
+      },
       "todos": {"image": "", "position": "center"},
       "tube": {"image": "", "position": "center"},
       "gym": {"image": "", "position": "center"}
     }
   },
   "tube": {
-    "layout": "grid",
-    "visibleCount": 6,
-    "cardImageRatio": 0.42,
+    "layout": "stack",
+    "visibleCount": 5,
+    "cardImageRatio": 0.28,
     "showHooks": true,
     "showTopic": true,
-    "readerDepth": "deep",
-    "sectionLimit": 5,
-    "paragraphScale": 1.05,
-    "quizMode": "mixed",
+    "readerDepth": "balanced",
+    "sectionLimit": 3,
+    "paragraphScale": 1.0,
+    "quizMode": "mcq_sentence",
     "sentenceMinWords": 5,
-    "sentenceTargetWords": 16,
+    "sentenceTargetWords": 14,
     "completionAction": "replace_card",
-    "allowedLayouts": ["grid", "stack", "swipe", "story"],
+    "allowedLayouts": ["stack"],
     "remoteStructure": true,
     "remoteReader": true,
     "remoteQuiz": true,
     "remoteMotion": true
   },
   "todos": {
-    "layout": "timeline",
-    "maxVisible": 12,
+    "layout": "focus",
+    "maxVisible": 8,
     "showMeta": true,
     "showArea": true,
     "showMinutes": true,
     "showNotes": false,
     "groupBy": "none",
-    "archiveCollapsed": false,
-    "focusCount": 4
+    "archiveCollapsed": true,
+    "focusCount": 3
   },
   "vbrainPatch": {
-    "refreshMs": 30000,
+    "refreshMs": 60000,
     "home": {
-      "orderMode": "fixed",
-      "order": ["tube", "calendar", "gym", "todos"],
-      "visible": {"calendar": false, "todos": false, "tube": false, "gym": false},
-      "gap": 9,
-      "minHeight": 104,
-      "scale": 0.95,
-      "heroImage": "https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1800&q=88",
-      "heroPosition": "center 50%"
+      "orderMode": "adaptive",
+      "order": ["calendar", "todos", "tube", "gym"],
+      "visible": {"calendar": true, "todos": true, "tube": true, "gym": true},
+      "gap": 14,
+      "minHeight": 132,
+      "scale": 1.0,
+      "heroImage": "",
+      "heroPosition": "center"
     },
-    "score": {"title": "CONTROL DECK / 20", "subtitle": "Generic renderer ready", "showMini": true},
-    "brain": {"hint": "LIVE TEST · generic UI host incoming", "detailMaxVh": 48, "nodeScale": 1.33},
-    "motion": {"cardMs": 90, "pressScale": 0.94},
-    "banner": {"visible": true, "title": "◉ LIVE JUMP · TODAY", "text": "Legacy channel stays active until Host 18 is installed", "target": "calendar"},
-    "modules": [
-      {"id":"orb-focus","visible":true,"order":1,"shape":"circle","size":"small","tone":"focus","icon":"◎","kicker":"NOW","title":"FOCUS","text":"Open current tasks","metric":"DO","target":"todos"},
-      {"id":"pill-tube","visible":true,"order":2,"shape":"pill","size":"wide","tone":"learn","icon":"↗","kicker":"LEARN","title":"TUBE STREAM","text":"Jump into the knowledge grid","metric":"06","target":"tube"},
-      {"id":"square-gym","visible":true,"order":3,"shape":"square","size":"medium","tone":"health","icon":"+","kicker":"BODY","title":"GYM","text":"Training control","metric":"45m","target":"gym"}
-    ]
+    "score": {"title": "Your signal today", "subtitle": "", "showMini": true},
+    "brain": {
+      "hint": "drag to rotate · pinch to zoom · tap a node",
+      "detailMaxVh": 35,
+      "nodeScale": 1.0
+    },
+    "motion": {"cardMs": 110, "pressScale": 0.985},
+    "banner": {"visible": false},
+    "modules": []
   },
   "remoteUI": {
-    "enabled": true,
-    "replaceHome": true,
-    "refreshMs": 20000,
-    "scene": {
-      "layout": "grid",
-      "columns": 4,
-      "mobileColumns": 2,
-      "gap": 10,
-      "padding": 14,
-      "minHeight": "100svh",
-      "background": "radial-gradient(circle at 85% 8%,rgba(75,171,255,.15),transparent 28%),radial-gradient(circle at 12% 72%,rgba(181,255,98,.09),transparent 30%),#05070a"
-    },
-    "components": [
-      {
-        "type": "text",
-        "id": "lab-title",
-        "size": "full",
-        "text": "V//BRAIN LAB  ·  {{time}}\n{{date}}",
-        "style": {"fontSize": 14, "fontWeight": "800", "letterSpacing": ".14em", "padding": 8, "color": "rgba(255,255,255,.72)"}
-      },
-      {
-        "type": "button",
-        "id": "focus-orb",
-        "shape": "circle",
-        "size": "sm",
-        "span": 1,
-        "animation": "float",
-        "icon": "◎",
-        "kicker": "FOCUS",
-        "title": "{{todoActive}}",
-        "text": "tasks",
-        "background": "radial-gradient(circle at 35% 28%,rgba(123,232,255,.28),rgba(17,27,37,.96) 66%)",
-        "style": {"padding": 16, "minHeight": 142},
-        "action": {"type": "route", "target": "todos"}
-      },
-      {
-        "type": "button",
-        "id": "tube-pill",
-        "shape": "pill",
-        "size": "wide",
-        "span": 3,
-        "animation": "shimmer",
-        "icon": "↗",
-        "kicker": "KNOWLEDGE",
-        "title": "TUBE STREAM",
-        "text": "{{tubeDone}} completed · tap to learn",
-        "metric": "LIVE",
-        "background": "linear-gradient(105deg,rgba(55,38,89,.96),rgba(21,30,48,.96))",
-        "style": {"padding": 20, "minHeight": 142},
-        "action": {"type": "route", "target": "tube"}
-      },
-      {
-        "type": "button",
-        "id": "brain-diamond",
-        "shape": "diamond",
-        "size": "sm",
-        "span": 1,
-        "animation": "breathe",
-        "kicker": "MODEL",
-        "title": "BRAIN",
-        "metric": "V8",
-        "background": "linear-gradient(145deg,#162f36,#111720)",
-        "action": {"type": "brain"}
-      },
-      {
-        "type": "button",
-        "id": "gym-hex",
-        "shape": "hex",
-        "size": "sm",
-        "span": 1,
-        "icon": "+",
-        "kicker": "BODY",
-        "title": "GYM",
-        "text": "{{gymWeek}} this week",
-        "background": "linear-gradient(145deg,#2e2617,#1b1711)",
-        "style": {"padding": 18, "minHeight": 142},
-        "action": {"type": "route", "target": "gym"}
-      },
-      {
-        "type": "button",
-        "id": "calendar-blob",
-        "shape": "blob",
-        "size": "wide",
-        "span": 2,
-        "animation": "pulse",
-        "kicker": "TIME",
-        "title": "DAY MAP",
-        "text": "Calendar · {{date}}",
-        "metric": "CAL",
-        "background": "linear-gradient(145deg,rgba(36,54,87,.98),rgba(16,24,38,.98))",
-        "style": {"padding": 20, "minHeight": 142},
-        "action": {"type": "route", "target": "calendar"}
-      },
-      {
-        "type": "button",
-        "id": "action-bar",
-        "shape": "pill",
-        "size": "full",
-        "icon": "→",
-        "kicker": "NEXT",
-        "title": "ACTION QUEUE",
-        "text": "{{todoActive}} open tasks · {{syncPending}} sync pending",
-        "metric": "OPEN",
-        "background": "linear-gradient(90deg,rgba(27,54,41,.96),rgba(16,27,24,.96))",
-        "style": {"padding": 20, "minHeight": 104},
-        "action": {"type": "route", "target": "todos"}
-      },
-      {
-        "type": "container",
-        "id": "signal-panel",
-        "shape": "soft",
-        "size": "full",
-        "childLayout": "row",
-        "childGap": 8,
-        "background": "rgba(255,255,255,.035)",
-        "style": {"padding": 14},
-        "children": [
-          {"type":"text","id":"sig-a","text":"TASKS  {{todoActive}}","style":{"fontSize":11,"fontWeight":"800","padding":8}},
-          {"type":"text","id":"sig-b","text":"LEARN  {{tubeDone}}","style":{"fontSize":11,"fontWeight":"800","padding":8}},
-          {"type":"text","id":"sig-c","text":"MOVE  {{gymWeek}}","style":{"fontSize":11,"fontWeight":"800","padding":8}}
-        ]
-      },
-      {
-        "type": "progress",
-        "id": "experiment-progress",
-        "size": "full",
-        "value": 72,
-        "color": "#77e7ff",
-        "style": {"marginTop": 4, "marginBottom": 8}
-      },
-      {
-        "type": "button",
-        "id": "status-float",
-        "shape": "circle",
-        "size": "xs",
-        "icon": "⌁",
-        "style": {"position":"fixed","right":16,"bottom":22,"width":58,"height":58,"zIndex":100,"padding":15,"background":"rgba(24,31,42,.94)","boxShadow":"0 16px 40px rgba(0,0,0,.35)"},
-        "action": {"type": "status"}
-      }
-    ]
+    "enabled": false,
+    "replaceHome": false,
+    "refreshMs": 60000,
+    "components": []
   },
   "notifications": {
     "enabled": true,
@@ -234,5 +101,5 @@
     "cooldownHours": 6,
     "maxMajorExperimentsPerDay": 2
   },
-  "generatedBy": "vbrain-generic-remote-ui-test"
+  "generatedBy": "private-home-behavior-engine"
 }
