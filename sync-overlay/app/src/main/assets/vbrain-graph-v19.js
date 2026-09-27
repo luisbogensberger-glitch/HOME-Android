@@ -4,10 +4,15 @@
   if(window.__VBRAIN_GRAPH_V19__)return;window.__VBRAIN_GRAPH_V19__=true;
   const VERSION=19,GRAPH='vbrainGraphV19',BRANCH='vbrainBranchesV19',LEGACY=['homeLivingGraphV8','homeLivingGraphV6'];
   const baseModel=typeof window.VBrain?.model==='function'?window.VBrain.model.bind(window.VBrain):()=>({nodes:[],edges:[],e:{}});
-  const load=(k,f)=>{try{return JSON.parse(localStorage.getItem(k)||'')??f}catch(_){return f}};
-  const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));Native?.saveState?.(k,JSON.stringify(v))}catch(_){}};
+  const load=(k,f)=>{
+    let raw='';
+    try{raw=localStorage.getItem(k)||'';if(raw)return JSON.parse(raw)??f}catch(_){}
+    try{raw=Native?.loadState?.(k)||'';if(raw){try{localStorage.setItem(k,raw)}catch(_){}return JSON.parse(raw)??f}}catch(_){}
+    return f;
+  };
+  const save=(k,v)=>{const raw=JSON.stringify(v);try{localStorage.setItem(k,raw)}catch(_){}try{Native?.saveState?.(k,raw)}catch(_){}};
   const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const edgeKey=(a,b)=>[String(a),String(b)].sort().join('::');
   const log=(kind,data)=>{try{window.homeAdaptiveLog?.(kind,data||{})}catch(_){}};
   let shell,canvas,ctx,detail,current,positionsCache={},raf=0,lastFrame=0,lastInput=0,rotX=.20,rotY=-.45,targetX=.20,targetY=-.45,zoom=1,targetZoom=1,pinch=null;
@@ -56,7 +61,15 @@
     const dpr=Math.min(2,devicePixelRatio||1),w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h){raf=requestAnimationFrame(draw);return}const W=Math.floor(w*dpr),H=Math.floor(h*dpr);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
     const P=pos(current.nodes),cx=w/2,cy=h*.46,scale=Math.min(w,h)*.40*zoom;projected=current.nodes.map(n=>{const p=rotate(P[n.id]||{x:0,y:0,z:0}),pers=1/(1.55-p.z*.58);return{n,p,x:cx+p.x*scale*pers,y:cy+p.y*scale*pers,r:(8+Number(n.confidence||0)*.075)*pers}});const by=Object.fromEntries(projected.map(q=>[q.n.id,q]));
     for(const e of current.edges){const a=by[e.a],b=by[e.b];if(!a||!b)continue;ctx.globalAlpha=e.active===false?.15:.55;ctx.strokeStyle='rgba(145,165,235,.8)';ctx.lineWidth=.55+Number(e.w||40)/90;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}ctx.globalAlpha=1;
-    const many=current.nodes.length>45;for(const q of projected.slice().sort((a,b)=>a.p.z-b.p.z)){const n=q.n,col=palette[n.group]||palette.custom,active=n.active!==false;ctx.globalAlpha=active?.92:.28;ctx.shadowBlur=active&&n.emergent?15:active?7:0;ctx.shadowColor=col;ctx.fillStyle='#101620';ctx.strokeStyle=col;ctx.lineWidth=n.emergent?1.8:1.15;ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.shadowBlur=0;if(active&&(!many||q.r>12)){ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font=`${Math.max(8,Math.min(11,q.r*.62))}px system-ui`;ctx.fillText(String(n.label||n.id),q.x,q.y-q.r-5)}ctx.globalAlpha=1}
+    const ordered=projected.slice().sort((a,b)=>a.p.z-b.p.z);
+    for(const q of ordered){const n=q.n,col=palette[n.group]||palette.custom,active=n.active!==false;ctx.globalAlpha=active?.92:.28;ctx.shadowBlur=active&&n.emergent?15:active?7:0;ctx.shadowColor=col;ctx.fillStyle='#101620';ctx.strokeStyle=col;ctx.lineWidth=n.emergent?1.8:1.15;ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1}
+    const occupied=[];
+    for(const q of ordered.slice().reverse()){
+      const n=q.n;if(n.active===false)continue;const text=String(n.label||n.id),fontSize=Math.max(8,Math.min(11,q.r*.62));ctx.font=`${fontSize}px system-ui`;const width=Math.min(w*.42,ctx.measureText(text).width+10),x=q.x,y=q.y-q.r-7,box={l:x-width/2,r:x+width/2,t:y-fontSize-2,b:y+3};
+      if(box.l<4||box.r>w-4||box.t<72||box.b>h*.69)continue;
+      if(occupied.some(o=>!(box.r+5<o.l||box.l-5>o.r||box.b+3<o.t||box.t-3>o.b)))continue;
+      occupied.push(box);ctx.globalAlpha=n.emergent?1:.88;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(text,x,y);ctx.globalAlpha=1;
+    }
     raf=requestAnimationFrame(draw);
   }
   function show(n){if(!n||!detail)return;const linked=current.edges.filter(e=>e.a===n.id||e.b===n.id).map(e=>current.nodes.find(x=>x.id===(e.a===n.id?e.b:e.a))?.label).filter(Boolean),state=n.active===false?'Historical branch':n.emergent?'Discovered branch':'Active signal';detail.innerHTML=`<div class="vb19Tag">${esc(state)} · ${Math.round(Number(n.confidence||0))}% confidence · ${Number(n.evidenceCount||0)} signals</div><div class="vb19Title"><h2>${esc(n.label||n.id)}</h2><b>${Math.round(Number(n.value||0))}</b></div><p>${esc(n.description||'Persistent V-Brain branch.')}</p>${n.active===false?'<p>This branch is currently quiet, but it remains part of your history and will not be deleted automatically.</p>':''}${linked.length?`<p><b>Connected with:</b> ${esc(linked.slice(0,8).join(', '))}</p>`:''}<div>${(n.reasons||[]).map(x=>`<span class="vb19Reason">${esc(x)}</span>`).join('')}</div>`}
