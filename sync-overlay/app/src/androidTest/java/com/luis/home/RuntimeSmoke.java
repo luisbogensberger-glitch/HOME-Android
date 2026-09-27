@@ -43,7 +43,6 @@ public class RuntimeSmoke extends Instrumentation {
         getTargetContext().getSharedPreferences("vbrain_live_runtime",Context.MODE_PRIVATE).edit()
             .putInt("host",18).putInt("rescueEpoch",19).putString("active",hash).putString("previous",hash)
             .putString("ready",hash).putBoolean("bootPending",true).putString("error","legacy state").commit();
-        // Representative user state must survive quarantine.
         getTargetContext().getSharedPreferences("home_state",Context.MODE_PRIVATE).edit()
             .putString("vbrainUpgradeSentinel","KEEP_ME").commit();
     }
@@ -71,6 +70,12 @@ public class RuntimeSmoke extends Instrumentation {
             waitFor("!!document.getElementById('vbrainScoreV8') && !!document.getElementById('vbrainCompatReminderV1')",12);
             waitFor("Number(document.querySelector('#vbrainScoreV8 .vb8Orb strong')?.textContent||0)>0",8);
             waitFor("document.querySelector('#vbrainScoreV8 .vb8Open')?.textContent.includes('traits')",5);
+            phase="safe status control";
+            waitFor("document.getElementById('vbrainLiveStatus17')?.dataset.safeStatus==='3'",8);
+            eval("document.getElementById('vbrainLiveStatus17').click();true");
+            waitFor("document.getElementById('vbrainControl17')?.classList.contains('show') && document.body.innerText.includes('SYSTEM STATUS') && document.body.innerText.includes('HOME loader')",5);
+            eval("document.querySelector('#vbrainControl17 .vb17Close')?.click();true");
+            waitFor("!document.getElementById('vbrainControl17')?.classList.contains('show')",5);
             phase="native back";
             eval("VBrain.openBrain();true");waitFor("document.getElementById('vBrainV19').classList.contains('show')",5);
             runOnMainSync(()->activity.onBackPressed());waitFor("!document.getElementById('vBrainV19').classList.contains('show')",5);
@@ -93,7 +98,7 @@ public class RuntimeSmoke extends Instrumentation {
             phase="rollback to healthy document";
             waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && !!window.VBrainLive && !!window.VBrainRemoteUI && !!window.VBrainGraph && !!window.VBrainTodos",30);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",10);
-            result.putString("stream","VBRAIN_SMOKE_OK: dirty Host17-style state quarantined, user state preserved, HOME loader v4 ignores legacy JS cache, V-Score nonzero, reminder present, persistent V19 brain, unified To-Dos, native Back, live activation and failed-release rollback\n");
+            result.putString("stream","VBRAIN_SMOKE_OK: dirty Host17-style state quarantined, user state preserved, HOME loader v4 ignores legacy JS cache, V-Score nonzero, reminder present, status button non-blocking, persistent V19 brain, unified To-Dos, native Back, live activation and failed-release rollback\n");
             runOnMainSync(()->activity.finish());finish(Activity.RESULT_OK,result);
         }catch(Throwable e){result.putString("stream","VBRAIN_SMOKE_FAILED: "+phase+": "+e.toString()+"\n");
             try { if(activity!=null) runOnMainSync(()->activity.finish()); } catch(Throwable ignored) { }
