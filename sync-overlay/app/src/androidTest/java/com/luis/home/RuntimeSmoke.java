@@ -11,7 +11,7 @@ import java.security.MessageDigest;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Tests the real WebView/native live boundary with the single-runtime v24 architecture. */
+/** Tests the real WebView/native live boundary with the single-owner One UI v25 architecture. */
 public class RuntimeSmoke extends Instrumentation {
     private Activity activity;
     private WebView web;
@@ -30,7 +30,7 @@ public class RuntimeSmoke extends Instrumentation {
     private void waitFor(String js,int seconds)throws Exception{
         long end=System.currentTimeMillis()+seconds*1000L;
         while(System.currentTimeMillis()<end){if("true".equals(eval(js)))return;Thread.sleep(200);}
-        throw new Exception("Condition failed in "+phase+": "+js+" result="+eval(js)+" status="+eval("typeof Native!=='undefined'?Native.liveRuntimeStatus():'no bridge'")+" DOM="+eval("document.body.innerText.slice(-500)"));
+        throw new Exception("Condition failed in "+phase+": "+js+" result="+eval(js)+" status="+eval("typeof Native!=='undefined'?Native.liveRuntimeStatus():'no bridge'")+" DOM="+eval("document.body.innerText.slice(-700)"));
     }
 
     private String sha(byte[] bytes)throws Exception{
@@ -75,7 +75,7 @@ public class RuntimeSmoke extends Instrumentation {
         try{
             phase="dirty upgrade boot";
             seedDirtyUpgradeState();startTarget();
-            waitFor("window.VBrainLean?.version===24 && window.VBrainLive?.version===24 && window.VBrain?.version===24 && document.querySelectorAll('.v24Nav [data-v24-route]').length===3",15);
+            waitFor("window.VBrainLean?.version===25 && window.VBrainLive?.version===25 && window.VBrain?.version===25 && document.querySelectorAll('.v25HomeCard').length===3 && document.getElementById('vbrainScoreV8')?.innerText.includes('Your signal today')",15);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).rescueEpoch===20 && JSON.parse(Native.liveRuntimeStatus()).source==='bundled'",8);
             waitFor("!window.__OLD_LIVE_POISON__ && Native.loadState('vbrainUpgradeSentinel')==='KEEP_ME'",5);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",5);
@@ -83,23 +83,28 @@ public class RuntimeSmoke extends Instrumentation {
             phase="legacy cache quarantine";
             eval("localStorage.setItem('homeRemoteCacheSchema','host17-v3');localStorage.setItem('homeRemoteJsV2','window.__LEGACY_REMOTE_POISON__=true');localStorage.setItem('homeBehaviorJsV3','window.__LEGACY_BEHAVIOR_POISON__=true');true");
             restartTarget();
-            waitFor("window.VBrainLean?.version===24 && document.querySelectorAll('script[data-source]').length===1",15);
+            waitFor("window.VBrainLean?.version===25 && document.querySelectorAll('script[data-source]').length===1",15);
             waitFor("!window.__LEGACY_REMOTE_POISON__ && !window.__LEGACY_BEHAVIOR_POISON__ && localStorage.getItem('homeRemoteJsV2')===null && localStorage.getItem('homeBehaviorJsV3')===null",5);
 
-            phase="deterministic resume";
-            eval("window.onAppResume?.();window.onAppResume?.();true");
-            waitFor("document.querySelectorAll('.v24Nav [data-v24-route]').length===3 && document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#vbRestoreInline').length===0",5);
+            phase="deterministic repeated resume";
+            eval("window.onAppResume?.();window.onAppResume?.();window.onAppResume?.();true");
+            waitFor("document.querySelectorAll('.v25HomeCard').length===3 && [...document.querySelectorAll('.v25HomeCard')].map(x=>x.dataset.route).join(',')==='gym,tube,todos' && document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#vbRestoreInline,#v24BrainOverlay').length===0",5);
+
+            phase="bounded todos without sync chrome";
+            eval("showScreen('todos');true");
+            waitFor("document.getElementById('todosScreen').classList.contains('show') && document.querySelectorAll('#todoList .todo').length<=18 && !document.querySelector('.syncBar')",5);
+            eval("showScreen('home');true");
 
             phase="tube stack";
             eval("showScreen('tube');true");
             waitFor("document.getElementById('tubeScreen').classList.contains('show') && localStorage.getItem('homeTubeLayoutV6')==='stack' && document.getElementById('grid').dataset.layout==='stack'",5);
             eval("showScreen('home');true");
 
-            phase="lean brain and native back";
+            phase="living brain and native back";
             eval("document.getElementById('vbrainScoreV8').click();true");
-            waitFor("document.getElementById('v24BrainOverlay').classList.contains('show')",5);
+            waitFor("document.getElementById('v25Brain').classList.contains('show') && document.getElementById('v25BrainCanvas').width>0",5);
             runOnMainSync(()->activity.onBackPressed());
-            waitFor("!document.getElementById('v24BrainOverlay').classList.contains('show')",5);
+            waitFor("!document.getElementById('v25Brain').classList.contains('show')",5);
             if(activity.isFinishing())throw new Exception("Back closed the activity");
 
             eval("localStorage.setItem('vbrainSmokeSentinel','persist');Native.saveState('vbrainSmokeSentinel','persist');true");
@@ -111,7 +116,7 @@ public class RuntimeSmoke extends Instrumentation {
             phase="activate live document";
             stage(html.replace("</head>","<meta name=\"vbrain-smoke\" content=\"live-test\"></head>"));
             eval("Native.applyLiveUpdate();true");
-            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && window.VBrainLean?.version===24 && window.VBrainLive?.version===24",15);
+            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && window.VBrainLean?.version===25 && window.VBrainLive?.version===25",15);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).source==='live' && JSON.parse(Native.liveRuntimeStatus()).healthy===true",8);
             waitFor("localStorage.getItem('vbrainSmokeSentinel')==='persist' && Native.loadState('vbrainSmokeSentinel')==='persist'",5);
 
@@ -120,11 +125,11 @@ public class RuntimeSmoke extends Instrumentation {
             eval("Native.applyLiveUpdate();true");
             waitFor("!!document.getElementById('broken')",8);
 
-            phase="rollback to healthy lean document";
-            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && window.VBrainLean?.version===24 && document.querySelectorAll('.v24Nav [data-v24-route]').length===3",20);
+            phase="rollback to healthy One UI document";
+            waitFor("!!document.querySelector('meta[name=vbrain-smoke]') && window.VBrainLean?.version===25 && document.querySelectorAll('.v25HomeCard').length===3",20);
             waitFor("JSON.parse(Native.liveRuntimeStatus()).healthy===true",8);
 
-            result.putString("stream","VBRAIN_SMOKE_OK: single lean v24 runtime, dirty legacy release quarantined, user state preserved, legacy JS caches purged, deterministic repeated resume, stack Tube, lightweight Brain/native Back, live activation and failed-release rollback\n");
+            result.putString("stream","VBRAIN_SMOKE_OK: single One UI v25 runtime, screenshot-2 Home preserved across repeated resume, dirty legacy release quarantined, user state preserved, old JS caches purged, bounded To-Dos, stack Tube, living Brain/native Back, live activation and failed-release rollback\n");
             runOnMainSync(()->activity.finish());finish(Activity.RESULT_OK,result);
         }catch(Throwable e){
             result.putString("stream","VBRAIN_SMOKE_FAILED: "+phase+": "+e.toString()+"\n");
