@@ -1,5 +1,5 @@
 {
-  "version": 10,
+  "version": 17,
   "updatedAt": "2026-09-27T04:29:01.384111Z",
   "theme": {
     "radius": 22,
@@ -31,7 +31,7 @@
   },
   "tube": {
     "layout": "stack",
-    "visibleCount": 6,
+    "visibleCount": 5,
     "cardImageRatio": 0.28,
     "showHooks": true,
     "showTopic": true,
@@ -89,7 +89,7 @@
       "showMini": true
     },
     "brain": {
-      "hint": "drag to rotate · pinch to zoom · tap a node",
+      "hint": "drag to rotate \u00b7 pinch to zoom \u00b7 tap a node",
       "detailMaxVh": 35,
       "nodeScale": 1.0
     },
@@ -98,17 +98,14 @@
       "pressScale": 0.985
     },
     "banner": {
-      "visible": true,
-      "title": "Live control active",
-      "text": "This card was pushed to the running app through V-Brain's live control plane.",
-      "target": "todos"
+      "visible": false
     },
     "modules": []
   },
   "notifications": {
     "enabled": true,
     "autonomous": true,
-    "managedBy": "vbrain-autonomy-v11",
+    "managedBy": "vbrain-live-core-v17",
     "maxPerDay": 2
   },
   "adaptation": {

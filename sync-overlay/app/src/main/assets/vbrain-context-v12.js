@@ -64,10 +64,7 @@
   function patchTodoRender(){if(typeof window.renderTodoDetail!=='function'||window.renderTodoDetail.__vbrain12)return;const base=window.renderTodoDetail;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(enhanceTaskLinks,0);return r};wrapped.__vbrain12=true;window.renderTodoDetail=wrapped}
 
   function install(){
-    document.addEventListener('click',captureTubeSubmit,true);
-    document.addEventListener('input',e=>schedule(e.target,false,'draft'),true);
-    document.addEventListener('change',e=>schedule(e.target,true,'change'),true);
-    document.addEventListener('focusout',e=>schedule(e.target,true,'blur'),true);
+
     patchTodoRender();setTimeout(enhanceTaskLinks,300);
     log('vbrain_runtime_ready',{version:12,capabilities:['tube-learning-direct-sync','private-text-redundancy','todo-state-direct-sync','rich-task-links']});
   }

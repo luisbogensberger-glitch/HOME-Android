@@ -36,17 +36,15 @@ final class AdaptiveBridge {
 
     @JavascriptInterface
     public void logActivity(String rawJson) {
-        if (!worker.isConfigured() || rawJson == null || rawJson.trim().isEmpty()) return;
-        final String payload = rawJson;
-        queue.execute(() -> {
+        if (rawJson == null || rawJson.length() > 60000) return;
             try {
-                JSONObject activity = new JSONObject(payload);
+                JSONObject activity = new JSONObject(rawJson);
                 if (!activity.has("at")) activity.put("at", System.currentTimeMillis());
                 activity.remove("answer");
                 activity.remove("text");
-                worker.saveActivity(activity);
+                if (!activity.has("id")) activity.put("id", UUID.randomUUID().toString());
+                worker.enqueue("activity",activity);
             } catch (Exception ignored) { }
-        });
     }
 
     /**
@@ -57,18 +55,20 @@ final class AdaptiveBridge {
      */
     @JavascriptInterface
     public void logPrivateActivity(String rawJson) {
-        if (!worker.isConfigured() || rawJson == null || rawJson.trim().isEmpty()) return;
-        if (rawJson.length() > 60000) return;
-        final String payload = rawJson;
-        queue.execute(() -> {
-            try {
-                JSONObject activity = new JSONObject(payload);
+        queuePrivateActivity(rawJson);
+    }
+
+    @JavascriptInterface
+    public String queuePrivateActivity(String rawJson) {
+        if (rawJson == null || rawJson.length()>60000) return "";
+        try {
+                JSONObject activity = new JSONObject(rawJson);
                 if (!activity.has("at")) activity.put("at", System.currentTimeMillis());
                 if (!activity.has("kind")) activity.put("kind", "private_home_context");
                 if (!activity.has("source")) activity.put("source", "android");
-                worker.savePrivateActivity(activity);
-            } catch (Exception ignored) { }
-        });
+                if (!activity.has("id")) activity.put("id", UUID.randomUUID().toString());
+                return worker.enqueue("private_activity", activity);
+        } catch (Exception ignored) { return ""; }
     }
 
     /** Persist the complete HOME To-Do state, including the user's notes/details, to HOME Sync. */
@@ -206,13 +206,7 @@ final class AdaptiveBridge {
 
     @JavascriptInterface
     public String homeSyncStatus() {
-        try {
-            return new JSONObject()
-                    .put("configured", worker.isConfigured())
-                    .put("pending", worker.pendingOutboxCount())
-                    .put("at", System.currentTimeMillis())
-                    .toString();
-        } catch (Exception ignored) { return "{\"configured\":false}"; }
+        return worker.syncStatus().toString();
     }
 
     @JavascriptInterface
@@ -249,42 +243,36 @@ final class AdaptiveBridge {
     }
 
     @JavascriptInterface
-    public void scheduleNotification(String id, String title, String body, long atMillis) {
-        if (atMillis <= System.currentTimeMillis()) return;
-        Intent intent = new Intent(context, HomeNotificationReceiver.class);
-        intent.setAction("com.luis.home.ADAPTIVE_NOTIFICATION");
-        intent.putExtra("id", safeId(id));
-        intent.putExtra("title", clean(title, 90));
-        intent.putExtra("body", clean(body, 240));
-
-        int requestCode = Math.abs(safeId(id).hashCode());
-        PendingIntent pending = PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        AlarmManager alarms = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarms == null) return;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMillis, pending);
-        } else {
-            alarms.set(AlarmManager.RTC_WAKEUP, atMillis, pending);
-        }
+    public void scheduleSmartReminder(String raw) {
+        try { HomeNotificationReceiver.schedule(context, new JSONObject(raw)); }
+        catch (Exception ignored) { }
     }
 
     @JavascriptInterface
-    public void cancelNotification(String id) {
-        Intent intent = new Intent(context, HomeNotificationReceiver.class);
-        intent.setAction("com.luis.home.ADAPTIVE_NOTIFICATION");
-        int requestCode = Math.abs(safeId(id).hashCode());
-        PendingIntent pending = PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        AlarmManager alarms = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarms != null) alarms.cancel(pending);
-        pending.cancel();
+    public String notificationSettings() { return HomeNotificationReceiver.settings(context).toString(); }
+
+    @JavascriptInterface
+    public void setRemindersEnabled(boolean enabled) { HomeNotificationReceiver.setEnabled(context, enabled); }
+
+    @JavascriptInterface
+    public void checkDeviceCommands() {
+        queue.execute(() -> HomeSyncJob.pollCommands(context,worker));
+    }
+
+    @JavascriptInterface
+    public void scheduleNotification(String id, String title, String body, long atMillis) {
+        try { HomeNotificationReceiver.schedule(context, new JSONObject().put("id",safeId(id))
+            .put("title",clean(title,90)).put("body",clean(body,240)).put("atMillis",atMillis)); }
+        catch(Exception ignored) { }
+    }
+
+    @JavascriptInterface
+    public void cancelNotification(String id) { HomeNotificationReceiver.cancel(context,safeId(id)); }
+
+    @JavascriptInterface
+    public String queueLearningAttempt(String raw) {
+        try { return worker.enqueue("attempt",new JSONObject(raw)); }
+        catch(Exception ignored) { return ""; }
     }
 
     private String safeId(String value) {

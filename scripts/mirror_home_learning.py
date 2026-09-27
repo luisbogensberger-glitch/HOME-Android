@@ -80,6 +80,7 @@ allowed_exact = {
     "habit_intervention", "todo_pressure_show", "todo_pressure_dismiss", "notification_plan",
     "feedback_prompt_shown", "feedback_prompt_dismissed", "feedback_response",
     "learning_method_selected", "semantic_learning_updated", "sentence_review_error",
+    "runtime_ready", "runtime_heartbeat", "device_command_applied", "notification_delivered", "notification_opened", "notification_snoozed", "notification_suppressed",
     "learning_engine_loaded", "ui_press", "screen_enter_detail", "screen_exit_detail",
     "session_heartbeat", "session_background", "session_foreground", "home_impression",
     "dynamic_module_open", "interface_manifest", "private_text_field",

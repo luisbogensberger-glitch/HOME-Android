@@ -147,6 +147,8 @@
     const reader=document.getElementById('reader'),selectedEl=reader?.querySelector('.option.selected'),selected=selectedEl?Number(selectedEl.dataset.n):null;
     const d=decisions.get(card.id)||decide(card),requestId=`sr-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,attemptId=`attempt-${card.id}-${Date.now()}`;
     const ctx={requestId,attemptId,cardId:String(card.id||''),title:String(card.title||''),topic:String(card.topic||''),question:String(card.q||''),prompt:String(reader?.querySelector('.promptText')?.textContent||card.prompt||card.q||''),sentence:ans.value.trim(),selected:Number.isInteger(selected)?selected:null,correct:Number.isInteger(card.correct)?card.correct:null,options:Array.isArray(card.options)?card.options.slice(0,4):[],lead:String(card.lead||''),takeaway:String(card.takeaway||''),sections:(Array.isArray(card.sections)?card.sections:[]).slice(0,5).map(s=>Array.isArray(s)?[String(s[0]||''),String(s[1]||'').slice(0,900)]:s),method:d.method,contentDepth:d.content,at:Date.now(),fallbackHtml:''};
+    ctx.attemptId=`attempt-${card.id}-${ctx.at}`;reader.dataset.attemptAt=String(ctx.at);reader.dataset.attemptId=ctx.attemptId;
+    try { if(typeof AdaptiveNative!=='undefined'&&AdaptiveNative.queueLearningAttempt)AdaptiveNative.queueLearningAttempt(JSON.stringify({...ctx,id:ctx.attemptId,reviewStatus:'pending'})); } catch(_) {}
     pending.set(requestId,ctx);
     setTimeout(()=>{
       const fb=document.getElementById('feedback');if(fb){ctx.fallbackHtml=fb.innerHTML;fb.classList.add('show');fb.innerHTML='<h3>Reviewing your reasoning…</h3><p>HOME is judging the actual idea in your answer, not matching keywords.</p>'}
@@ -157,7 +159,7 @@
   function showError(ctx,message){const fb=document.getElementById('feedback');if(fb&&cardForReader()?.id===ctx.cardId){fb.classList.add('show');fb.innerHTML=(ctx.fallbackHtml||'<h3>Saved</h3>')+`<p class="tiny">AI review unavailable: ${esc(message)}.</p>`}pending.delete(ctx.requestId);log('sentence_review_error',{cardId:ctx.cardId,error:String(message).slice(0,120)})}
 
   function saveReview(ctx,result){
-    const review=result.review||{},rows=semanticJournal();rows.push({at:Date.now(),cardId:ctx.cardId,title:ctx.title,topic:ctx.topic,method:ctx.method,review});save(SEMANTIC_JOURNAL_KEY,rows.slice(-120));const profile=semanticProfile();
+    const review=result.review||{},rows=semanticJournal();rows.push({at:Date.now(),cardId:ctx.cardId,title:ctx.title,topic:ctx.topic,method:ctx.method,review});try{AdaptiveNative.queueLearningAttempt(JSON.stringify({...ctx,id:ctx.attemptId,reviewStatus:'reviewed',semanticReview:review}));const row=tubeState.completed.find(x=>x.id===ctx.cardId&&x.at===ctx.at);if(row){row.reviewStatus='reviewed';row.semanticReview=review;saveStore('tubeState',tubeState)}}catch(_){};save(SEMANTIC_JOURNAL_KEY,rows.slice(-120));const profile=semanticProfile();
     log('semantic_learning_updated',{count:profile.count,stage:profile.stage,overall:profile.overall,understanding:profile.understanding,application:profile.application,precision:profile.precision,depth:profile.depth,nextFocus:profile.nextFocus});return profile;
   }
 

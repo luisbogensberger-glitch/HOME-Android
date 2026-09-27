@@ -1,0 +1,7 @@
+tests/node_modules/
+*-screen-test.png
+android-smoke.txt
+source.b64
+source.zip
+src/
+*.apk

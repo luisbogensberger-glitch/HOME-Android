@@ -119,6 +119,7 @@
       if(r.ok){const txt=await r.text();if(txt.length<120000)remote=JSON.parse(txt)}
     }catch(e){}
     if(remote){saveJson(CONFIG_CACHE,remote)}else remote=loadJson(CONFIG_CACHE,{});
+    try { if(typeof Native!=='undefined')remote=merge(remote||{},JSON.parse(Native.loadState('vbrainPrivatePatch')||'{}')); } catch(_) {}
     const local=dailyLocalOverride(merge(defaults,remote));
     config=merge(merge(defaults,remote),local);
     window.HOMEAdaptive.config=config;
@@ -131,6 +132,7 @@
 
   function scheduleConfiguredNotifications(){
     const n=config.notifications||{};
+    if(n.managedBy==='vbrain-live-core-v17')return;
     if(!n.enabled||typeof AdaptiveNative==='undefined')return;
     try{
       const asked=localStorage.getItem('homeNotificationPromptedV1')==='1';
@@ -216,7 +218,7 @@
     document.getElementById('readerBack').onclick=()=>closeReader();
 
     const finish=(score,extra)=>{
-      const completed={id:c.id,title:c.title,total:Math.round(score),mode,at:Date.now()};tubeState.completed.push(completed);delete tubeState.drafts[id];const active=tubeState.activeIds.slice();if((config.tube?.completionAction||'replace_card')==='replace_card')tubeState.activeIds[slot]=nextCardId(active);saveStore('tubeState',tubeState);updateHome();adaptiveLog('tube_complete',{id:c.id,score:Math.round(score),mode,...(extra||{})});
+      const completed={id:c.id,title:c.title,total:score===null?null:Math.round(score),mode,at:Number(reader.dataset.attemptAt)||Date.now(),sentence:extra?.sentence||'',selected:mode==='flashcard'?null:selected,correct:c.correct,quizCorrect:extra?.quizCorrect??null,prompt:reader.querySelector('.promptText')?.textContent||c.prompt,reviewStatus:extra?.sentence?'pending':'not_required'};tubeState.completed.push(completed);delete tubeState.drafts[id];const active=tubeState.activeIds.slice();if((config.tube?.completionAction||'replace_card')==='replace_card')tubeState.activeIds[slot]=nextCardId(active);saveStore('tubeState',tubeState);updateHome();adaptiveLog('tube_complete',{id:c.id,score:score===null?null:Math.round(score),mode,quizCorrect:extra?.quizCorrect??null});
     };
 
     if(mode==='flashcard'){
@@ -228,8 +230,16 @@
     const persist=()=>{tubeState.drafts[id]={selected,text:ans?ans.value:''};saveStore('tubeState',tubeState)};
     const valid=()=>{const words=ans?ans.value.trim().split(/\s+/).filter(Boolean).length:999;submit.disabled=submitted||(mode!=='reflection'&&selected===null)||(mode!=='mcq'&&words<minWords)};
     opts.forEach(o=>o.onclick=()=>{if(submitted)return;selected=+o.dataset.n;opts.forEach(x=>x.classList.toggle('selected',x===o));persist();valid()});if(ans){ans.addEventListener('input',()=>{persist();valid()});ans.addEventListener('touchstart',()=>setTimeout(()=>ans.focus(),0),{passive:true});ans.addEventListener('pointerdown',()=>setTimeout(()=>ans.focus(),0))}valid();
-    submit.onclick=()=>{if(submitted)return;submitted=true;let total=0;let extra={};if(mode==='reflection'){const sg=sentenceGrade(c,ans?.value||'');total=sg.score;extra={words:sg.words};fb.classList.add('show');fb.innerHTML=`<h3>${total>=67?'Good recall':'Keep sharpening it'}</h3><p>${html(sg.checks.join(' · '))}.</p><div class="scoreline"><span class="pill">Recall ${total}/100</span></div>`}else{const correct=selected===c.correct;opts.forEach((o,n)=>{o.disabled=true;o.classList.remove('selected');if(n===c.correct)o.classList.add('correct');if(n===selected&&n!==c.correct)o.classList.add('wrong')});if(mode==='mcq'){total=correct?100:45;extra={correct};fb.classList.add('show');fb.innerHTML=`<h3>${correct?'✓ Correct':'Not quite'}</h3><p>${correct?'You picked the key mechanism.':'Strongest answer: <b>'+html(options[c.correct])+'</b>.'}</p><div class="scoreline"><span class="pill">${total}/100</span></div>`}else{const sg=sentenceGrade(c,ans?.value||'');total=(correct?40:0)+Math.round(sg.score*.6);extra={correct,words:sg.words};fb.classList.add('show');fb.innerHTML=`<h3>${correct?'✓ Correct answer':'Correct answer: '+String.fromCharCode(65+c.correct)}</h3><p>${correct?'You picked the key mechanism.':'The strongest answer is: <b>'+html(options[c.correct])+'</b>.'}</p><div class="scoreline"><span class="pill">Quiz ${correct?40:0}/40</span><span class="pill">Sentence ${Math.round(sg.score*.6)}/60</span><span class="pill">Total ${total}/100</span></div><p><b>Sentence:</b> ${html(sg.checks.join(' · '))}.</p>`}}
-      if(ans)ans.disabled=true;submit.disabled=true;finish(total,extra);next?.classList.add('show')};if(next)next.onclick=()=>closeReader();window.scrollTo(0,0);
+    submit.onclick=()=>{
+      if(submitted||submit.disabled)return;submitted=true;
+      const correct=selected===c.correct;
+      opts.forEach((o,n)=>{o.disabled=true;o.classList.remove('selected');if(n===c.correct)o.classList.add('correct');if(n===selected&&n!==c.correct)o.classList.add('wrong')});
+      const sentence=ans?.value.trim()||'';
+      fb.classList.add('show');
+      fb.innerHTML=mode==='reflection'?'<h3>Answer saved</h3><p>Written answer awaiting review.</p>':`<h3>${correct?'✓ Correct answer':'Not quite'}</h3><p>${correct?'You picked the key mechanism.':'The strongest answer is: <b>'+html(options[c.correct])+'</b>.'}</p>${sentence?'<p>Written answer awaiting review.</p>':''}`;
+      if(ans)ans.disabled=true;submit.disabled=true;
+      finish(mode==='reflection'?null:(correct?100:0),{quizCorrect:mode==='reflection'?null:correct,sentence});next?.classList.add('show');
+    };if(next)next.onclick=()=>closeReader();window.scrollTo(0,0);
   }
 
   function patchTube(){
