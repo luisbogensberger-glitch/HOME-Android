@@ -3,6 +3,16 @@
   'use strict';
   if(window.__HOME_BEHAVIOUR_LAUNCHER_V3__)return;
   window.__HOME_BEHAVIOUR_LAUNCHER_V3__=true;
+  const BASE='https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/';
+
+  async function loadV7(){
+    if(window.__VBRAIN_BEHAVIOUR_V7__)return;
+    try{
+      const r=await fetch(BASE+'behaviour-engine-v7.js?v='+Date.now(),{cache:'no-store'});
+      if(!r.ok)throw new Error('v7 '+r.status);
+      new Function(await r.text()+'\n//# sourceURL=vbrain-behaviour-engine-v7.js')();
+    }catch(e){try{console.warn('V-Brain behaviour v7 failed to load',e)}catch(_) {}}
+  }
 
   const open=()=>{try{window.HOMEBehaviourIntelligence?.open?.()}catch(e){try{document.getElementById('homeDayScoreV2')?.click()}catch(_){}}};
 
@@ -47,6 +57,7 @@
     }
   }
 
+  loadV7();setTimeout(loadV7,900);setTimeout(loadV7,3000);
   bind();setTimeout(bind,250);setTimeout(bind,900);setTimeout(bind,2200);setTimeout(bind,5000);
   const mo=new MutationObserver(()=>requestAnimationFrame(bind));
   mo.observe(document.documentElement,{subtree:true,childList:true});
