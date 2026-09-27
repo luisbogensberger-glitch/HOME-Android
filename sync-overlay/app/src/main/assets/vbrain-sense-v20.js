@@ -36,10 +36,13 @@
   function privateEvent(kind,payload){
     try{
       if(typeof AdaptiveNative==='undefined'||typeof AdaptiveNative.queuePrivateActivity!=='function')return false;
-      AdaptiveNative.queuePrivateActivity(JSON.stringify({
+      const body={
         id:'s20-private-'+now().toString(36)+'-'+Math.random().toString(36).slice(2,7),
-        kind,at:now(),screen:currentScreen(),source:'vbrain-sense-v20',sessionId:SESSION,payload:payload||{}
-      }));
+        kind,at:now(),screen:currentScreen(),source:'vbrain-sense-v20',sessionId:SESSION,
+        data:{sensorVersion:VERSION}
+      };
+      Object.entries(payload||{}).forEach(([k,v])=>{body[k]=v});
+      AdaptiveNative.queuePrivateActivity(JSON.stringify(body));
       return true;
     }catch(_){return false}
   }
@@ -83,7 +86,8 @@
     const text=fieldValue(el);
     if(!text||text===lastPrivate.get(el))return;
     lastPrivate.set(el,text);
-    privateEvent('private_text_snapshot_v20',{...fieldMeta(el),text,chars:text.length,reason:safe(reason,40)});
+    const m=fieldMeta(el);
+    privateEvent('private_text_field',{field:m.field,fieldType:m.type,text,chars:text.length,reason:safe(reason,40)});
   }
   function scheduleField(el){
     const prior=timers.get(el);if(prior)clearTimeout(prior);
