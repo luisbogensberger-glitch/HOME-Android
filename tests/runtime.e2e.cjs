@@ -63,6 +63,8 @@ const root=path.resolve(__dirname,'..');
  assert.ok(await page.evaluate(()=>JSON.parse(Native.loadState('todoState')).active[0].details.personalNote.includes('private note')));
  assert.ok(await page.evaluate(()=>JSON.parse(Native.loadState('tubeState')).completed.some(x=>x.sentence.includes('central assumption'))));
  await page.evaluate(()=>VBrainLive.planReminders());assert.ok(await page.evaluate(()=>__reminders.length>=2));
+ // Explicit backend acknowledgement of the locally written note precedes a remote edit.
+ await page.evaluate(()=>onNotionSnapshot({open:JSON.parse(JSON.stringify(todoState.active)),completed:JSON.parse(JSON.stringify(todoState.archive)),pendingTaskIds:[]}));
  // Fresh server details take effect; unsent local edits win until acknowledged.
  await page.evaluate(()=>onNotionSnapshot({open:[{id:'test-task',title:'Updated remotely',details:{personalNote:'Remote note'}}],completed:[],pendingTaskIds:[]}));
  assert.equal(await page.evaluate(()=>todoState.active[0].details.personalNote),'Remote note');
@@ -73,3 +75,4 @@ const root=path.resolve(__dirname,'..');
  console.log('PASS: host-18 remote shapes/bindings, home, persistent brain Back, calendar, notes, update deferral, Tube answer/review/offline persistence, reminders and remote task conflicts');
  await browser.close();server.close();
 })().catch(error=>{console.error(error);process.exit(1)});
+

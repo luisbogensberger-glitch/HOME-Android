@@ -110,6 +110,7 @@
   }
 
   function adaptiveOrder(){
+    if(window.__vbrainSessionOrder)return;window.__vbrainSessionOrder=true;
     const grid=document.querySelector('#homeScreen .homeGrid');if(!grid)return;
     const hour=new Date().getHours();let order=hour<11?['calendar','todos','gym','tube']:hour<17?['todos','calendar','tube','gym']:['gym','tube','todos','calendar'];
     const r=rows(14),count=t=>r.filter(x=>x.type===t).length;
