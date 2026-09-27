@@ -10,7 +10,7 @@ ASSETS = ROOT / 'sync-overlay/app/src/main/assets'
 CSS = ['home-ui-v2.css', 'adaptive-runtime.css', 'todo-premium.css', 'runtime.css']
 JS = ['home-ui-v2.js', 'adaptive-runtime.js', 'todo-premium.js', 'runtime.js',
       'tube-remote.js', 'vbrain-safe-shell-v3.js', 'vbrain-patch-v10.js',
-      'vbrain-autonomy-v11.js', 'vbrain-context-v12.js',
+      'vbrain-autonomy-v11.js', 'vbrain-context-v12.js', 'vbrain-sense-v20.js',
       'learning-engine-v10.js', 'learning-resilience-v11.js',
       'vbrain-android-back-v14.js', 'vbrain-live-core-v17.js',
       'vbrain-remote-ui-v18.js', 'vbrain-todo-core-v19.js',
