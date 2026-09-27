@@ -12,7 +12,7 @@ import java.security.MessageDigest;
 
 /** A complete UI is staged and verified before use. The previous healthy UI remains available. */
 final class LiveRuntime {
-    static final int HOST = 17;
+    static final int HOST = 18;
     private static final String BASE = "https://raw.githubusercontent.com/luisbogensberger-glitch/HOME-Android/main/home-runtime/";
     private final Context context;
     private final SharedPreferences state;
@@ -71,7 +71,7 @@ final class LiveRuntime {
                 byte[] data = download("live-app.html", 3_000_000);
                 if (data.length != manifest.getInt("bytes") || !hash(data).equals(sha)) throw new IOException("Incomplete UI download");
                 String html = new String(data, StandardCharsets.UTF_8);
-                if (!html.contains("name=\"vbrain-host\" content=\"17\"")) throw new IOException("Missing host contract");
+                if (!html.contains("name=\"vbrain-host\" content=\"18\"")) throw new IOException("Missing host contract");
                 AtomicFile target = new AtomicFile(file);
                 FileOutputStream stream = target.startWrite();
                 try { stream.write(data); target.finishWrite(stream); }
@@ -130,7 +130,7 @@ final class LiveRuntime {
         try {
             String active = state.getString("active", "");
             String sha = active.isEmpty() ? bundledHash() : active;
-            out.put("nativeVersion", HOST).put("version", "17."+sha.substring(0, 12))
+            out.put("nativeVersion", HOST).put("version", "18."+sha.substring(0, 12))
                     .put("source", active.isEmpty() ? "bundled" : "live")
                     .put("ready", !state.getString("ready", "").isEmpty())
                     .put("checkedAt", state.getLong("checkedAt", 0)).put("recovered", recovered)
