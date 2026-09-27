@@ -1,0 +1,5 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),crypto=require('crypto');
+const source=fs.readFileSync('sync-overlay/app/src/main/assets/vbrain-hot-loader-v19.js','utf8');
+const memory=new Map(),sandbox={TextEncoder,TextDecoder,Uint8Array,Uint32Array,DataView,AbortController,console,localStorage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)},Native:{liveRuntimeStatus:()=>'{"nativeVersion":18}'},document:{hidden:false,addEventListener(){},querySelector:()=>null,querySelectorAll:()=>[],documentElement:{dataset:{}}},setInterval:()=>0,setTimeout,clearTimeout,fetch:async()=>{throw Error('offline')}};
+sandbox.window=sandbox;sandbox.addEventListener=()=>{};sandbox.removeEventListener=()=>{};vm.createContext(sandbox);vm.runInContext(source,sandbox);
+(async()=>{for(const s of ['', 'abc', 'Grüße 🧠', 'a'.repeat(10000)])assert.equal(await sandbox.VBrainHotLoader.sha256(s),crypto.createHash('sha256').update(s).digest('hex'));console.log('PASS: Android SHA-256 fallback, empty, ASCII, Unicode and multi-block')})().catch(e=>{console.error(e);process.exitCode=1});

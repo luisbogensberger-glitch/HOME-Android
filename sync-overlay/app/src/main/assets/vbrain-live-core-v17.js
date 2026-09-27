@@ -37,7 +37,7 @@
     return{live,sync};
   }
   function safeApply(){
-    if(!ready||screen()!=='home'||document.querySelector('#vBrainV8.show,#vbrainControl17.show')||privateField(document.activeElement))return;
+    if(!ready||screen()!=='home'||document.querySelector('#vBrainV8.show,#vBrainV19.show,#vbrainControl17.show,#reader.show')||privateField(document.activeElement)||window.VBrainHotLoader?.status?.().applying)return;
     captureAll();ready=false;Native.applyLiveUpdate();
   }
   window.onVBrainLiveUpdate=function(result){live=result||live;ready=live.ready===true;status();safeApply()};

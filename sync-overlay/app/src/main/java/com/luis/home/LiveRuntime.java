@@ -26,9 +26,11 @@ final class LiveRuntime {
         this.root = new File(context.getNoBackupFilesDir(), "vbrain-live");
         root.mkdirs();
         int storedHost = state.getInt("host", 0);
-        if (storedHost != HOST) {
+        String installedBundle="";
+        try { installedBundle=bundledHash(); } catch(Exception ignored) { }
+        if (storedHost != HOST || (!installedBundle.isEmpty() && !installedBundle.equals(state.getString("installedBundle", "")))) {
             // A native-host upgrade invalidates only cached UI releases. App data lives elsewhere.
-            state.edit().putInt("host", HOST).remove("active").remove("previous").remove("ready")
+            state.edit().putInt("host", HOST).putString("installedBundle",installedBundle).remove("active").remove("previous").remove("ready")
                     .remove("readyVersion").remove("rejected").remove("version").remove("error")
                     .putBoolean("bootPending", false).commit();
         } else if (state.getBoolean("bootPending", false)) rollback();
