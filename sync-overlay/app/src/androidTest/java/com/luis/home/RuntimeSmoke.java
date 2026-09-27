@@ -89,15 +89,23 @@ public class RuntimeSmoke extends Instrumentation {
             phase="deterministic repeated resume";
             eval("window.onAppResume?.();window.onAppResume?.();window.onAppResume?.();true");
             waitFor("document.querySelectorAll('.v25HomeCard').length===4 && [...document.querySelectorAll('.v25HomeCard')].map(x=>x.dataset.route).join(',')==='gym,tube,todos,calendar' && document.querySelectorAll('#homeDayScoreV4,#homeMomentum,.homeQuestV7,#vbrainLiveStatus17,#vbRestoreInline,#v24BrainOverlay').length===0",5);
+            waitFor("(()=>{const cards=[...document.querySelectorAll('.v25HomeCard')],heights=cards.map(x=>x.getBoundingClientRect().height);return Math.max(...heights)-Math.min(...heights)<3&&getComputedStyle(cards[3]).backgroundImage.includes('photo-1513635269975-59663e0ac1ad')})()",5);
+
+            phase="three gym plans";
+            eval("showScreen('gym');true");
+            waitFor("document.querySelectorAll('#v25GymTabs button').length===3 && document.getElementById('gymScreen').classList.contains('show')",5);
+            eval("document.querySelector('#v25GymTabs button[data-plan=quick]').click();document.getElementById('v25GymDone').click();document.querySelector('#v25GymSession [data-step=\"0\"]').click();document.getElementById('v25GymDone').click();true");
+            waitFor("JSON.parse(Native.loadState('homeGymStateV1')).history.length===1",5);
+            eval("showScreen('home');true");
 
             phase="bounded todos with HOME Sync";
             eval("showScreen('todos');true");
-            waitFor("document.getElementById('todosScreen').classList.contains('show') && document.querySelectorAll('#todoList .todo').length<=18 && !!document.querySelector('.syncBar')",5);
+            waitFor("document.getElementById('todosScreen').classList.contains('show') && document.querySelectorAll('#todoList .todo').length<=18 && document.getElementById('todoStats').textContent!=='193 open' && !!document.querySelector('.syncBar')",5);
             eval("showScreen('home');true");
 
             phase="tube stack";
             eval("showScreen('tube');true");
-            waitFor("document.getElementById('tubeScreen').classList.contains('show') && localStorage.getItem('homeTubeLayoutV6')==='stack' && document.getElementById('grid').dataset.layout==='stack'",5);
+            waitFor("document.getElementById('tubeScreen').classList.contains('show') && localStorage.getItem('homeTubeLayoutV6')==='stack' && document.getElementById('grid').dataset.layout==='stack' && document.querySelectorAll('#grid .card').length===5",5);
             eval("showScreen('home');true");
 
             phase="living brain and native back";
