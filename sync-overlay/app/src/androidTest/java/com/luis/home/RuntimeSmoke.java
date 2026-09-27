@@ -73,7 +73,7 @@ public class RuntimeSmoke extends Instrumentation {
             phase="safe status control";
             waitFor("document.getElementById('vbrainLiveStatus17')?.dataset.safeStatus==='3'",8);
             eval("document.getElementById('vbrainLiveStatus17').click();true");
-            waitFor("document.getElementById('vbrainControl17')?.classList.contains('show') && document.body.innerText.includes('SYSTEM STATUS') && document.body.innerText.includes('HOME loader')",5);
+            waitFor("document.getElementById('vbrainControl17')?.classList.contains('show') && document.body.innerText.includes('Live and recoverable.') && document.body.innerText.includes('HOME LOADER') && document.body.innerText.includes('rescue 20')",5);
             eval("document.querySelector('#vbrainControl17 .vb17Close')?.click();true");
             waitFor("!document.getElementById('vbrainControl17')?.classList.contains('show')",5);
             phase="native back";
