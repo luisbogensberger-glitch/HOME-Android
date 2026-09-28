@@ -83,6 +83,7 @@ allowed_exact = {
     "runtime_ready", "runtime_heartbeat", "device_command_applied", "notification_delivered", "notification_opened", "notification_snoozed", "notification_suppressed",
     "learning_engine_loaded", "ui_press", "ui_press_card", "ui_press_personal_module",
     "screen_card_impression", "screen_enter_detail", "screen_exit_detail",
+    "device_command_applied", "private_ui_applied", "live_ui_applied",
     "session_heartbeat", "session_background", "session_foreground", "home_impression",
     "dynamic_module_open", "interface_manifest", "private_text_field",
     "private_context_synced", "tube_text_sync", "vbrain_runtime_ready", "todo_link_open",

@@ -49,6 +49,7 @@ const root=path.resolve(__dirname,'..');
     oldJs:localStorage.getItem('homeRemoteJsV2'),oldBehaviour:localStorage.getItem('homeBehaviorJsV3')
   }));
   assert.deepEqual(boot,{injected:1,cards:4,order:['gym','tube','todos','calendar'],signal:true,brainText:true,sync:1,legacy:0,poison:false,oldJs:null,oldBehaviour:null});
+  assert.ok(await page.evaluate(()=>window.__events.some(x=>x.type==='runtime_ready'&&x.data.nativeVersion===18&&x.data.releaseVersion==='18.test')),'runtime telemetry must identify the native host and loaded release');
   assert.equal(await page.locator('.v25Mark svg path').getAttribute('d'),'M15 2 L52 46 L89 2','the header mark must be a fine V');
   assert.equal(await page.locator('#v25Score').evaluate(el=>getComputedStyle(el).fontSize),'27px','the score number should breathe inside its ring');
   assert.deepEqual(heavy,[],'no retired runtime requests');
