@@ -1,8 +1,6 @@
-name: Adapt HOME from usage
+name: Legacy HOME config (manual only)
 
 on:
-  schedule:
-    - cron: '15 4 * * *'
   workflow_dispatch:
 
 permissions:
