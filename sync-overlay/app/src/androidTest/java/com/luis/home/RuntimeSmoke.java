@@ -100,8 +100,8 @@ public class RuntimeSmoke extends Instrumentation {
             phase="three gym plans";
             eval("showScreen('gym');true");
             waitFor("document.querySelectorAll('#v25GymTabs button').length===3 && document.getElementById('gymScreen').classList.contains('show')",5);
-            eval("document.querySelector('#v25GymTabs button[data-plan=quick]').click();document.getElementById('v25GymDone').click();document.querySelector('#v25GymSession [data-step=\"0\"]').click();document.getElementById('v25GymDone').click();true");
-            waitFor("JSON.parse(Native.loadState('homeGymStateV1')).history.length===1",5);
+            eval("document.querySelector('#v25GymTabs button[data-plan=quick]').click();document.getElementById('v25GymDone').click();for(let i=0;i<4;i++)document.querySelectorAll('#v25GymSession [data-step]')[i].click();document.getElementById('v25GymDone').click();true");
+            waitFor("JSON.parse(Native.loadState('homeGymStateV1')).history[0]?.completed===4",5);
             eval("showScreen('home');true");
 
             phase="bounded todos with HOME Sync";
