@@ -346,14 +346,22 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
     let changed=false,repaired=0;for(const list of [state.active||[],state.archive||[]])for(const t of list){if(taskId(t)||!taskKey(t))continue;t.id=`legacy-${stableLegacyTaskHash(taskKey(t))}`;changed=true;repaired++}
     if(changed){saveStore('todoState',state);log('todo_identity_repaired',{count:repaired,active:(state.active||[]).length,archived:(state.archive||[]).length})}return changed
   }
+  function remoteTaskFingerprint(t){
+    let details='';try{details=JSON.stringify(t?.details||{})}catch(_){details=''}return `${taskKey(t)}|${clean(t?.note||'',1800)}|${details}`
+  }
+  function collapseClearRemoteDuplicates(items){
+    const list=Array.isArray(items)?items:[],groups=new Map(),order=[];for(const t of list){const key=remoteTaskFingerprint(t);if(!groups.has(key)){groups.set(key,[]);order.push(key)}groups.get(key).push(t)}
+    const out=[];let removed=0;const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    for(const key of order){const group=groups.get(key)||[];if(group.length>=3){const stable=group.find(t=>taskId(t)&&!uuid.test(taskId(t)));out.push(stable||group[0]);removed+=group.length-1}else out.push(...group)}
+    if(removed)log('todo_remote_duplicates_collapsed',{removed,kept:out.length,total:list.length});return out
+  }
   function installTaskCore(){
-    normalizeLegacyTaskIds();
     window.completeTodo=id=>{const i=todoState.active.findIndex(t=>taskId(t)===String(id));if(i<0)return false;const [t]=todoState.active.splice(i,1);t.completedAt=now();todoState.archive.push(t);taskDirty.add(taskId(t));persistTasks('complete');log('todo_complete',{id:taskId(t)});return true};
     window.restoreTodo=id=>{const i=todoState.archive.findIndex(t=>taskId(t)===String(id));if(i<0)return false;const [t]=todoState.archive.splice(i,1);delete t.completedAt;todoState.active.unshift(t);taskDirty.add(taskId(t));persistTasks('restore');log('todo_restore',{id:taskId(t)});return true};
     window.addTodo=()=>{const input=document.getElementById('newTodo'),title=String(input?.value||'').trim();if(!title)return false;const t={id:`local-${now().toString(36)}-${Math.random().toString(36).slice(2,8)}`,title,area:'Personal',minutes:0,note:'',source:'android',details:{outcome:'',info:[],tips:[],links:[],personalNote:''}};todoState.active.unshift(t);taskDirty.add(taskId(t));input.value='';persistTasks('add');log('todo_add',{id:taskId(t),title:clean(title,160)});return true};
     const baseDetail=window.renderTodoDetail;
     window.renderTodoDetail=function(){const result=baseDetail?.apply(this,arguments),note=document.getElementById('detailPersonalNote');if(!note)return result;note.oninput=()=>{const t=findTodo(currentTodoDetailId);if(!t)return;t.details=t.details||{};t.details.personalNote=note.value;taskDirty.add(taskId(t));clearTimeout(noteTimer);noteTimer=setTimeout(()=>persistTasks('note'),650)};note.onblur=()=>{clearTimeout(noteTimer);noteTimer=0;const t=findTodo(currentTodoDetailId);if(t){t.details=t.details||{};t.details.personalNote=note.value;taskDirty.add(taskId(t));persistTasks('note_blur')}};return result};
-    window.onNotionSnapshot=data=>{clearTimeout(taskRefreshTimer);syncingNotion=false;try{const allRemoteActive=Array.isArray(data?.open)?data.open:[],allRemoteArchive=Array.isArray(data?.completed)?data.completed:[];if(allRemoteActive.length>40&&!readState(TASK_SCREENED,false)){const known=new Set([...todoState.active,...todoState.archive].map(taskId)),seeds=new Set(seedTodos.map(x=>String(x.id)));rememberOlder(allRemoteActive.filter(t=>!known.has(taskId(t))&&!seeds.has(taskId(t))));persistState(TASK_SCREENED,true)}const remoteActive=allRemoteActive.filter(t=>!hiddenTaskIds.has(taskId(t))),remoteArchive=allRemoteArchive.filter(t=>!hiddenTaskIds.has(taskId(t))),serverPending=new Set((data?.pendingTaskIds||[]).map(String)),pending=new Set([...serverPending,...taskDirty]);const localActive=todoState.active,localArchive=todoState.archive,local=[...localActive,...localArchive],byId=new Map(local.map(t=>[taskId(t),t])),bySemantic=new Map(local.map(t=>[taskKey(t),t])),matched=new Set(),active=[],archive=[];
+    window.onNotionSnapshot=data=>{clearTimeout(taskRefreshTimer);syncingNotion=false;try{const rawRemoteActive=Array.isArray(data?.open)?data.open:[],rawRemoteArchive=Array.isArray(data?.completed)?data.completed:[],allRemoteActive=collapseClearRemoteDuplicates(rawRemoteActive),allRemoteArchive=collapseClearRemoteDuplicates(rawRemoteArchive);if(allRemoteActive.length>40&&!readState(TASK_SCREENED,false)){const known=new Set([...todoState.active,...todoState.archive].map(taskId)),seeds=new Set(seedTodos.map(x=>String(x.id)));rememberOlder(allRemoteActive.filter(t=>!known.has(taskId(t))&&!seeds.has(taskId(t))));persistState(TASK_SCREENED,true)}const remoteActive=allRemoteActive.filter(t=>!hiddenTaskIds.has(taskId(t))),remoteArchive=allRemoteArchive.filter(t=>!hiddenTaskIds.has(taskId(t))),serverPending=new Set((data?.pendingTaskIds||[]).map(String)),pending=new Set([...serverPending,...taskDirty]);const localActive=todoState.active,localArchive=todoState.archive,local=[...localActive,...localArchive],byId=new Map(local.map(t=>[taskId(t),t])),bySemantic=new Map(local.map(t=>[taskKey(t),t])),matched=new Set(),active=[],archive=[];
       for(const [items,done] of [[remoteActive,false],[remoteArchive,true]])for(const r of items){const prev=byId.get(taskId(r))||bySemantic.get(taskKey(r)),id=taskId(prev||r),dirty=pending.has(id)||pending.has(taskId(r));matched.add(id);matched.add(taskId(r));const parsed=typeof parseTaskNotes==='function'?parseTaskNotes(r.note):{},details={...prev?.details,...parsed,...r.details,personalNote:dirty?String(prev?.details?.personalNote||''):String(r.details?.personalNote??prev?.details?.personalNote??'')},merged=enrichTodo({...prev,...r,details});const localDone=localArchive.includes(prev);if(prev&&!serverPending.has(id)&&!serverPending.has(taskId(r))&&localDone===done&&String(r.details?.personalNote??prev.details?.personalNote??'')===String(prev.details?.personalNote||'')){taskDirty.delete(id);pending.delete(id)}if(pending.has(id)||pending.has(taskId(r))){if(localDone)archive.push(merged);else active.push(merged)}else if(done){merged.completedAt=r.completedAt||prev?.completedAt||now();archive.push(merged)}else active.push(merged);if(!dirty&&prev&&String(prev.details?.personalNote||'')===String(details.personalNote||''))taskDirty.delete(id)}
       for(const t of local)if(!matched.has(taskId(t)))(localArchive.includes(t)?archive:active).push(t);const seen=new Set(),dedupe=items=>items.filter(t=>{const id=taskId(t),key=id||taskKey(t);if(seen.has(key))return false;seen.add(key);return true});todoState.archive=dedupe(archive);todoState.active=dedupe(active);pruneArchive();const raw=JSON.stringify(todoState);try{Native?.acceptRemoteTodoState?.(raw)}catch(_){}try{localStorage.setItem('todoState',raw)}catch(_){}renderTodosLean();if(screen()==='todoDetail'&&document.activeElement?.id!=='detailPersonalNote')window.renderTodoDetail?.();updateHome();setSyncStatus('Saved on phone · synced')
     }catch(_){setSyncStatus('Saved on phone · sync will retry')}};
@@ -469,6 +477,7 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
   const TOMBSTONES='vbrainPrivateTaskTombstonesV29';
   const HISTORY='vbrainCompletedHistoryV29';
   const REVIEW_SEEN='vbrainLearningReviewSeenV29';
+  const ACCESS_STATUS='vbrainAccessStatusV29';
   const MAX_APPLIED=600;
   const MAX_TOMBSTONES=600;
   const MAX_HISTORY=1000;
@@ -485,6 +494,25 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
   const normalizedKey=t=>`${clean(t?.title,180).toLowerCase()}|${clean(t?.area||'Personal',80).toLowerCase()}`;
   const currentTodoState=()=>{try{if(typeof todoState!=='undefined'&&todoState)return todoState}catch(_){}return read('todoState',{active:[],archive:[]})};
   const log=(kind,data)=>{try{window.homeAdaptiveLog?.(kind,data||{})}catch(_){}};
+
+  function accessStatus(){
+    const call=(obj,name)=>{try{return obj&&typeof obj[name]==='function'?!!obj[name]():null}catch(_){return null}};
+    return{
+      notificationAccess:call(typeof VBrainNative!=='undefined'?VBrainNative:null,'notificationAccessEnabled'),
+      whatsappAccessibility:call(typeof VBrainNative!=='undefined'?VBrainNative:null,'whatsappAccessibilityEnabled'),
+      calendarPermission:call(typeof Native!=='undefined'?Native:null,'hasCalendarPermission'),
+      homeSync:call(typeof Native!=='undefined'?Native:null,'hasNotionConnection')
+    }
+  }
+
+  function reportAccessStatus(force=false){
+    const next=accessStatus();
+    if(Object.values(next).every(v=>v===null))return false;
+    const prior=read(ACCESS_STATUS,null), changed=!prior||JSON.stringify(prior)!==JSON.stringify(next);
+    if(changed)write(ACCESS_STATUS,next);
+    if(changed||force)log('inbox_access_status_v13',next);
+    return changed
+  }
 
   function storeTodoState(state){
     try{
@@ -684,10 +712,10 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
     }
   }
 
-  function refreshPrivateState(){wrapTaskActions();installLearningReviewSync();syncPrivateTasks();renderHistory();pullLatestLearning()}
+  function refreshPrivateState(){wrapTaskActions();installLearningReviewSync();syncPrivateTasks();renderHistory();pullLatestLearning();reportAccessStatus()}
   function install(){
     try{rememberCompleted(currentTodoState().archive||[])}catch(_){}
-    installLearningReviewSync();refreshPrivateState();
+    installLearningReviewSync();refreshPrivateState();reportAccessStatus(true);
     for(const delay of [2500,12000])setTimeout(()=>pullLatestLearning(true),delay);
     const prior=window.onAppResume;
     if(typeof prior==='function'&&!prior.__v29){
@@ -704,7 +732,7 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
   else setTimeout(install,0);
   document.addEventListener('click',()=>setTimeout(refreshPrivateState,80),true);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshPrivateState,180)});
-  window.VBrainPrivateIngest={version:29,ingest:syncPrivateTasks,history:()=>read(HISTORY,[]),syncLearning:()=>pullLatestLearning(true)};
+  window.VBrainPrivateIngest={version:29,ingest:syncPrivateTasks,history:()=>read(HISTORY,[]),syncLearning:()=>pullLatestLearning(true),access:accessStatus};
 })();
 
 </script>
