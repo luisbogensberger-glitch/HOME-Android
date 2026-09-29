@@ -1,4 +1,4 @@
-/* V-Brain private ingest v29 — private task delivery + durable completed history.
+/* V-Brain private ingest v29 — private task delivery, removals and durable completed history.
    This file contains generic code only. Private task text stays inside vbrainPrivatePatch. */
 (function(){
   'use strict';
@@ -7,8 +7,10 @@
 
   const PATCH='vbrainPrivatePatch';
   const APPLIED='vbrainPrivateTaskAppliedV29';
+  const TOMBSTONES='vbrainPrivateTaskTombstonesV29';
   const HISTORY='vbrainCompletedHistoryV29';
   const MAX_APPLIED=600;
+  const MAX_TOMBSTONES=600;
   const MAX_HISTORY=1000;
 
   const parse=(raw,fallback)=>{try{const v=JSON.parse(raw||'');return v??fallback}catch(_){return fallback}};
@@ -52,22 +54,43 @@
     if(after.length!==before.length) write(HISTORY,after);
   }
 
-  function ingestPrivateTasks(){
+  function privateRemovalIds(patch){
+    const raw=Array.isArray(patch?.taskRemovals)?patch.taskRemovals:[];
+    return raw.map(item=>clean(typeof item==='string'?item:(item?.id||item?.taskId||item?.externalId),180)).filter(Boolean).slice(0,120);
+  }
+
+  function syncPrivateTasks(){
     const patch=parse(nativeRead(PATCH),{}), incoming=Array.isArray(patch?.taskUpserts)?patch.taskUpserts:[];
-    if(!incoming.length) return false;
     const state=currentTodoState();
     state.active=Array.isArray(state.active)?state.active:[];
     state.archive=Array.isArray(state.archive)?state.archive:[];
+
+    const priorTombstones=read(TOMBSTONES,[]);
+    const tombstones=new Set(Array.isArray(priorTombstones)?priorTombstones:[]);
+    for(const id of privateRemovalIds(patch)) tombstones.add(id);
+    const removedNow=[];
+    const keep=task=>{
+      const id=idOf(task), remove=!!id&&tombstones.has(id);
+      if(remove) removedNow.push(id);
+      return !remove
+    };
+    const activeBefore=state.active.length, archiveBefore=state.archive.length;
+    state.active=state.active.filter(keep);
+    state.archive=state.archive.filter(keep);
+    const removalChanged=state.active.length!==activeBefore||state.archive.length!==archiveBefore;
+    write(TOMBSTONES,[...tombstones].slice(-MAX_TOMBSTONES));
+
     const appliedList=read(APPLIED,[]), applied=new Set(Array.isArray(appliedList)?appliedList:[]);
     const byId=new Map([...state.active,...state.archive].map(t=>[idOf(t),t]).filter(([id])=>id));
     const byKey=new Map([...state.active,...state.archive].map(t=>[normalizedKey(t),t]).filter(([key])=>key!=='|personal'));
-    let changed=false;
+    let ingestChanged=false;
 
     for(const raw of incoming.slice(0,80)){
       const externalId=clean(raw?.externalId||raw?.id,180);
       const title=clean(raw?.title,180);
       if(!externalId||!title) continue;
       const stableId=externalId.startsWith('external-')?externalId:`external-${externalId}`;
+      if(tombstones.has(stableId)||tombstones.has(externalId)) continue;
       const key=`${title.toLowerCase()}|${clean(raw?.area||'Personal',80).toLowerCase()}`;
       const existing=byId.get(stableId)||byKey.get(key);
       if(existing){applied.add(stableId);continue}
@@ -91,13 +114,14 @@
         createdAt:Number(raw?.createdAt)||Date.now()
       };
       state.active.unshift(task);
-      byId.set(stableId,task); byKey.set(key,task); applied.add(stableId); changed=true;
+      byId.set(stableId,task); byKey.set(key,task); applied.add(stableId); ingestChanged=true;
       log('private_task_ingested',{id:stableId,source:task.source});
     }
 
     write(APPLIED,[...applied].slice(-MAX_APPLIED));
-    if(changed) storeTodoState(state);
-    return changed;
+    if(removalChanged||ingestChanged) storeTodoState(state);
+    for(const id of [...new Set(removedNow)]) log('private_task_removed',{id});
+    return removalChanged||ingestChanged;
   }
 
   function renderHistory(){
@@ -148,7 +172,7 @@
     }
   }
 
-  function refreshPrivateState(){wrapTaskActions();ingestPrivateTasks();renderHistory()}
+  function refreshPrivateState(){wrapTaskActions();syncPrivateTasks();renderHistory()}
   function install(){
     try{rememberCompleted(currentTodoState().archive||[])}catch(_){}
     refreshPrivateState();
@@ -167,5 +191,5 @@
   else setTimeout(install,0);
   document.addEventListener('click',()=>setTimeout(refreshPrivateState,80),true);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshPrivateState,180)});
-  window.VBrainPrivateIngest={version:29,ingest:ingestPrivateTasks,history:()=>read(HISTORY,[])};
+  window.VBrainPrivateIngest={version:29,ingest:syncPrivateTasks,history:()=>read(HISTORY,[])};
 })();
