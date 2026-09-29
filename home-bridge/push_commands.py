@@ -246,6 +246,7 @@ def run_command(command: dict):
         patch = validate_private_patch(command.get("patch") or {})
         carrier = {
             "id": PRIVATE_CARRIER_ID,
+            "title": "V-Brain private state",
             "kind": "private_state",
             "source": "home-command-bridge",
             "updatedAt": int(time.time() * 1000),
