@@ -59,6 +59,9 @@ jobs:
       - name: Speed up V-Brain 23 startup recovery
         run: python3 scripts/patch_runtime_fast_v23.py src/luis-home-app/app/src/main/java/com/luis/home/MainActivity.java
 
+      - name: Repair legacy task identity in live UI
+        run: python3 scripts/patch_vbrain_task_identity_v29.py sync-overlay/app/src/main/assets/vbrain-one-ui-v25.js
+
       - name: Build and validate lean live release
         run: |
           python3 scripts/build_live_release.py
