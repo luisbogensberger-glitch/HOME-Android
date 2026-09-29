@@ -21,11 +21,14 @@ assert manifest['minNative']==18
 assert manifest['version'].startswith('18.')
 assert 'name="vbrain-host" content="18"' in html
 
-# One runtime owns all visible UI. Historical UI layers may stay in git only.
-assert html.count('data-source="')==1, 'v25 must ship exactly one injected runtime'
-assert 'data-source="vbrain-one-ui-v25.js"' in html
+# Exactly one runtime owns visible UI. V29 is a non-visual private data helper.
+assert html.count('data-source="')==1, 'v25 must remain the only injected runtime owner'
+assert html.count('data-source="vbrain-one-ui-v25.js"')==1
+assert html.count('data-helper="')==1, 'release may ship only one private helper'
+assert html.count('data-helper="vbrain-private-ingest-v29.js"')==1
 assert '__VBRAIN_ONE_UI_V25__' in html
-assert manifest['bytes'] < 200000, f'one-ui release regressed to {manifest["bytes"]} bytes'
+assert '__VBRAIN_PRIVATE_INGEST_V29__' in html
+assert manifest['bytes'] < 215000, f'one-ui release regressed to {manifest["bytes"]} bytes'
 assert not re.search(r'<script\b[^>]*\bsrc=',html,re.I), 'no external script may execute at boot'
 assert not re.search(r'<link\b[^>]*\brel=["\']stylesheet',html,re.I), 'no external stylesheet may execute at boot'
 
@@ -42,6 +45,7 @@ retired_sources=[
 ]
 for name in retired_sources:
  assert f'data-source="{name}"' not in html, f'retired runtime leaked into release: {name}'
+ assert f'data-helper="{name}"' not in html, f'retired helper leaked into release: {name}'
 
 # Ownership/performance invariants.
 assert 'setInterval(' not in html, 'shipping UI must not create repeating JS intervals'
@@ -55,6 +59,7 @@ assert 'vbrainPrivatePatch' in html and 'vbrainBrainContext' in html
 assert 'Your signal today' in html and 'Behaviour intelligence' in html
 assert 'Tube Learning' in html and 'Easy · 15 min' in html
 assert 'window.__vbrainBundledTubeFeed=' in html and 'ICARUS' in html
+assert html.count('window.__vbrainBundledTubeFeed=')==1, 'bundled feed must not be duplicated across helpers'
 assert 'vbrainDailyScoreV28' in html and 'daily_score_finalized' in html
 assert 'vbrainHomeCardOrderV28' in html and 'v28DragGhost' in html
 assert 'M15 2 L52 46 L89 2' in html
@@ -80,6 +85,13 @@ assert "window.onAppResume=()=>{if(notionConnected())refreshNotion()};" not in h
 assert "renderTodos();updateHome();updateSyncUI();if(notionConnected())refreshNotion();" not in html
 assert 'Build momentum that matters.' not in html
 assert "TODAY'S QUEST" not in html
+
+# Private task ingestion is generic code only: task text arrives only via the private device patch.
+assert 'taskUpserts' in html
+assert 'vbrainPrivateTaskAppliedV29' in html
+assert 'vbrainCompletedHistoryV29' in html
+assert 'private_task_ingested' in html
+assert 'VBrainPrivateIngest' in html
 
 # Fast declarative UI channel: data only, never executable remote JavaScript.
 assert ui['schema']==1
@@ -111,4 +123,4 @@ if len(sys.argv)>1:
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
 
-print(f'PASS: One UI v25, {len(scripts)} total inline scripts / 1 injected runtime, {manifest["bytes"]} bytes, original Behaviour network + persistent graph + local-first To-Dos + semantic Tube review + calendar + live UI + Host-18 rollback'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: One UI v25 + private ingest v29, {len(scripts)} total inline scripts / 1 visual owner + 1 private helper, {manifest["bytes"]} bytes, persistent Brain + local-first To-Dos + semantic Tube review + calendar + live UI + Host-18 rollback'+(' and APK bytes' if len(sys.argv)>1 else ''))

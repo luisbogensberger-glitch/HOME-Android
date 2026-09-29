@@ -8,10 +8,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'sync-overlay/app/src/main/assets'
 
-# V25 has exactly one visible/runtime owner. The verified base document supplies
-# local data functions and native bridges only; historical adaptation layers do not execute.
+# V25 remains the one visible/runtime owner. V29 is a non-visual private-ingest helper:
+# it consumes only device-private patch data and never places private content in this repository.
 CSS = []
-JS = ['vbrain-one-ui-v25.js']
+JS = ['vbrain-one-ui-v25.js', 'vbrain-private-ingest-v29.js']
 
 def source(name):
     path = ASSETS / name
@@ -37,7 +37,12 @@ def build():
     if not isinstance(feed.get('cards'), list) or len(feed['cards']) < 5:
         raise ValueError('Tube release needs at least five bundled learning cards')
     bundled_feed = json.dumps(feed, ensure_ascii=False, separators=(',', ':')).replace('<', '\\u003c')
-    scripts = '\n'.join('<script data-source="'+name+'">\nwindow.__vbrainBundledTubeFeed='+bundled_feed+';\n'+source(name).replace('</script', '<\\/script')+'\n</script>' for name in JS)
+    script_parts=[]
+    for index,name in enumerate(JS):
+        prefix='window.__vbrainBundledTubeFeed='+bundled_feed+';\n' if index==0 else ''
+        marker='data-source' if index==0 else 'data-helper'
+        script_parts.append('<script '+marker+'="'+name+'">\n'+prefix+source(name).replace('</script', '<\\/script')+'\n</script>')
+    scripts='\n'.join(script_parts)
     html = html.replace('</head>', styles+'\n<meta name="vbrain-host" content="18">\n</head>')
     html = html.replace('</body>', scripts+'\n</body>')
     payload = html.encode()
