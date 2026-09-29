@@ -134,6 +134,7 @@ allowed_exact = {
     "behavior_summary", "screen_dwell", "screen_open", "ui_usage_summary",
     "insights_open", "insights_node_open", "todo_open", "todo_complete", "todo_add",
     "todo_restore", "todo_state_saved", "todo_archive_expired", "home_cards_swapped",
+    "todo_remote_duplicates_collapsed",
     "tube_card_open", "tube_complete", "gym_open", "gym_start", "gym_complete",
     "gym_plan_select", "gym_exercise_toggle", "gym_partial", "gym_abandoned",
     "daily_score_finalized", "calendar_open", "brain_context_synced", "scroll_depth",
