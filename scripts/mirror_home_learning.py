@@ -38,7 +38,7 @@ def request_json(url, *, method="GET", body=None, bearer=""):
             "Authorization": f"Bearer {bearer}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "V-Brain-Private-Mirror/1.7",
+            "User-Agent": "V-Brain-Private-Mirror/1.8",
         },
     )
     try:
@@ -136,11 +136,11 @@ allowed_exact = {
     "todo_restore", "todo_state_saved", "todo_archive_expired", "home_cards_swapped",
     "tube_card_open", "tube_complete", "gym_open", "gym_start", "gym_complete",
     "gym_plan_select", "gym_exercise_toggle", "gym_partial", "gym_abandoned",
-    "daily_score_finalized", "calendar_open", "brain_context_synced",
+    "daily_score_finalized", "calendar_open", "brain_context_synced", "scroll_depth",
     "behavior_ui_decision", "adaptive_profile_updated",
     "habit_intervention", "todo_pressure_show", "todo_pressure_dismiss", "notification_plan",
     "feedback_prompt_shown", "feedback_prompt_dismissed", "feedback_response",
-    "learning_method_selected", "semantic_learning_updated", "sentence_review_error",
+    "learning_method_selected", "semantic_learning_updated", "semantic_learning_synced", "sentence_review_error",
     "runtime_ready", "runtime_heartbeat", "device_command_applied", "notification_delivered", "notification_opened", "notification_snoozed", "notification_suppressed",
     "learning_engine_loaded", "ui_press", "ui_press_card", "ui_press_personal_module",
     "screen_card_impression", "screen_personal_module_impression",
