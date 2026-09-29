@@ -338,7 +338,16 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
   const taskKey=t=>clean(t?.title||'',160).toLowerCase()+'|'+clean(t?.area||'',80).toLowerCase();
   function persistTasks(reason){pruneArchive();saveStore('todoState',todoState);renderTodosLean();updateHome();log('todo_state_saved',{reason,open:todoState.active.length,archived:todoState.archive.length})}
   function refreshTasks(force=false){try{if(!Native?.hasNotionConnection?.())return;const t=now();if(syncingNotion||(!force&&t-lastTaskRefresh<30000))return;lastTaskRefresh=t;syncingNotion=true;setSyncStatus('Syncing in background…');Native.requestNotionSync();clearTimeout(taskRefreshTimer);taskRefreshTimer=setTimeout(()=>{if(syncingNotion){syncingNotion=false;setSyncStatus('Saved on phone · sync will retry')}},16000)}catch(_){syncingNotion=false;setSyncStatus('Saved on phone · sync will retry')}}
+  function stableLegacyTaskHash(value){
+    let h=2166136261;const s=String(value||'');for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)
+  }
+  function normalizeLegacyTaskIds(){
+    const state=(typeof todoState!=='undefined'&&todoState&&typeof todoState==='object')?todoState:null;if(!state)return false;
+    let changed=false,repaired=0;for(const list of [state.active||[],state.archive||[]])for(const t of list){if(taskId(t)||!taskKey(t))continue;t.id=`legacy-${stableLegacyTaskHash(taskKey(t))}`;changed=true;repaired++}
+    if(changed){saveStore('todoState',state);log('todo_identity_repaired',{count:repaired,active:(state.active||[]).length,archived:(state.archive||[]).length})}return changed
+  }
   function installTaskCore(){
+    normalizeLegacyTaskIds();
     window.completeTodo=id=>{const i=todoState.active.findIndex(t=>taskId(t)===String(id));if(i<0)return false;const [t]=todoState.active.splice(i,1);t.completedAt=now();todoState.archive.push(t);taskDirty.add(taskId(t));persistTasks('complete');log('todo_complete',{id:taskId(t)});return true};
     window.restoreTodo=id=>{const i=todoState.archive.findIndex(t=>taskId(t)===String(id));if(i<0)return false;const [t]=todoState.archive.splice(i,1);delete t.completedAt;todoState.active.unshift(t);taskDirty.add(taskId(t));persistTasks('restore');log('todo_restore',{id:taskId(t)});return true};
     window.addTodo=()=>{const input=document.getElementById('newTodo'),title=String(input?.value||'').trim();if(!title)return false;const t={id:`local-${now().toString(36)}-${Math.random().toString(36).slice(2,8)}`,title,area:'Personal',minutes:0,note:'',source:'android',details:{outcome:'',info:[],tips:[],links:[],personalNote:''}};todoState.active.unshift(t);taskDirty.add(taskId(t));input.value='';persistTasks('add');log('todo_add',{id:taskId(t),title:clean(title,160)});return true};
