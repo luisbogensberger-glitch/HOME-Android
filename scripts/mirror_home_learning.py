@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
@@ -24,6 +25,9 @@ if GITHUB_TASK_OIDC_TOKEN.count(".") != 2:
     raise SystemExit("GitHub task OIDC token is missing or invalid")
 
 
+UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.I)
+
+
 def request_json(url, *, method="GET", body=None, bearer=""):
     data = None if body is None else json.dumps(body, separators=(",", ":")).encode("utf-8")
     req = urllib.request.Request(
@@ -34,7 +38,7 @@ def request_json(url, *, method="GET", body=None, bearer=""):
             "Authorization": f"Bearer {bearer}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "V-Brain-Private-Mirror/1.6",
+            "User-Agent": "V-Brain-Private-Mirror/1.7",
         },
     )
     try:
@@ -44,6 +48,60 @@ def request_json(url, *, method="GET", body=None, bearer=""):
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")[:300]
         raise RuntimeError(f"HTTP {exc.code} from {url}: {detail}") from exc
+
+
+def normalized(value):
+    return " ".join(str(value or "").split()).strip().lower()
+
+
+def task_fingerprint(task):
+    """Exact-enough legacy fingerprint. Done/open copies are never mixed."""
+    return json.dumps(
+        {
+            "title": normalized(task.get("title")),
+            "area": normalized(task.get("area")),
+            "note": str(task.get("note") or "").strip(),
+            "details": task.get("details") if isinstance(task.get("details"), dict) else {},
+            "done": task.get("done") is True,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+
+def preferred_task(items):
+    """Prefer a stable non-UUID id, then the most recently updated copy."""
+    def rank(task):
+        task_id = str(task.get("id") or "").strip()
+        stable = 0 if UUID_RE.match(task_id) else 1
+        updated = str(task.get("updatedAt") or task.get("createdAt") or "")
+        return stable, updated
+
+    return max(items, key=rank)
+
+
+def collapse_clear_legacy_duplicates(items):
+    """Collapse only 3+ exact duplicates, leaving pairs and non-identical tasks untouched."""
+    groups = {}
+    order = []
+    for item in items:
+        key = task_fingerprint(item)
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(item)
+
+    result = []
+    removed = 0
+    for key in order:
+        group = groups[key]
+        if len(group) >= 3:
+            result.append(preferred_task(group))
+            removed += len(group) - 1
+        else:
+            result.extend(group)
+    return result, removed
 
 
 status, snapshot = request_json(f"{HOME_API}/api/snapshot", bearer=HOME_TOKEN)
@@ -95,6 +153,7 @@ allowed_exact = {
     "session_heartbeat_v13", "session_background_v13", "session_foreground_v13",
     "session_start_v13", "inbox_access_status_v13", "permission_open_v13",
     "notification_shown_v13", "whatsapp_message_private", "gmail_notification_private",
+    "todo_identity_repaired", "private_task_ingested", "private_task_removed",
 }
 private_kinds = {"private_text_field", "whatsapp_message_private", "gmail_notification_private"}
 
@@ -136,6 +195,8 @@ for task in tasks:
     item.setdefault("source", "vbrain-sync-task-mirror")
     eligible_tasks.append(item)
 
+eligible_tasks, duplicate_tasks_skipped = collapse_clear_legacy_duplicates(eligible_tasks)
+
 mirrored = 0
 activity_mirrored = 0
 max_batches = max(
@@ -174,5 +235,6 @@ for start in range(0, len(eligible_tasks), 300):
 
 print(
     f"V-Brain private mirror: {mirrored} written attempt(s), "
-    f"{activity_mirrored} behaviour/context event(s), {task_mirrored} task snapshot(s) upserted"
+    f"{activity_mirrored} behaviour/context event(s), {task_mirrored} task snapshot(s) upserted, "
+    f"{duplicate_tasks_skipped} clear legacy task duplicate(s) skipped"
 )
