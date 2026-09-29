@@ -457,8 +457,8 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
 
 </script>
 <script data-helper="vbrain-private-ingest-v29.js">
-/* V-Brain private ingest v29 — private task delivery, removals and durable completed history.
-   This file contains generic code only. Private task text stays inside vbrainPrivatePatch. */
+/* V-Brain private ingest v29 — private task delivery, removals, durable history and delayed learning review sync.
+   This file contains generic code only. Private task/review text stays in authenticated private channels. */
 (function(){
   'use strict';
   if(window.__VBRAIN_PRIVATE_INGEST_V29__) return;
@@ -468,9 +468,12 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
   const APPLIED='vbrainPrivateTaskAppliedV29';
   const TOMBSTONES='vbrainPrivateTaskTombstonesV29';
   const HISTORY='vbrainCompletedHistoryV29';
+  const REVIEW_SEEN='vbrainLearningReviewSeenV29';
   const MAX_APPLIED=600;
   const MAX_TOMBSTONES=600;
   const MAX_HISTORY=1000;
+  const MAX_REVIEW_SEEN=300;
+  let lastReviewPull=0;
 
   const parse=(raw,fallback)=>{try{const v=JSON.parse(raw||'');return v??fallback}catch(_){return fallback}};
   const clean=(value,max=600)=>String(value??'').replace(/\s+/g,' ').trim().slice(0,max);
@@ -583,6 +586,56 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
     return removalChanged||ingestChanged;
   }
 
+  function currentTubeState(){
+    try{if(typeof tubeState!=='undefined'&&tubeState)return tubeState}catch(_){}
+    return read('tubeState',{activeIds:[],completed:[],drafts:{}})
+  }
+
+  function saveTubeState(state){
+    try{if(typeof saveStore==='function')saveStore('tubeState',state);else write('tubeState',state)}catch(_){write('tubeState',state)}
+  }
+
+  function syncLearningReviews(result){
+    const rows=Array.isArray(result?.learning)?result.learning:[];
+    if(!rows.length)return false;
+    const attempts=read('v25LearningAttempts',[]), attemptById=new Map((Array.isArray(attempts)?attempts:[]).map(a=>[String(a?.id||a?.attemptId||''),a]));
+    const state=currentTubeState(); state.completed=Array.isArray(state.completed)?state.completed:[];
+    const journal=read('homeSemanticReviewJournalV10',[]), seenList=read(REVIEW_SEEN,[]), seen=new Set(Array.isArray(seenList)?seenList:[]);
+    let changed=false, synced=0;
+
+    for(const row of rows){
+      const review=row?.semantic_review;
+      if(row?.review_status!=='reviewed'||!review||typeof review!=='object')continue;
+      const sourceId=String(row?.id||''); if(!sourceId)continue;
+      const attempt=attemptById.get(sourceId), cardId=String(row?.card_id||attempt?.cardId||'');
+      const attemptAt=Number(attempt?.at)||0;
+      let hit=attemptAt?state.completed.find(x=>String(x?.id||'')===cardId&&Number(x?.at||0)===attemptAt):null;
+      if(!hit&&cardId){const same=state.completed.filter(x=>String(x?.id||'')===cardId);hit=same[same.length-1]||null}
+      if(hit&&(hit.reviewStatus!=='reviewed'||JSON.stringify(hit.semanticReview)!==JSON.stringify(review))){hit.reviewStatus='reviewed';hit.semanticReview=review;hit.semanticReviewSource='private-backend';changed=true}
+      if(!seen.has(sourceId)){
+        journal.push({sourceId,at:Date.now(),cardId,title:clean(row?.title||attempt?.title,180),topic:clean(row?.topic||attempt?.topic,100),method:clean(row?.learning_method||attempt?.method,80),review});
+        seen.add(sourceId); synced++;
+      }
+    }
+
+    if(changed){saveTubeState(state);try{window.renderLearningArchive?.()}catch(_){}try{window.updateHome?.()}catch(_){}}
+    if(synced){write('homeSemanticReviewJournalV10',journal.slice(-160));write(REVIEW_SEEN,[...seen].slice(-MAX_REVIEW_SEEN));log('semantic_learning_synced',{count:synced})}
+    return changed||synced>0;
+  }
+
+  function installLearningReviewSync(){
+    if(window.onHomeLatestLearning?.__v29)return;
+    const prior=window.onHomeLatestLearning;
+    const wrapped=function(result){let out;try{if(typeof prior==='function')out=prior.apply(this,arguments)}catch(_){}try{syncLearningReviews(result||{})}catch(_){}return out};
+    wrapped.__v29=true; window.onHomeLatestLearning=wrapped;
+  }
+
+  function pullLatestLearning(force=false){
+    if(typeof AdaptiveNative==='undefined'||typeof AdaptiveNative.loadLatestLearning!=='function')return false;
+    const t=Date.now();if(!force&&t-lastReviewPull<45000)return false;lastReviewPull=t;
+    try{AdaptiveNative.loadLatestLearning(20);return true}catch(_){return false}
+  }
+
   function renderHistory(){
     const screen=document.getElementById('todosScreen');
     if(!screen||!screen.classList.contains('show')) return;
@@ -631,10 +684,11 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
     }
   }
 
-  function refreshPrivateState(){wrapTaskActions();syncPrivateTasks();renderHistory()}
+  function refreshPrivateState(){wrapTaskActions();installLearningReviewSync();syncPrivateTasks();renderHistory();pullLatestLearning()}
   function install(){
     try{rememberCompleted(currentTodoState().archive||[])}catch(_){}
-    refreshPrivateState();
+    installLearningReviewSync();refreshPrivateState();
+    for(const delay of [2500,12000])setTimeout(()=>pullLatestLearning(true),delay);
     const prior=window.onAppResume;
     if(typeof prior==='function'&&!prior.__v29){
       const wrapped=function(){
@@ -650,7 +704,7 @@ window.__vbrainBundledTubeFeed={"version":"2026-09-27-ucl-reading-list-v2","gene
   else setTimeout(install,0);
   document.addEventListener('click',()=>setTimeout(refreshPrivateState,80),true);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshPrivateState,180)});
-  window.VBrainPrivateIngest={version:29,ingest:syncPrivateTasks,history:()=>read(HISTORY,[])};
+  window.VBrainPrivateIngest={version:29,ingest:syncPrivateTasks,history:()=>read(HISTORY,[]),syncLearning:()=>pullLatestLearning(true)};
 })();
 
 </script>
