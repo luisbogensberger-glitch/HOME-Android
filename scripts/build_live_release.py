@@ -40,7 +40,8 @@ def build():
     script_parts=[]
     for index,name in enumerate(JS):
         prefix='window.__vbrainBundledTubeFeed='+bundled_feed+';\n' if index==0 else ''
-        script_parts.append('<script data-source="'+name+'">\n'+prefix+source(name).replace('</script', '<\\/script')+'\n</script>')
+        marker='data-source' if index==0 else 'data-helper'
+        script_parts.append('<script '+marker+'="'+name+'">\n'+prefix+source(name).replace('</script', '<\\/script')+'\n</script>')
     scripts='\n'.join(script_parts)
     html = html.replace('</head>', styles+'\n<meta name="vbrain-host" content="18">\n</head>')
     html = html.replace('</body>', scripts+'\n</body>')
