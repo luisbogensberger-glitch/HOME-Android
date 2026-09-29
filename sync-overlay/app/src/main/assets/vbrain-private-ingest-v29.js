@@ -10,6 +10,7 @@
   const TOMBSTONES='vbrainPrivateTaskTombstonesV29';
   const HISTORY='vbrainCompletedHistoryV29';
   const REVIEW_SEEN='vbrainLearningReviewSeenV29';
+  const ACCESS_STATUS='vbrainAccessStatusV29';
   const MAX_APPLIED=600;
   const MAX_TOMBSTONES=600;
   const MAX_HISTORY=1000;
@@ -26,6 +27,25 @@
   const normalizedKey=t=>`${clean(t?.title,180).toLowerCase()}|${clean(t?.area||'Personal',80).toLowerCase()}`;
   const currentTodoState=()=>{try{if(typeof todoState!=='undefined'&&todoState)return todoState}catch(_){}return read('todoState',{active:[],archive:[]})};
   const log=(kind,data)=>{try{window.homeAdaptiveLog?.(kind,data||{})}catch(_){}};
+
+  function accessStatus(){
+    const call=(obj,name)=>{try{return obj&&typeof obj[name]==='function'?!!obj[name]():null}catch(_){return null}};
+    return{
+      notificationAccess:call(typeof VBrainNative!=='undefined'?VBrainNative:null,'notificationAccessEnabled'),
+      whatsappAccessibility:call(typeof VBrainNative!=='undefined'?VBrainNative:null,'whatsappAccessibilityEnabled'),
+      calendarPermission:call(typeof Native!=='undefined'?Native:null,'hasCalendarPermission'),
+      homeSync:call(typeof Native!=='undefined'?Native:null,'hasNotionConnection')
+    }
+  }
+
+  function reportAccessStatus(force=false){
+    const next=accessStatus();
+    if(Object.values(next).every(v=>v===null))return false;
+    const prior=read(ACCESS_STATUS,null), changed=!prior||JSON.stringify(prior)!==JSON.stringify(next);
+    if(changed)write(ACCESS_STATUS,next);
+    if(changed||force)log('inbox_access_status_v13',next);
+    return changed
+  }
 
   function storeTodoState(state){
     try{
@@ -225,10 +245,10 @@
     }
   }
 
-  function refreshPrivateState(){wrapTaskActions();installLearningReviewSync();syncPrivateTasks();renderHistory();pullLatestLearning()}
+  function refreshPrivateState(){wrapTaskActions();installLearningReviewSync();syncPrivateTasks();renderHistory();pullLatestLearning();reportAccessStatus()}
   function install(){
     try{rememberCompleted(currentTodoState().archive||[])}catch(_){}
-    installLearningReviewSync();refreshPrivateState();
+    installLearningReviewSync();refreshPrivateState();reportAccessStatus(true);
     for(const delay of [2500,12000])setTimeout(()=>pullLatestLearning(true),delay);
     const prior=window.onAppResume;
     if(typeof prior==='function'&&!prior.__v29){
@@ -245,5 +265,5 @@
   else setTimeout(install,0);
   document.addEventListener('click',()=>setTimeout(refreshPrivateState,80),true);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshPrivateState,180)});
-  window.VBrainPrivateIngest={version:29,ingest:syncPrivateTasks,history:()=>read(HISTORY,[]),syncLearning:()=>pullLatestLearning(true)};
+  window.VBrainPrivateIngest={version:29,ingest:syncPrivateTasks,history:()=>read(HISTORY,[]),syncLearning:()=>pullLatestLearning(true),access:accessStatus};
 })();
