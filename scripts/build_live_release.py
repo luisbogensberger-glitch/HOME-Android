@@ -8,10 +8,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'sync-overlay/app/src/main/assets'
 
-# V25 has exactly one visible/runtime owner. The verified base document supplies
-# local data functions and native bridges only; historical adaptation layers do not execute.
+# V25 remains the one visible/runtime owner. V29 is a non-visual private-ingest helper:
+# it consumes only device-private patch data and never places private content in this repository.
 CSS = []
-JS = ['vbrain-one-ui-v25.js']
+JS = ['vbrain-one-ui-v25.js', 'vbrain-private-ingest-v29.js']
 
 def source(name):
     path = ASSETS / name
