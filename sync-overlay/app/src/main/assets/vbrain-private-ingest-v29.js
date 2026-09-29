@@ -70,10 +70,7 @@
       const stableId=externalId.startsWith('external-')?externalId:`external-${externalId}`;
       const key=`${title.toLowerCase()}|${clean(raw?.area||'Personal',80).toLowerCase()}`;
       const existing=byId.get(stableId)||byKey.get(key);
-      if(existing){
-        applied.add(stableId);
-        continue;
-      }
+      if(existing){applied.add(stableId);continue}
       if(applied.has(stableId)) continue;
       const links=Array.isArray(raw?.links)?raw.links.map(link=>({label:clean(link?.label||link?.url,100),url:clean(link?.url,1000)})).filter(link=>/^https:\/\//i.test(link.url)).slice(0,8):[];
       const task={
@@ -151,19 +148,24 @@
     }
   }
 
+  function refreshPrivateState(){wrapTaskActions();ingestPrivateTasks();renderHistory()}
   function install(){
-    wrapTaskActions();
     try{rememberCompleted(currentTodoState().archive||[])}catch(_){}
-    ingestPrivateTasks(); renderHistory();
+    refreshPrivateState();
     const prior=window.onAppResume;
     if(typeof prior==='function'&&!prior.__v29){
-      const wrapped=function(){const result=prior.apply(this,arguments);setTimeout(()=>{wrapTaskActions();ingestPrivateTasks();renderHistory()},250);return result};
+      const wrapped=function(){
+        const result=prior.apply(this,arguments);
+        for(const delay of [250,2200,6500]) setTimeout(refreshPrivateState,delay);
+        return result
+      };
       wrapped.__v29=true; window.onAppResume=wrapped;
     }
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0));
   else setTimeout(install,0);
-  setInterval(()=>{wrapTaskActions();ingestPrivateTasks();renderHistory()},5000);
+  document.addEventListener('click',()=>setTimeout(refreshPrivateState,80),true);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshPrivateState,180)});
   window.VBrainPrivateIngest={version:29,ingest:ingestPrivateTasks,history:()=>read(HISTORY,[])};
 })();
