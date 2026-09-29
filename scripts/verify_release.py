@@ -21,10 +21,11 @@ assert manifest['minNative']==18
 assert manifest['version'].startswith('18.')
 assert 'name="vbrain-host" content="18"' in html
 
-# Exactly one runtime owns visible UI. V29 may assist with private data ingestion only.
-assert html.count('data-source="')==2, 'release may ship only One UI plus the private ingest helper'
+# Exactly one runtime owns visible UI. V29 is a non-visual private data helper.
+assert html.count('data-source="')==1, 'v25 must remain the only injected runtime owner'
 assert html.count('data-source="vbrain-one-ui-v25.js"')==1
-assert html.count('data-source="vbrain-private-ingest-v29.js"')==1
+assert html.count('data-helper="')==1, 'release may ship only one private helper'
+assert html.count('data-helper="vbrain-private-ingest-v29.js"')==1
 assert '__VBRAIN_ONE_UI_V25__' in html
 assert '__VBRAIN_PRIVATE_INGEST_V29__' in html
 assert manifest['bytes'] < 215000, f'one-ui release regressed to {manifest["bytes"]} bytes'
@@ -44,6 +45,7 @@ retired_sources=[
 ]
 for name in retired_sources:
  assert f'data-source="{name}"' not in html, f'retired runtime leaked into release: {name}'
+ assert f'data-helper="{name}"' not in html, f'retired helper leaked into release: {name}'
 
 # Ownership/performance invariants.
 assert 'setInterval(' not in html, 'shipping UI must not create repeating JS intervals'
@@ -121,4 +123,4 @@ if len(sys.argv)>1:
   assert hashlib.sha256(shipped).hexdigest()==manifest['sha256']
   assert json.loads(apk.read('assets/live-release.json'))==manifest
 
-print(f'PASS: One UI v25 + private ingest v29, {len(scripts)} total inline scripts / 1 visual owner, {manifest["bytes"]} bytes, persistent Brain + local-first To-Dos + semantic Tube review + calendar + live UI + Host-18 rollback'+(' and APK bytes' if len(sys.argv)>1 else ''))
+print(f'PASS: One UI v25 + private ingest v29, {len(scripts)} total inline scripts / 1 visual owner + 1 private helper, {manifest["bytes"]} bytes, persistent Brain + local-first To-Dos + semantic Tube review + calendar + live UI + Host-18 rollback'+(' and APK bytes' if len(sys.argv)>1 else ''))
