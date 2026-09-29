@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import base64
+import gzip
 import hashlib
 import json
 import os
@@ -27,6 +28,7 @@ COMMAND_INFO = b"HOME-Bridge-v2-command"
 MAX_COMMAND_AGE_MS = 7 * 24 * 60 * 60 * 1000
 PRIVATE_CARRIER_ID = "vbrain-private-state-v1"
 MAX_PRIVATE_PATCH_BYTES = 100_000
+MAX_DECRYPTED_COMMAND_BYTES = 120_000
 
 if not TOKEN:
     print("HOME_TOKEN repository secret is missing.", file=sys.stderr)
@@ -103,6 +105,9 @@ def decrypt_envelope(private_key: X25519PrivateKey, envelope: dict) -> dict:
         raise ValueError("Only encrypted v2 HOME bridge envelopes are accepted")
     if envelope.get("alg") != "X25519-HKDF-SHA256+A256GCM":
         raise ValueError("Unsupported bridge encryption algorithm")
+    compression = envelope.get("zip")
+    if compression not in (None, "gzip"):
+        raise ValueError("Unsupported bridge compression")
 
     epk = X25519PublicKey.from_public_bytes(b64d(envelope.get("ephemeralPublicKey")))
     salt = b64d(envelope.get("salt"))
@@ -119,6 +124,10 @@ def decrypt_envelope(private_key: X25519PrivateKey, envelope: dict) -> dict:
         info=COMMAND_INFO,
     ).derive(shared)
     plaintext = AESGCM(aes_key).decrypt(nonce, ciphertext, AAD)
+    if compression == "gzip":
+        plaintext = gzip.decompress(plaintext)
+    if len(plaintext) > MAX_DECRYPTED_COMMAND_BYTES:
+        raise ValueError("Decrypted bridge command is too large")
     command = json.loads(plaintext.decode("utf-8"))
     if not isinstance(command, dict) or command.get("version") != 2:
         raise ValueError("Invalid decrypted command")
