@@ -25,6 +25,8 @@ KEY_SALT = b"HOME-Bridge-v2-key-derivation"
 KEY_INFO = b"x25519-private-key"
 COMMAND_INFO = b"HOME-Bridge-v2-command"
 MAX_COMMAND_AGE_MS = 7 * 24 * 60 * 60 * 1000
+PRIVATE_CARRIER_ID = "vbrain-private-state-v1"
+MAX_PRIVATE_PATCH_BYTES = 100_000
 
 if not TOKEN:
     print("HOME_TOKEN repository secret is missing.", file=sys.stderr)
@@ -78,8 +80,6 @@ def request(method: str, path: str, body=None):
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-cache",
     }
-    # curl_cffi impersonates a real Chrome TLS/browser signature. The previous urllib
-    # bridge was rejected by Cloudflare Error 1010 even with a browser-like User-Agent.
     response = requests.request(
         method,
         API + path,
@@ -175,6 +175,31 @@ def validate_task(raw) -> dict:
     return task
 
 
+def validate_private_patch(raw) -> dict:
+    if not isinstance(raw, dict):
+        raise ValueError("patch must be an object")
+    allowed = {"brainContext", "taskUpserts", "taskRemovals", "liveUi"}
+    unknown = set(raw.keys()) - allowed
+    if unknown:
+        raise ValueError("unsupported private patch field(s): " + ", ".join(sorted(unknown)))
+
+    brain = raw.get("brainContext")
+    if brain is not None:
+        if not isinstance(brain, dict):
+            raise ValueError("brainContext must be an object")
+        items = brain.get("items") or []
+        if not isinstance(items, list) or len(items) > 200:
+            raise ValueError("brainContext items must be an array with at most 200 entries")
+    for key, limit in (("taskUpserts", 80), ("taskRemovals", 120)):
+        value = raw.get(key)
+        if value is not None and (not isinstance(value, list) or len(value) > limit):
+            raise ValueError(f"{key} exceeds its bounded array limit")
+    rendered = json.dumps(raw, separators=(",", ":"), ensure_ascii=False)
+    if len(rendered.encode("utf-8")) > MAX_PRIVATE_PATCH_BYTES:
+        raise ValueError("private patch is too large")
+    return json.loads(rendered)
+
+
 def existing_task_for(task: dict, existing: list):
     task_id = task.get("id")
     source_key = task.get("sourceKey")
@@ -189,23 +214,39 @@ def existing_task_for(task: dict, existing: list):
 
 
 def run_command(command: dict):
-    if command.get("op") != "upsert_task":
-        raise ValueError("Only upsert_task is allowed through the ChatGPT write bridge")
-    task = validate_task(command.get("task") or {})
-    current = request("GET", "/api/tasks") or []
-    if not isinstance(current, list):
-        current = []
-    found = existing_task_for(task, current)
-    if found:
-        existing_id = clean_text(found.get("id"), 120)
-        if not existing_id:
-            raise ValueError("Existing matching task has no id")
-        task["id"] = existing_id
-        request("PATCH", "/api/tasks/" + urllib.parse.quote(existing_id, safe=""), task)
-        print("Updated HOME task", existing_id)
-    else:
-        request("POST", "/api/tasks", task)
-        print("Created HOME task", task["id"])
+    op = command.get("op")
+    if op == "upsert_task":
+        task = validate_task(command.get("task") or {})
+        current = request("GET", "/api/tasks") or []
+        if not isinstance(current, list):
+            current = []
+        found = existing_task_for(task, current)
+        if found:
+            existing_id = clean_text(found.get("id"), 120)
+            if not existing_id:
+                raise ValueError("Existing matching task has no id")
+            task["id"] = existing_id
+            request("PATCH", "/api/tasks/" + urllib.parse.quote(existing_id, safe=""), task)
+            print("Updated HOME task", existing_id)
+        else:
+            request("POST", "/api/tasks", task)
+            print("Created HOME task", task["id"])
+        return
+
+    if op == "upsert_private_patch":
+        patch = validate_private_patch(command.get("patch") or {})
+        carrier = {
+            "id": PRIVATE_CARRIER_ID,
+            "kind": "private_state",
+            "source": "home-command-bridge",
+            "updatedAt": int(time.time() * 1000),
+            "patch": patch,
+        }
+        request("POST", "/api/cards", carrier)
+        print("Updated HOME private patch carrier")
+        return
+
+    raise ValueError("Unsupported HOME bridge operation")
 
 
 def load_queue() -> dict:
@@ -268,7 +309,6 @@ def main():
     else:
         print("No HOME commands processed.")
 
-    # Key/queue mutations are committed by the workflow after this script exits.
     if remaining:
         sys.exit(1)
     if key_changed or queue_changed:
