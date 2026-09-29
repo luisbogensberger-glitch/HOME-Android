@@ -133,13 +133,18 @@ const root=path.resolve(__dirname,'..');
   assert.ok(await page.evaluate(()=>window.__private.some(x=>x.kind==='private_text_field'&&x.text.includes('remote field'))),'remote field must use same private capture path');
   await page.locator('.v25RemoteInput').evaluate(el=>el.blur());
 
-  await page.evaluate(()=>{Native.saveState('vbrainPrivatePatch',JSON.stringify({liveUi:{expiresAt:new Date(Date.now()+3600000).toISOString(),home:{components:[{id:'next-learning-step',type:'button',kicker:'FOR YOU',title:'Review the simulation',text:'Try one useful card.',action:{type:'route',target:'tube'}}]}}}));onAppResume()});
+  await page.evaluate(()=>{Native.saveState('vbrainPrivatePatch',JSON.stringify({liveUi:{baseline:{home:{components:[{id:'next-learning-step',type:'button',kicker:'FOR YOU',title:'Review the simulation',text:'Try one useful card.',action:{type:'route',target:'tube'}}]}}}}));onAppResume()});
   await page.waitForSelector('#v25DynamicHome >> text=Review the simulation');
-  assert.equal(await page.locator('.v25HomeCard').count(),4,'personal hints must preserve the four core cards');
+  assert.equal(await page.locator('.v25HomeCard').count(),4,'a lasting personal baseline must preserve the four core cards');
   await page.getByText('Review the simulation').click();await page.waitForSelector('#tubeScreen.show');
-  assert.ok(await page.evaluate(()=>window.__events.some(x=>x.type==='ui_press_personal_module'&&x.data.id==='next-learning-step')),'personal module taps must be measurable without logging its text');
-  await page.evaluate(()=>{Native.saveState('vbrainPrivatePatch',JSON.stringify({liveUi:{expiresAt:new Date(Date.now()-1000).toISOString(),home:{components:[{id:'next-learning-step',type:'button',title:'Review the simulation'}]}}}));showScreen('home');onAppResume()});
-  assert.equal(await page.getByText('Review the simulation').count(),0,'expired personal UI must disappear');
+  const moduleEvidence=await page.evaluate(()=>({seen:window.__events.find(x=>x.type==='screen_personal_module_impression'&&x.data.id==='next-learning-step'),opened:window.__events.find(x=>x.type==='ui_press_personal_module'&&x.data.id==='next-learning-step')}));
+  assert.equal(moduleEvidence.seen?.data.visitId,moduleEvidence.opened?.data.visitId,'personal module clicks need a matching visible impression');
+  await page.evaluate(()=>{const p=JSON.parse(Native.loadState('vbrainPrivatePatch'));p.liveUi.experiment={id:'quiz-trial',expiresAt:new Date(Date.now()+3600000).toISOString(),home:{components:[{id:'quiz-trial',type:'button',title:'Try a tiny quiz',action:{type:'route',target:'tube'}}]}};Native.saveState('vbrainPrivatePatch',JSON.stringify(p));showScreen('home');onAppResume()});
+  await page.waitForSelector('#v25DynamicHome >> text=Try a tiny quiz');
+  assert.equal(await page.getByText('Review the simulation').count(),0,'the experiment temporarily overrides the accepted Home baseline');
+  await page.evaluate(()=>{const p=JSON.parse(Native.loadState('vbrainPrivatePatch'));p.liveUi.experiment.expiresAt=new Date(Date.now()-1000).toISOString();Native.saveState('vbrainPrivatePatch',JSON.stringify(p));onAppResume()});
+  await page.waitForSelector('#v25DynamicHome >> text=Review the simulation');
+  assert.equal(await page.getByText('Try a tiny quiz').count(),0,'an expired experiment returns to the lasting baseline');
 
   liveUi={schema:1,version:'25-test-c',pollMs:1500,theme:{accent:'#f2ce62'},home:{mode:'replace',columns:1,components:[{type:'button',kicker:'NEXT UI',title:'A completely different Home',text:'Still one runtime.',action:{type:'route',target:'todos'}}]},slots:{gym:[],todos:[],tube:[],todoDetail:[]}};
   await page.waitForSelector('#v25DynamicHome >> text=A completely different Home',{timeout:4000});
@@ -159,6 +164,7 @@ const root=path.resolve(__dirname,'..');
   assert.equal(await page.evaluate(()=>handleAndroidBack()),'handled');
   assert.equal(await page.locator('#v25Brain.show').count(),0);
   await page.reload();await page.waitForFunction(()=>window.VBrain?.version===25);
+  assert.equal(await page.getByText('Review the simulation').count(),1,'the accepted personal baseline survives a runtime restart');
   assert.ok(await page.evaluate(()=>VBrain.model(true).nodes.some(n=>n.id==='persist-104')),'branches must survive restart');
 
   const scoreBeforeImport=await page.evaluate(()=>VBrainScore.today());
