@@ -29,6 +29,7 @@ final class WorkerSync {
     static final String API = "https://luis-home-sync.luisbogensberger.workers.dev";
     private static final String LEARNING_INGEST = "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-ingest";
     private static final String LEARNING_LATEST = "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/home-learning-latest";
+    private static final String SUPABASE_FUNCTIONS = "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/";
     private static final String KEY_ALIAS = "home_worker_token_v1";
     private final Context context;
     private final File outboxFile;
@@ -139,7 +140,14 @@ final class WorkerSync {
             connection.setRequestMethod(method);
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(Math.max(5000, readTimeoutMs));
-            connection.setRequestProperty("Authorization", "Bearer " + token);
+            String bearer = "Bearer " + token;
+            connection.setRequestProperty("Authorization", bearer);
+            if (url.startsWith(SUPABASE_FUNCTIONS)) {
+                // Authorization is reserved for Supabase user JWTs. Keep it for compatibility,
+                // but mirror the HOME bearer through an explicit private header so Edge
+                // Functions can validate the exact HOME token without relying on that header.
+                connection.setRequestProperty("X-Home-Authorization", bearer);
+            }
             connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
             connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("Cache-Control", "no-cache");

@@ -11,11 +11,18 @@ path = Path(sys.argv[1] if len(sys.argv) > 1 else "src/luis-home-app/app/src/mai
 s = path.read_text()
 
 # HOME tokens authenticate the Cloudflare HOME backend. Never present them as Supabase JWTs.
+# Newer overlays can already carry the explicit X-Home-Authorization header. In that case,
+# remove only the duplicate helper constant because patch_veqrya_auth_v22.py owns the final
+# shared request block and re-inserts one canonical SUPABASE_FUNCTIONS constant.
 old = '''            connection.setRequestProperty("Authorization", "Bearer " + token);\n            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");'''
 new = '''            boolean supabaseFunction = url.startsWith("https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/");\n            if (supabaseFunction) connection.setRequestProperty("X-HOME-Authorization", "Bearer " + token);\n            else connection.setRequestProperty("Authorization", "Bearer " + token);\n            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");'''
-if old not in s:
+already_hardened = 'connection.setRequestProperty("X-Home-Authorization", bearer);'
+if old in s:
+    s = s.replace(old, new, 1)
+elif already_hardened in s:
+    s = s.replace('    private static final String SUPABASE_FUNCTIONS = "https://skgmgxthymnzubbobqxu.supabase.co/functions/v1/";\n', '', 1)
+else:
     raise SystemExit("WorkerSync auth anchor not found")
-s = s.replace(old, new, 1)
 
 # Queue policy: task/learning writes first; collapse repeated text snapshots; telemetry last.
 old = '''    int pendingOutboxCount() { return readOutbox().length(); }\n\n    JSONObject syncStatus() {\n        JSONObject out=new JSONObject();\n        try {\n            android.content.SharedPreferences p=context.getSharedPreferences("vbrain_sync",Context.MODE_PRIVATE);\n            out.put("configured",isConfigured()).put("pending",pendingOutboxCount())\n               .put("lastSyncedAt",p.getLong("lastSyncedAt",0)).put("lastError",p.getString("lastError",""));\n        } catch(Exception ignored) { }\n        return out;\n    }\n\n    void flushOutbox() {\n        if (!isConfigured() || !flushing.compareAndSet(false, true)) return;\n        long deadline=System.currentTimeMillis()+40000;\n        try {\n            JSONArray rows = readOutbox();'''
