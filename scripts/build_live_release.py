@@ -37,7 +37,11 @@ def build():
     if not isinstance(feed.get('cards'), list) or len(feed['cards']) < 5:
         raise ValueError('Tube release needs at least five bundled learning cards')
     bundled_feed = json.dumps(feed, ensure_ascii=False, separators=(',', ':')).replace('<', '\\u003c')
-    scripts = '\n'.join('<script data-source="'+name+'">\nwindow.__vbrainBundledTubeFeed='+bundled_feed+';\n'+source(name).replace('</script', '<\\/script')+'\n</script>' for name in JS)
+    script_parts=[]
+    for index,name in enumerate(JS):
+        prefix='window.__vbrainBundledTubeFeed='+bundled_feed+';\n' if index==0 else ''
+        script_parts.append('<script data-source="'+name+'">\n'+prefix+source(name).replace('</script', '<\\/script')+'\n</script>')
+    scripts='\n'.join(script_parts)
     html = html.replace('</head>', styles+'\n<meta name="vbrain-host" content="18">\n</head>')
     html = html.replace('</body>', scripts+'\n</body>')
     payload = html.encode()
