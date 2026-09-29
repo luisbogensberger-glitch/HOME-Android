@@ -1,25 +1,6 @@
 {
-  "commands": [
-    {
-      "alg": "X25519-HKDF-SHA256+A256GCM",
-      "ciphertext": "SwADTZmqGdjRCaxmVjfTletQP3_IxSBg4BQFrjbuCSReKcyeh33-HREG5T6vFUOnjDvaKFFmFwK9yYus9pXYXnLgOp7facsrfpIudkCnV9nRcaQFm-Q8o0s5nXYvRuasYJo6CfZhDWjuhzwMm6Xa-NoztQMzteJBn6VZFxy6a59qHYu7415cx3eJqKmnlixlTCjwic_r_B5bcYq1wAHPLF3CqlrzHf8HzM93Q_5Dza_74aNodfB0mixgHkEw2qW_X7loTonclGG_nSWWXwL9eLnlO6H8wVBr55md46lCP7Lhk5YjL1_j-MiTAO9vEqzIkn3nTbUOX-hv37q7oX9S-UeYByeSE4S3vA4DBgtj35U-_m42OlLPLHVOth8vdlO7okfsb1Qxuiy3_3hhUBzv3drzhFuCpkn_0uaO_x8f99fXtHgVflzc4-whYrrI3c9O-NHI5ZdZ1BkKrO-AOTKYRoDHxs3Zw2BnP-6jEcQM2L4cAPfJhTUipJG-c8fLTJJuu8vOyM-XkBZEWxol-QG8Soc2PZ2uVj1VzmE1--yNKdO5cMD_Wm9v16H63LYyhtW7KJjrzUh9BVS6FBhi2lAAENQP7YpsMtbkklFGdzYf_G6THWyZBTs",
-      "ephemeralPublicKey": "3smyndmeGmHKpEmEa1GqzztHQbfUQGyzIqVwXmjVWhI",
-      "id": "cmd-gmail-dalons-20260929",
-      "nonce": "CSxvzTrCeuhdb8a2",
-      "salt": "WEcON7GZcLSNmyH6yfGNQA",
-      "v": 2
-    },
-    {
-      "alg": "X25519-HKDF-SHA256+A256GCM",
-      "ciphertext": "-i3q6ha_KVjx0QFCX4w28o5vo5h0Hl2Z7fZf-5op2-3Ft-sUCcb-AP9EJD_CQWllGzbciYlwgBG1osPaoGJ-6kaqRUAYPPUqwQbg0C5DYQSA90kMJzsjpf7d-6g34Lviy8iHmZAno-EJSzTp2UDJapeUmCjuOBI4Afqr4vrw4BUD83DKDaeiyRrsBfzl1xtVezuMn4g5HWgr5-bfFpSwD5wtkux_LAzrtvVxhrM9iec_ZTGet-7qDFXMoPdXjFtCz6QQiCNL4QRQtplyJYBCa1v7jkb1Yie03ZR01JjeGivFL28rUPurxHueSEBqz8SVv4gnWOFZ8HHBgMgBS9SiRgVM5zTacmH4flkgd9n8ruk6HWt_notvmWsH3vFm0I4XKAHeGttfemZQw4Bsz6TZqI1D04D4-SAv0ObcWRuU-_G_a1NlZom8VnEnwjjJ3EI-VgNqxX8B7FHbx6iu_rTYL0h83clZCqU8XWW5P7UC5SUMUayWbjXC8mBXZGws_zrg7Ca0zVCrBd9qlyfzs51xeBriC5_PXsI-h2BqqDHJcSXeTZRJOW7fGJ71A7IEhy_7sQmPZ0IOHShI2e3LXQClkhhXL7Y",
-      "ephemeralPublicKey": "yGQ_7N9037ctzEMP9PEvTmtstlXX0IuZAGMMwUmA03U",
-      "id": "cmd-gmail-cardterms-20260929",
-      "nonce": "aWie6qDUvIGm78YW",
-      "salt": "0EiSKnMopAFipbSg8GSquw",
-      "v": 2
-    }
-  ],
-  "lastProcessedAtMs": 1790435338486,
-  "lastProcessedCount": 1,
+  "commands": [],
+  "lastProcessedAtMs": 1790696339720,
+  "lastProcessedCount": 2,
   "version": 2
 }
