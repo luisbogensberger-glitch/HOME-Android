@@ -38,6 +38,8 @@ public class MainActivity extends Activity {
     private WebView webView;
     private SharedPreferences prefs;
     private WorkerSync worker;
+    private GoogleBridge googleBridge;
+    private android.database.ContentObserver calendarObserver;
     private LiveRuntime liveRuntime;
     private final ExecutorService liveQueue = Executors.newSingleThreadExecutor();
     private final java.util.concurrent.atomic.AtomicBoolean liveChecking = new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -53,6 +55,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences("home_state", MODE_PRIVATE);
         worker = new WorkerSync(this);
+        googleBridge = new GoogleBridge(this, this::callback);
         liveRuntime = new LiveRuntime(this);
         if (!prefs.getBoolean("vbrainOutboxMigrated17",false)) {
             worker.stageTodoState();prefs.edit().putBoolean("vbrainOutboxMigrated17",true).commit();
@@ -101,6 +104,8 @@ public class MainActivity extends Activity {
         });
         webView.setWebChromeClient(new WebChromeClient());
         webView.addJavascriptInterface(new NativeBridge(), "Native");
+        webView.addJavascriptInterface(googleBridge, "GoogleNative");
+        observeCalendar();
         webView.addJavascriptInterface(new AdaptiveBridge(this, worker, syncQueue, webView), "AdaptiveNative");
         webView.addJavascriptInterface(new VBrainSettingsBridge(this), "VBrainNative");
 
@@ -142,10 +147,22 @@ public class MainActivity extends Activity {
         super.onPause();
     }
 
+    private void observeCalendar() {
+        if(checkSelfPermission(Manifest.permission.READ_CALENDAR)!=PackageManager.PERMISSION_GRANTED||calendarObserver!=null)return;
+        calendarObserver=new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())) {
+            @Override public void onChange(boolean selfChange) { callback("onGoogleCalendarChanged",new JSONObject()); }
+        };
+        getContentResolver().registerContentObserver(CalendarContract.CONTENT_URI,true,calendarObserver);
+    }
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data) {
+        super.onActivityResult(requestCode,resultCode,data);
+        if(googleBridge!=null)googleBridge.onResult(requestCode,resultCode,data);
+    }
+
     private void injectHomeSyncLabels() {
         if (webView == null) return;
         String js = "(function(){" +
-                "if(window.__homeWorkerPatched)return;window.__homeWorkerPatched=true;" +
+                "if(window.__VBRAIN_ONE_UI_V25__)return;if(window.__homeWorkerPatched)return;window.__homeWorkerPatched=true;" +
                 "if(typeof window.setSyncStatus==='function'){var oldStatus=window.setSyncStatus;window.setSyncStatus=function(s){oldStatus(String(s||'').replace(/Notion/g,'HOME Sync'));};}" +
                 "if(typeof window.updateSyncUI==='function'){var oldUI=window.updateSyncUI;window.updateSyncUI=function(){oldUI();var b=document.getElementById('syncButton');if(b)b.textContent=(typeof Native!=='undefined'&&Native.hasNotionConnection())?'Sync now':'Connect HOME';var st=document.getElementById('syncStatus');if(st&&st.textContent==='Local tasks only')st.textContent='Local tasks only · HOME Sync is off';};window.updateSyncUI();}" +
                 "})();";
@@ -172,6 +189,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if(googleBridge!=null)googleBridge.close();
+        if(calendarObserver!=null)getContentResolver().unregisterContentObserver(calendarObserver);
         syncQueue.shutdown();
         liveQueue.shutdown();
         super.onDestroy();
@@ -349,6 +368,7 @@ public class MainActivity extends Activity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == CALENDAR_PERMISSION_REQUEST) {
             boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if(granted)observeCalendar();
             if (webView != null) {
                 webView.post(() -> webView.evaluateJavascript(
                         "window.onCalendarPermissionResult && window.onCalendarPermissionResult(" + granted + ")", null));
@@ -385,9 +405,9 @@ public class MainActivity extends Activity {
             String clean = value == null ? "" : value;
             String before=prefs.getString(key, "");
             prefs.edit().putString(key, clean).commit();
-            if ("todoState".equals(key)) worker.stageChangedTodos(before,clean);
+            if ("todoState".equals(key) && !googleBridge.isConnected()) worker.stageChangedTodos(before,clean);
             if ("tubeState".equals(key)) syncNewTubeAttempts(clean);
-            if ("todoState".equals(key)) {
+            if ("todoState".equals(key) && !googleBridge.isConnected()) {
                 scheduleTodoStateSync();
             }
         }
@@ -492,7 +512,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public boolean hasCalendarPermission() {
-            return checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED;
+            return googleBridge.isConnected() || checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED;
         }
 
         @JavascriptInterface
@@ -503,7 +523,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String getCalendarEvents(long startMillis, long endMillis) {
             JSONArray out = new JSONArray();
-            if (!hasCalendarPermission()) return out.toString();
+            if(googleBridge.isConnected()) { String cached=new GoogleSync(MainActivity.this).calendar(startMillis,endMillis);if(cached!=null)return cached; }
+            if (checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) return out.toString();
 
             Uri.Builder builder = CalendarContract.Instances.CONTENT_URI.buildUpon();
             ContentUris.appendId(builder, startMillis);
@@ -551,6 +572,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void openCalendarEvent(String eventId) {
+            if(eventId!=null&&eventId.startsWith("google:")){openUrl(new GoogleSync(MainActivity.this).calendarUrl(eventId));return;}
             try {
                 long id = Long.parseLong(eventId);
                 Uri uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, id);

@@ -59,7 +59,7 @@ Free text is private high-value evidence. Raw notes, messages and reflections mu
 
 ## 6. To-Dos
 
-To-Dos are local-first and deduplicated. Each task may expand into useful context, notes, links, tips or an outcome. Completed tasks move out of the active list while history remains recoverable.
+Google Tasks is the canonical connected task source, with a durable native offline write queue. Changes from either side must propagate, including completion, restoration, notes, dates and Google-side deletion. A lost insert response must not create duplicates. Without Google authorization, phone tasks remain usable. To-Dos are local-first and deduplicated. Each task may expand into useful context, notes, links, tips or an outcome. Completed tasks move out of the active list while history remains recoverable.
 
 V-Brain may create or enrich a task from real external evidence only when there is a concrete action, deadline, promised follow-up or clearly relevant commitment. Newsletters, generic FYI mail and ordinary conversation should not become tasks. Never invent task completion.
 
@@ -77,13 +77,13 @@ A completed learning loop should support:
 6. semantic feedback;
 7. longitudinal learning evidence.
 
-Questions must be grounded in the specific card. Generic prompts that do not match the material are a product defect. Explicit prompt complaints or delivery tests are not learner-performance evidence.
+Prefer unseen cards, use spaced repetition after completion, and refresh at most one undrafted stale card daily. A draft or open reader must survive every feed refresh. An exhausted finite pack may show fewer than five cards until a review is due. Questions must be grounded in the specific card. Generic prompts that do not match the material are a product defect. Explicit prompt complaints or delivery tests are not learner-performance evidence.
 
 Semantic reviews should distinguish understanding, application, precision, depth and task fulfilment, and should carry an `assessmentValid` signal when the row is suitable for ability inference.
 
 ## 8. Calendar
 
-Calendar stays visually simple but gives V-Brain timing context. It should help answer what matters today and improve reminder/task timing. Calendar events should not automatically become duplicate To-Dos.
+When authorized, Calendar reads Google directly, including selected secondary calendars, recurring instances, cancellations and all-day dates. Android provider changes also trigger a refresh. Poll in the foreground and at resume; background jobs are approximate and must not be described as instantaneous push. Calendar stays visually simple but gives V-Brain timing context. It should help answer what matters today and improve reminder/task timing. Calendar events should not automatically become duplicate To-Dos.
 
 Future punctuality or movement inference may use location/movement only after explicit native permission integration. Never pretend precise-location evidence exists without that path.
 
@@ -111,7 +111,7 @@ Notion is not a product dependency. Historical method names may remain for compa
 
 ## 13. Personal live adaptation
 
-Personal interface changes should be evidence-driven.
+Personal interface changes should be evidence-driven. A private local hourly evaluator may add one contextual guidance module and promote an accepted baseline after repeated evidence, while remote private adaptations retain priority and manual core-card order remains stable. Completed learning grows persistent topic branches with topic-specific confidence.
 
 - A temporary candidate uses `liveUi.experiment` with a finite expiry.
 - A change that proves useful across adequate exposure may be promoted to `liveUi.baseline`.

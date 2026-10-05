@@ -1,13 +1,13 @@
 {
-  "version": "2026-09-27-ucl-reading-list-v2",
+  "version": "2026-10-05-entrepreneurship-v3",
   "generatedAt": "2026-09-27T20:51:56.990152+00:00",
   "visibleCount": 5,
   "featuredIds": [
-    "ucl-icarus-bottleneck",
-    "ucl-icarus-rounds",
-    "ucl-lean-loop",
-    "ucl-finance-cash",
-    "ucl-culture-map"
+    "v31-british-values",
+    "v31-hypothesis",
+    "v31-risk-first",
+    "v31-means",
+    "v31-affordable-loss"
   ],
   "cards": [
     {
@@ -492,6 +492,216 @@
       ],
       "sourceLabel": "Traction · Weinberg & Mares",
       "sourceUrl": "https://www.penguin.co.uk/books/289806/traction-by-mares-gabriel-weinberg-and-justin/9780241242537"
+    },
+    {
+      "id": "v31-british-values",
+      "icon": "✦",
+      "topic": "Induction Week",
+      "time": "3 min",
+      "title": "Fundamental British Values",
+      "hook": "Democracy, law, liberty and respect are principles you can use in a diverse university community.",
+      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=85",
+      "lead": "The Department for Education names democracy, the rule of law, individual liberty, and mutual respect and tolerance of people with different faiths and beliefs. These principles support participation and freedom alongside equal treatment.",
+      "sections": [
+        [
+          "In a seminar",
+          "Let others challenge an idea, use agreed decision rules, and distinguish disagreement from denying someone equal participation. Respect does not require agreement."
+        ]
+      ],
+      "takeaway": "Democracy, law, liberty and respect are principles you can use in a diverse university community.",
+      "q": "Which response best reflects these principles in a team?",
+      "options": [
+        "Exclude the minority view",
+        "Require everyone to share one belief",
+        "Let everyone participate, debate and follow fair rules",
+        "Avoid all disagreement"
+      ],
+      "correct": 2,
+      "prompt": "Explain how you would combine freedom of expression with mutual respect in a UCL discussion.",
+      "keywords": [
+        "democracy",
+        "respect",
+        "liberty",
+        "law"
+      ],
+      "sourceLabel": "Department for Education",
+      "sourceUrl": "https://www.gov.uk/government/news/guidance-on-promoting-british-values-in-schools-published",
+      "provenance": "Supplementary primary-source concepts for MSc entrepreneurship; not a claim of assigned UCL reading."
+    },
+    {
+      "id": "v31-hypothesis",
+      "icon": "✦",
+      "topic": "Customer Development",
+      "time": "3 min",
+      "title": "Make the hypothesis falsifiable",
+      "hook": "A test is useful only if its result could change your mind.",
+      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=85",
+      "lead": "A strong business hypothesis states one specific belief, a relevant customer group and an observable outcome. Separate willingness to pay from ease of use so one result cannot conceal failure in the other.",
+      "sections": [
+        [
+          "Before the test",
+          "Write what outcome would disconfirm the belief, then choose an experiment capable of observing it. A precise test makes evidence easier to interpret."
+        ]
+      ],
+      "takeaway": "A test is useful only if its result could change your mind.",
+      "q": "Which hypothesis is easiest to test?",
+      "options": [
+        "Customers will love our idea",
+        "Our product will be successful",
+        "At least 4 of 10 target buyers will place a paid trial order",
+        "Our team is innovative"
+      ],
+      "correct": 2,
+      "prompt": "Write one testable hypothesis for a venture and the outcome that would make you reconsider it.",
+      "keywords": [
+        "hypothesis",
+        "evidence",
+        "test",
+        "order"
+      ],
+      "sourceLabel": "Strategyzer · strong hypotheses",
+      "sourceUrl": "https://www.strategyzer.com/library/mastering-business-testing-formulating-strong-hypotheses",
+      "provenance": "Supplementary primary-source concepts for MSc entrepreneurship; not a claim of assigned UCL reading."
+    },
+    {
+      "id": "v31-risk-first",
+      "icon": "✦",
+      "topic": "Prototyping",
+      "time": "3 min",
+      "title": "Test the riskiest assumption first",
+      "hook": "Polishing a prototype is low value if the basic demand assumption is false.",
+      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=85",
+      "lead": "Rank assumptions by how uncertain they are and how damaging failure would be. Test the critical uncertain belief before committing resources to less consequential details.",
+      "sections": [
+        [
+          "Choose the experiment",
+          "If demand is uncertain, observe a concrete customer commitment before improving surface design. The cheapest useful test addresses the belief that could overturn the whole idea."
+        ]
+      ],
+      "takeaway": "Polishing a prototype is low value if the basic demand assumption is false.",
+      "q": "Which test should come first?",
+      "options": [
+        "A small test of a critical uncertain demand assumption",
+        "A font preference survey",
+        "A full product build before any customer contact",
+        "A test of something already known"
+      ],
+      "correct": 0,
+      "prompt": "Name your most dangerous uncertain assumption and a cheap experiment that could invalidate it.",
+      "keywords": [
+        "risk",
+        "assumption",
+        "test",
+        "demand"
+      ],
+      "sourceLabel": "Strategyzer · critical hypotheses",
+      "sourceUrl": "https://www.strategyzer.com/library/how-to-test-your-idea-start-with-the-most-critical-hypotheses",
+      "provenance": "Supplementary primary-source concepts for MSc entrepreneurship; not a claim of assigned UCL reading."
+    },
+    {
+      "id": "v31-means",
+      "icon": "✦",
+      "topic": "Entrepreneurship",
+      "time": "3 min",
+      "title": "Start from the means you have",
+      "hook": "Who you are, what you know and who you know can shape the next feasible step.",
+      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=85",
+      "lead": "The bird-in-hand principle of effectuation starts with existing means instead of requiring a fully predicted market. Your knowledge, identity and relationships help you choose actions you can take now.",
+      "sections": [
+        [
+          "A practical move",
+          "List your means, then identify a small action that becomes possible with them. A partner commitment can extend what you can do next."
+        ]
+      ],
+      "takeaway": "Who you are, what you know and who you know can shape the next feasible step.",
+      "q": "What does bird-in-hand prioritise?",
+      "options": [
+        "A guaranteed five-year forecast",
+        "Starting with existing knowledge, identity and relationships",
+        "Waiting until every resource is available",
+        "Ignoring potential partners"
+      ],
+      "correct": 1,
+      "prompt": "Describe one venture action you can take using what you already know or the people you already know.",
+      "keywords": [
+        "means",
+        "knowledge",
+        "network",
+        "partner"
+      ],
+      "sourceLabel": "Society for Entrepreneurial Action",
+      "sourceUrl": "https://effectuation.org/the-five-principles-of-effectuation",
+      "provenance": "Supplementary primary-source concepts for MSc entrepreneurship; not a claim of assigned UCL reading."
+    },
+    {
+      "id": "v31-affordable-loss",
+      "icon": "✦",
+      "topic": "Entrepreneurial Finance",
+      "time": "3 min",
+      "title": "Set an affordable-loss boundary",
+      "hook": "Decide what you can lose before an uncertain experiment begins.",
+      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=85",
+      "lead": "The affordable-loss principle bounds the resources committed to an action rather than relying only on predicted upside. Include time and effort as well as money.",
+      "sections": [
+        [
+          "Make the limit explicit",
+          "Choose the experiment and a loss you can absorb. When the boundary is reached, use the evidence to decide whether another bounded step is justified."
+        ]
+      ],
+      "takeaway": "Decide what you can lose before an uncertain experiment begins.",
+      "q": "What best expresses affordable loss?",
+      "options": [
+        "Commit everything because returns look large",
+        "Keep investing to recover sunk costs",
+        "Set a tolerable resource limit before an uncertain test",
+        "Avoid every uncertain action"
+      ],
+      "correct": 2,
+      "prompt": "Give a maximum amount of time or money you can afford to lose on one venture experiment and explain why.",
+      "keywords": [
+        "loss",
+        "limit",
+        "time",
+        "money"
+      ],
+      "sourceLabel": "Society for Entrepreneurial Action",
+      "sourceUrl": "https://effectuation.org/the-five-principles-of-effectuation-detail",
+      "provenance": "Supplementary primary-source concepts for MSc entrepreneurship; not a claim of assigned UCL reading."
+    },
+    {
+      "id": "v31-test-evidence",
+      "icon": "✦",
+      "topic": "Marketing Strategy",
+      "time": "3 min",
+      "title": "Match the evidence to the claim",
+      "hook": "A compliment and a real customer action answer different questions.",
+      "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=85",
+      "lead": "Choose an experiment that can observe the specific belief you are testing. Direct observation offers context, while a less mediated test can reduce the effect of your presence on customer behaviour.",
+      "sections": [
+        [
+          "Interpret carefully",
+          "A positive response is useful evidence of that response. It does not automatically establish repeated use or paid demand. State the narrower conclusion the experiment supports."
+        ]
+      ],
+      "takeaway": "A compliment and a real customer action answer different questions.",
+      "q": "Which conclusion is warranted after people praise a concept?",
+      "options": [
+        "Repeated paid demand is proven",
+        "They gave a positive response; further behavioural evidence is needed",
+        "Retention is guaranteed",
+        "Every channel will work"
+      ],
+      "correct": 1,
+      "prompt": "Explain what one customer experiment can establish and what it still leaves uncertain.",
+      "keywords": [
+        "evidence",
+        "behaviour",
+        "uncertain",
+        "experiment"
+      ],
+      "sourceLabel": "Strategyzer · testing value propositions",
+      "sourceUrl": "https://www.strategyzer.com/library/ways-to-test-your-value-proposition-and-business-model",
+      "provenance": "Supplementary primary-source concepts for MSc entrepreneurship; not a claim of assigned UCL reading."
     }
   ]
 }
