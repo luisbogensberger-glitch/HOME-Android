@@ -33,7 +33,7 @@ final class GoogleSync {
     void connected(boolean value) { context.getSharedPreferences("vbrain_google",0).edit().putBoolean("connected",value).commit(); }
     private JSONObject read() {
         synchronized(LOCK) {
-            if(!file.getBaseFile().exists()) return new JSONObject();
+            if(!file.getBaseFile().exists()&&!new File(file.getBaseFile().getPath()+".bak").exists()) return new JSONObject();
             try(InputStream in=file.openRead()) { return new JSONObject(readBytes(in,12_000_000)); }
             catch(Exception e) { throw new IllegalStateException("Google cache needs recovery; saved writes were retained.",e); }
         }
