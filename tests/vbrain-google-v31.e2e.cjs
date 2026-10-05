@@ -37,6 +37,8 @@ const root=path.resolve(__dirname,'..');
     await page.evaluate(()=>{window.__remote=window.__remote.filter(x=>x.id!=='gt:L:a');window.onGoogleSnapshot(window.__snapshot())});
     assert.ok(!(await page.locator('#todoList').textContent()).includes('Google changed this title'),'Google deletions stay deleted');
     assert.ok(await page.evaluate(()=>JSON.parse(Native.loadState('vbrainGoogleRemovedV31')).some(x=>x.id==='gt:L:a')),'removed task notes remain recoverable');
+    await page.locator('#v31GoogleRecovery summary').click();assert.ok((await page.locator('#v31GoogleRecovery').textContent()).includes('most recent real purchase'),'saved notes can be reviewed inside the app');
+    await page.locator('#v31GoogleRecovery button').click();assert.ok(await page.evaluate(()=>window.__ops.some(x=>x.fields.title==='Google changed this title'&&!x.googleId&&x.fields.status==='needsAction')),'recovery creates a new task only after an explicit user action');
     await page.evaluate(()=>{window.__offline=true});await page.locator('#newTodo').fill('Offline commitment');await page.evaluate(()=>addTodo());
     assert.ok((await page.locator('#todoList').textContent()).includes('Offline commitment'));
     assert.ok(await page.evaluate(()=>JSON.parse(Native.loadState('todoState')).active.some(x=>x.title==='Offline commitment')),'offline work persists before a network acknowledgement');

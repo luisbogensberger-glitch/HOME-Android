@@ -173,6 +173,7 @@ final class GoogleSync {
     private void commitTasks(JSONArray raw,JSONArray lists,String selected,JSONObject identities,Set<String> ack,JSONArray conflicts) throws Exception {
         synchronized(LOCK) {
             JSONObject data=read();JSONArray rows=new JSONArray();Map<String,String> names=new HashMap<>();for(int i=0;i<lists.length();i++)names.put(lists.getJSONObject(i).getString("id"),lists.getJSONObject(i).optString("title","Tasks"));
+            String currentSelection=data.optString("selectedListId","");if(names.containsKey(currentSelection))selected=currentSelection;
             for(int i=0;i<raw.length();i++) {
                 JSONObject g=raw.getJSONObject(i);if(g.optBoolean("deleted"))continue;String listId=g.getString("listId"),gid=g.getString("id"),ref=reference(g.optString("notes","")),key=listId+"/"+gid;
                 String id=identities.optString(key,ref.isEmpty()?"gt:"+listId+":"+gid:ref);identities.put(key,id);

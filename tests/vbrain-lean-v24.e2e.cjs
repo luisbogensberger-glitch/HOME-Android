@@ -107,7 +107,7 @@ const root=path.resolve(__dirname,'..');
   const tube=await page.evaluate(()=>({stored:localStorage.getItem('homeTubeLayoutV6'),layout:document.getElementById('grid').dataset.layout,columns:getComputedStyle(document.getElementById('grid')).gridTemplateColumns,backdrop:getComputedStyle(document.querySelector('#grid .card')).backdropFilter}));
   assert.equal(await page.locator('#grid .card').count(),5,'stale Tube IDs must recover to five bundled cards offline');
   assert.ok((await page.locator('#grid .card').first().textContent()).includes('Induction Week'),'first cards should include induction material');
-  assert.ok(await page.evaluate(()=>cards.some(c=>c.title.includes('Culture Map'))),'the pool retains international cohort reading');
+  assert.ok(await page.evaluate(()=>cards.some(c=>c.id==='ucl-culture-map')),'the pool retains international cohort reading');
   assert.ok(await page.evaluate(()=>cards.some(c=>c.topic.includes('Entrepreneurial Finance'))),'the pool retains entrepreneurial finance reading');
   assert.equal(tube.stored,'stack');assert.equal(tube.layout,'stack');assert.ok(tube.columns&&tube.columns!=='none');assert.ok(tube.backdrop===''||tube.backdrop==='none');
   await page.locator('#grid .card').first().click();
