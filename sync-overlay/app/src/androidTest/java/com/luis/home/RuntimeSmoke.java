@@ -73,6 +73,8 @@ public class RuntimeSmoke extends Instrumentation {
     @Override public void onStart(){
         Bundle result=new Bundle();
         try{
+            phase="Google durable sync contract";
+            GoogleSyncSmoke.run(getTargetContext());
             phase="dirty upgrade boot";
             seedDirtyUpgradeState();startTarget();
             waitFor("window.VBrainLean?.version===25 && window.VBrainLive?.version===25 && window.VBrain?.version===25 && document.querySelectorAll('.v25HomeCard').length===4 && document.getElementById('vbrainScoreV8')?.innerText.includes('Your signal today')",15);

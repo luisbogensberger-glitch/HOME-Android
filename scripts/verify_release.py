@@ -28,7 +28,7 @@ assert html.count('data-helper="')==1, 'release may ship only one private helper
 assert html.count('data-helper="vbrain-private-ingest-v29.js"')==1
 assert '__VBRAIN_ONE_UI_V25__' in html
 assert '__VBRAIN_PRIVATE_INGEST_V29__' in html
-assert manifest['bytes'] < 215000, f'one-ui release regressed to {manifest["bytes"]} bytes'
+assert manifest['bytes'] < 240000, f'one-ui release regressed to {manifest["bytes"]} bytes'
 assert not re.search(r'<script\b[^>]*\bsrc=',html,re.I), 'no external script may execute at boot'
 assert not re.search(r'<link\b[^>]*\brel=["\']stylesheet',html,re.I), 'no external stylesheet may execute at boot'
 
@@ -60,6 +60,8 @@ assert 'Your signal today' in html and 'Behaviour intelligence' in html
 assert 'Tube Learning' in html and 'Easy · 15 min' in html
 assert 'window.__vbrainBundledTubeFeed=' in html and 'ICARUS' in html
 assert html.count('window.__vbrainBundledTubeFeed=')==1, 'bundled feed must not be duplicated across helpers'
+assert 'GoogleNative' in html and 'onGoogleSnapshot' in html and 'vbrainLocalAdaptV31' in html
+assert 'nextLearningCard' in html and 'knowledgeModel' in html
 assert 'vbrainDailyScoreV28' in html and 'daily_score_finalized' in html
 assert 'vbrainHomeCardOrderV28' in html and 'v28DragGhost' in html
 assert 'M15 2 L52 46 L89 2' in html

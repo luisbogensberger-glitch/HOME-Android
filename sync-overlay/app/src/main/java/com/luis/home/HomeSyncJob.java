@@ -15,7 +15,7 @@ public class HomeSyncJob extends JobService {
     }
     @Override public boolean onStartJob(JobParameters params){
         executor=Executors.newSingleThreadExecutor();
-        executor.execute(()->{WorkerSync w=new WorkerSync(this);w.flushOutbox();pollCommands(this,w);jobFinished(params,w.pendingOutboxCount()>0);executor.shutdown();});return true;
+        executor.execute(()->{GoogleBridge.background(this);WorkerSync w=new WorkerSync(this);w.flushOutbox();pollCommands(this,w);jobFinished(params,w.pendingOutboxCount()>0);executor.shutdown();});return true;
     }
     @Override public boolean onStopJob(JobParameters params){if(executor!=null)executor.shutdownNow();return true;}
     static synchronized void pollCommands(Context c,WorkerSync w){

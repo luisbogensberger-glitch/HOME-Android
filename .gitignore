@@ -3,5 +3,5 @@ tests/node_modules/
 android-smoke.txt
 source.b64
 source.zip
-src/
+/src/
 *.apk

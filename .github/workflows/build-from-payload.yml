@@ -16,7 +16,40 @@ permissions:
   contents: write
 
 jobs:
+  verify-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate exact release
+        run: |
+          python3 scripts/build_live_release.py --check
+          python3 scripts/verify_release.py
+      - name: Install browser verification tools
+        run: npm install --prefix tests --no-package-lock --no-save playwright@1.56.1 agent-browser@0.26.0
+      - name: Verify Google and existing runtime flows
+        run: |
+          node tests/vbrain-google-v31.e2e.cjs
+          node tests/vbrain-lean-v24.e2e.cjs
+      - name: Visually verify the app
+        run: |
+          node scripts/browser-preview-server.cjs &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID"' EXIT
+          tests/node_modules/.bin/agent-browser --executable-path /usr/bin/google-chrome open http://127.0.0.1:8777
+          tests/node_modules/.bin/agent-browser wait '#v25Score'
+          tests/node_modules/.bin/agent-browser snapshot -i
+          tests/node_modules/.bin/agent-browser screenshot --annotate browser-screen-test.png
+          tests/node_modules/.bin/agent-browser eval 'if(window.__consoleErrors.length)throw Error(JSON.stringify(window.__consoleErrors));if(document.querySelectorAll(".v25HomeCard").length!==4)throw Error("Missing core cards");"PASS: visible app, four core routes, no runtime errors"'
+          tests/node_modules/.bin/agent-browser close
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: V-Brain-google-browser-check
+          path: '*-screen-test.png'
+          if-no-files-found: ignore
   build:
+    needs: verify-web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +73,18 @@ jobs:
         run: |
           cp -a sync-overlay/app/src/main/. src/luis-home-app/app/src/main/
           cp -a sync-overlay/app/src/androidTest src/luis-home-app/app/src/androidTest
+
+      - name: Add Google Tasks and Calendar authorization
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          p=Path('src/luis-home-app/app/build.gradle')
+          s=p.read_text()
+          s += "\ndependencies {\n    implementation 'com.google.android.gms:play-services-auth:21.4.0'\n}\n"
+          p.write_text(s)
+          p=Path('src/luis-home-app/gradle.properties')
+          p.write_text(p.read_text().replace('android.useAndroidX=false','android.useAndroidX=true'))
+          PYCODE
 
       - name: Harden V-Brain 18 private sync
         run: python3 scripts/patch_worker_sync_v18.py src/luis-home-app/app/src/main/java/com/luis/home/WorkerSync.java
@@ -90,6 +135,7 @@ jobs:
         run: |
           npm install --prefix tests --no-package-lock --no-save playwright@1.56.1
           node tests/vbrain-lean-v24.e2e.cjs
+          node tests/vbrain-google-v31.e2e.cjs
 
       - name: Upload UI screenshots
         if: always()
